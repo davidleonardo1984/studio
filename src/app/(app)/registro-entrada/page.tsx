@@ -32,7 +32,7 @@ let waitingYardStore: VehicleEntry[] = [];
 // Populate with some mock data for development if stores are empty
 if (process.env.NODE_ENV === 'development') {
     if (waitingYardStore.length === 0) {
-        waitingYardStore.push( { id: '20230115140000', driverName: 'Daniela Silva', transportCompanyName: 'BetaLog', plate1: 'JKL-4444', internalDestinationName: 'Pátio Espera', movementType: 'Carga Pendente', entryTimestamp: new Date().toISOString(), status: 'aguardando_patio', registeredBy: 'user2' });
+        waitingYardStore.push( { id: '20230115140000', driverName: 'Daniela Silva', transportCompanyName: 'BetaLog', plate1: 'JKL-4444', internalDestinationName: 'Pátio Espera', movementType: 'Carga Pendente', entryTimestamp: new Date().toISOString(), status: 'aguardando_patio', registeredBy: 'user2', observation: 'Aguardando NF' });
         waitingYardStore.push( { id: '20230115150000', driverName: 'Eduardo Lima', transportCompanyName: 'GamaTrans', plate1: 'MNO-5555', internalDestinationName: 'Verificação', movementType: 'Inspeção', entryTimestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), status: 'aguardando_patio', registeredBy: 'user1' });
     }
      if (entriesStore.length === 0) {
@@ -67,24 +67,18 @@ export default function RegistroEntradaPage() {
 
   // Sync with global waitingYardStore
   useEffect(() => {
-    setWaitingVehicles([...waitingYardStore]); // Create a new array to trigger re-render
-  }, []); // Initial load
+    setWaitingVehicles([...waitingYardStore]); 
+  }, []); 
 
-  // Listen for changes in waitingYardStore (e.g., after adding a new vehicle to wait)
-  // This is a bit of a hack for global array mutation. Proper state management would be better.
   useEffect(() => {
-    // This effect is tricky because waitingYardStore is mutated directly.
-    // A more robust solution would involve a shared state/context for these stores.
-    // For now, we assume that after an action that modifies waitingYardStore (like handleFormSubmit),
-    // we might need to refresh if this component doesn't re-render automatically.
-    // The setWaitingVehicles in handleApproveEntry and handleFormSubmit (for 'aguardando_patio') helps.
     const interval = setInterval(() => {
-        if (waitingVehicles.length !== waitingYardStore.length) {
+        if (waitingVehicles.length !== waitingYardStore.length || 
+            JSON.stringify(waitingVehicles) !== JSON.stringify(waitingYardStore)) { // Deeper check for content change
             setWaitingVehicles([...waitingYardStore]);
         }
-    }, 1000); // Check every second for changes
+    }, 1000); 
     return () => clearInterval(interval);
-  }, [waitingVehicles.length]);
+  }, [waitingVehicles]);
 
 
   const form = useForm<VehicleEntryFormData>({
@@ -133,14 +127,13 @@ export default function RegistroEntradaPage() {
 
     if (status === 'aguardando_patio') {
       waitingYardStore.push(newEntry);
-      setWaitingVehicles([...waitingYardStore]); // Update local state
+      setWaitingVehicles([...waitingYardStore]); 
       toast({
         title: 'Registro Enviado para o Pátio',
         description: `Veículo ${newEntry.plate1} aguardando liberação. Código: ${newEntry.id}`,
         className: 'bg-yellow-500 text-white',
         icon: <Clock className="h-6 w-6 text-white" />
       });
-      // Don't redirect, show the list on the same page
     } else {
       entriesStore.push(newEntry);
       toast({
@@ -171,13 +164,13 @@ export default function RegistroEntradaPage() {
       const vehicleToApprove = waitingYardStore[vehicleToApproveIndex];
       const updatedVehicle = { ...vehicleToApprove, status: 'entrada_liberada' as 'entrada_liberada' };
       
-      waitingYardStore.splice(vehicleToApproveIndex, 1); // Remove from waiting
-      entriesStore.push(updatedVehicle); // Add to general entries
+      waitingYardStore.splice(vehicleToApproveIndex, 1); 
+      entriesStore.push(updatedVehicle); 
 
-      setWaitingVehicles([...waitingYardStore]); // Update local state
+      setWaitingVehicles([...waitingYardStore]); 
 
       toast({
-        title: 'Entrada Aprovada!',
+        title: 'Entrada Liberada!',
         description: `Veículo ${updatedVehicle.plate1} liberado para entrada. Código: ${updatedVehicle.id}`,
         className: 'bg-green-600 text-white',
         icon: <CheckCircle className="h-6 w-6 text-white" />
@@ -186,11 +179,6 @@ export default function RegistroEntradaPage() {
     }
   };
   
-  const handlePrintWaitingEntry = (entry: VehicleEntry) => {
-    console.log("Printing waiting entry:", entry);
-    toast({ title: "Imprimir Documento de Espera", description: `Simulando impressão para ${entry.plate1}. Código: ${entry.id}` });
-  };
-
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -412,21 +400,23 @@ export default function RegistroEntradaPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID/Código</TableHead>
+                  <TableHead>Ordem</TableHead>
                   <TableHead>Motorista</TableHead>
                   <TableHead>Transportadora</TableHead>
                   <TableHead>Placa 1</TableHead>
+                  <TableHead>Observação</TableHead>
                   <TableHead>Data/Hora Registro</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredWaitingVehicles.map((vehicle) => (
+                {filteredWaitingVehicles.map((vehicle, index) => (
                   <TableRow key={vehicle.id}>
-                    <TableCell className="font-mono text-xs">{vehicle.id}</TableCell>
+                    <TableCell>{index + 1}</TableCell>
                     <TableCell>{vehicle.driverName}</TableCell>
                     <TableCell>{vehicle.transportCompanyName}</TableCell>
                     <TableCell>{vehicle.plate1}</TableCell>
+                    <TableCell>{vehicle.observation || '-'}</TableCell>
                     <TableCell>{new Date(vehicle.entryTimestamp).toLocaleString('pt-BR')}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button 
@@ -435,10 +425,7 @@ export default function RegistroEntradaPage() {
                         onClick={() => handleApproveEntry(vehicle.id)}
                         className="bg-green-600 hover:bg-green-700 text-white"
                       >
-                        <CheckCircle className="mr-2 h-4 w-4" /> Aprovar
-                      </Button>
-                       <Button variant="outline" size="sm" onClick={() => handlePrintWaitingEntry(vehicle)} title="Imprimir Documento de Espera">
-                        <Printer className="mr-2 h-4 w-4" /> Imprimir
+                        <CheckCircle className="mr-2 h-4 w-4" /> Liberar Entrada
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -462,5 +449,3 @@ export default function RegistroEntradaPage() {
     </div>
   );
 }
-
-    
