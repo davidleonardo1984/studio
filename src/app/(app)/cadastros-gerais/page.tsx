@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -86,7 +87,7 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
     defaultValues: editingItem ? (editingItem as unknown as TFormData) : defaultValues,
   });
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (editingItem) {
       form.reset(editingItem as unknown as TFormData);
       setShowForm(true);
@@ -170,10 +171,10 @@ export default function CadastrosGeraisPage() {
   const [internalDestinations, setInternalDestinations] = useState<InternalDestination[]>(internalDestinationsStore);
 
   // Update stores when local state changes (for demo persistence across soft reloads)
-  React.useEffect(() => { driversStore = drivers }, [drivers]);
-  React.useEffect(() => { assistantsStore = assistants }, [assistants]);
-  React.useEffect(() => { transportCompaniesStore = transportCompanies }, [transportCompanies]);
-  React.useEffect(() => { internalDestinationsStore = internalDestinations }, [internalDestinations]);
+  useEffect(() => { driversStore = drivers }, [drivers]);
+  useEffect(() => { assistantsStore = assistants }, [assistants]);
+  useEffect(() => { transportCompaniesStore = transportCompanies }, [transportCompanies]);
+  useEffect(() => { internalDestinationsStore = internalDestinations }, [internalDestinations]);
   
   const renderDriverFormFields = (form: any) => (
     <>
@@ -335,3 +336,5 @@ if (process.env.NODE_ENV === 'development') {
         internalDestinationsStore.push({ id: 'id1', name: 'Galpão Central', sector: 'GC-01' });
     }
 }
+
+    
