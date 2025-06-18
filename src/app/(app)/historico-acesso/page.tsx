@@ -1,12 +1,14 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DatePickerWithRange } from '@/components/ui/date-picker-with-range'; // Assuming this component exists or will be created
+import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry } from '@/lib/types';
 import { Download, Filter, Printer, Trash2, CalendarDays, Search, Truck, RotateCcw } from 'lucide-react';
@@ -40,13 +42,13 @@ if (process.env.NODE_ENV === 'development') {
 
     if (entriesStore.length === 0) {
         entriesStore = [
-            { id: '20230115100000', driverName: 'Ana Clara', transportCompanyName: 'LogMax', plate1: 'ABC-1111', internalDestinationName: 'Docas 1-3', movementType: 'Descarga', entryTimestamp: yesterday.toISOString(), exitTimestamp: new Date(yesterday.getTime() + 2 * 3600 * 1000).toISOString(), status: 'saiu', registeredBy: 'admin' },
-            { id: '20230115113000', driverName: 'Bruno Costa', transportCompanyName: 'TransFast', plate1: 'DEF-2222', internalDestinationName: 'Armazém Sul', movementType: 'Carga', entryTimestamp: new Date().toISOString(), status: 'entrada_liberada', registeredBy: 'user1' },
-            { id: '20220110090000', driverName: 'Carlos Dias', transportCompanyName: 'LogMax', plate1: 'GHI-3333', internalDestinationName: 'Bloco C', movementType: 'Devolução', entryTimestamp: lastYear.toISOString(), exitTimestamp: new Date(lastYear.getTime() + 4 * 3600 * 1000).toISOString(), status: 'saiu', registeredBy: 'admin' },
+            { id: '20230115100000', driverName: 'ANA CLARA', transportCompanyName: 'LOGMAX', plate1: 'ABC-1111', internalDestinationName: 'DOCAS 1-3', movementType: 'DESCARGA', entryTimestamp: yesterday.toISOString(), exitTimestamp: new Date(yesterday.getTime() + 2 * 3600 * 1000).toISOString(), status: 'saiu', registeredBy: 'admin' },
+            { id: '20230115113000', driverName: 'BRUNO COSTA', transportCompanyName: 'TRANSFAST', plate1: 'DEF-2222', internalDestinationName: 'ARMAZÉM SUL', movementType: 'CARGA', entryTimestamp: new Date().toISOString(), status: 'entrada_liberada', registeredBy: 'user1' },
+            { id: '20220110090000', driverName: 'CARLOS DIAS', transportCompanyName: 'LOGMAX', plate1: 'GHI-3333', internalDestinationName: 'BLOCO C', movementType: 'DEVOLUÇÃO', entryTimestamp: lastYear.toISOString(), exitTimestamp: new Date(lastYear.getTime() + 4 * 3600 * 1000).toISOString(), status: 'saiu', registeredBy: 'admin' },
         ];
     }
     if (waitingYardStore.length === 0) {
-        waitingYardStore.push( { id: '20230115140000', driverName: 'Daniela Silva', transportCompanyName: 'BetaLog', plate1: 'JKL-4444', internalDestinationName: 'Pátio Espera', movementType: 'Carga Pendente', entryTimestamp: new Date().toISOString(), status: 'aguardando_patio', registeredBy: 'user2' });
+        waitingYardStore.push( { id: '20230115140000', driverName: 'DANIELA SILVA', transportCompanyName: 'BETALOG', plate1: 'JKL-4444', internalDestinationName: 'PÁTIO ESPERA', movementType: 'CARGA PENDENTE', entryTimestamp: new Date().toISOString(), status: 'aguardando_patio', registeredBy: 'user2' });
     }
 }
 
@@ -189,21 +191,21 @@ export default function HistoricoAcessoPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             <div className="space-y-1">
               <Label htmlFor="searchTermGlobal">Pesquisa Rápida</Label>
-              <Input id="searchTermGlobal" placeholder="Buscar em todos os campos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Input id="searchTermGlobal" placeholder="BUSCAR EM TODOS OS CAMPOS..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
              <div className="space-y-1">
                 <Label htmlFor="transportCompanyFilter">Transportadora</Label>
                 <Select value={filters.transportCompany} onValueChange={(value) => setFilters(prev => ({...prev, transportCompany: value === 'all' ? '' : value}))}>
-                    <SelectTrigger id="transportCompanyFilter"><SelectValue placeholder="Todas Transportadoras" /></SelectTrigger>
+                    <SelectTrigger id="transportCompanyFilter"><SelectValue placeholder="TODAS TRANSPORTADORAS" /></SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todas Transportadoras</SelectItem>
+                        <SelectItem value="all">TODAS TRANSPORTADORAS</SelectItem>
                         {transportCompanyOptions.map(tc => <SelectItem key={tc} value={tc}>{tc}</SelectItem>)}
                     </SelectContent>
                 </Select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="plateFilter">Placa</Label>
-              <Input id="plateFilter" placeholder="Filtrar por placa..." value={filters.plate} onChange={(e) => setFilters(prev => ({...prev, plate: e.target.value}))} />
+              <Input id="plateFilter" placeholder="FILTRAR POR PLACA..." value={filters.plate} onChange={(e) => setFilters(prev => ({...prev, plate: e.target.value}))} />
             </div>
             <div className="space-y-1">
               <Label>Período de Entrada</Label>
@@ -215,18 +217,18 @@ export default function HistoricoAcessoPage() {
             </div>
           </div>
            <div className="flex flex-wrap gap-2 pt-2">
-            <Button onClick={resetFilters} variant="outline"><RotateCcw className="mr-2 h-4 w-4" /> Limpar Filtros</Button>
+            <Button onClick={resetFilters} variant="outline"><RotateCcw className="mr-2 h-4 w-4" /> LIMPAR FILTROS</Button>
           </div>
         </CardContent>
         <CardFooter className="flex flex-wrap gap-2 justify-end">
-          <Button onClick={handleExportToCSV} variant="default"><Download className="mr-2 h-4 w-4" /> Exportar para CSV</Button>
+          <Button onClick={handleExportToCSV} variant="default"><Download className="mr-2 h-4 w-4" /> EXPORTAR PARA CSV</Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-                <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> Excluir Antigos (+365d)</Button>
+                <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> EXCLUIR ANTIGOS (+365D)</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir registros de saída com mais de 365 dias? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteOldRecords} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
+                <AlertDialogFooter><AlertDialogCancel>CANCELAR</AlertDialogCancel><AlertDialogAction onClick={handleDeleteOldRecords} className="bg-destructive hover:bg-destructive/90">EXCLUIR</AlertDialogAction></AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
         </CardFooter>
@@ -242,14 +244,14 @@ export default function HistoricoAcessoPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID/Código</TableHead>
-                  <TableHead>Motorista</TableHead>
-                  <TableHead>Transportadora</TableHead>
-                  <TableHead>Placa 1</TableHead>
-                  <TableHead>Entrada</TableHead>
-                  <TableHead>Saída</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead>ID/CÓDIGO</TableHead>
+                  <TableHead>MOTORISTA</TableHead>
+                  <TableHead>TRANSPORTADORA</TableHead>
+                  <TableHead>PLACA 1</TableHead>
+                  <TableHead>ENTRADA</TableHead>
+                  <TableHead>SAÍDA</TableHead>
+                  <TableHead>STATUS</TableHead>
+                  <TableHead className="text-right">AÇÕES</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -267,7 +269,7 @@ export default function HistoricoAcessoPage() {
                             entry.status === 'entrada_liberada' ? 'bg-green-100 text-green-700' :
                             'bg-yellow-100 text-yellow-700' 
                         }`}>
-                            {entry.status === 'saiu' ? 'Saiu' : entry.status === 'entrada_liberada' ? 'Dentro da Fábrica' : 'Aguardando Pátio'}
+                            {entry.status === 'saiu' ? 'SAIU' : entry.status === 'entrada_liberada' ? 'DENTRO DA FÁBRICA' : 'AGUARDANDO PÁTIO'}
                         </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -281,7 +283,7 @@ export default function HistoricoAcessoPage() {
             </Table>
             </div>
           ) : (
-            <p className="text-muted-foreground text-center py-8">Nenhum registro encontrado com os filtros aplicados.</p>
+            <p className="text-muted-foreground text-center py-8">NENHUM REGISTRO ENCONTRADO COM OS FILTROS APLICADOS.</p>
           )}
         </CardContent>
       </Card>
@@ -297,12 +299,12 @@ export default function HistoricoAcessoPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Placa 1</TableHead>
-                  <TableHead>Motorista</TableHead>
-                  <TableHead>Transportadora</TableHead>
-                  <TableHead>Entrada</TableHead>
-                  <TableHead>Status</TableHead>
-                   <TableHead className="text-right">Ações</TableHead>
+                  <TableHead>PLACA 1</TableHead>
+                  <TableHead>MOTORISTA</TableHead>
+                  <TableHead>TRANSPORTADORA</TableHead>
+                  <TableHead>ENTRADA</TableHead>
+                  <TableHead>STATUS</TableHead>
+                   <TableHead className="text-right">AÇÕES</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -316,7 +318,7 @@ export default function HistoricoAcessoPage() {
                         <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
                             entry.status === 'entrada_liberada' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' 
                         }`}>
-                            {entry.status === 'entrada_liberada' ? 'Liberado' : 'Aguardando'}
+                            {entry.status === 'entrada_liberada' ? 'LIBERADO' : 'AGUARDANDO'}
                         </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -330,7 +332,7 @@ export default function HistoricoAcessoPage() {
             </Table>
             </div>
           ) : (
-            <p className="text-muted-foreground text-center py-8">Nenhum veículo dentro da fábrica no momento.</p>
+            <p className="text-muted-foreground text-center py-8">NENHUM VEÍCULO DENTRO DA FÁBRICA NO MOMENTO.</p>
           )}
         </CardContent>
       </Card>
@@ -338,32 +340,3 @@ export default function HistoricoAcessoPage() {
   );
 }
 
-// DatePickerWithRange component (simplified for this context, use shadcn if available)
-// Add to components/ui/date-picker-with-range.tsx
-// For this self-contained example, I'll mock its presence.
-// If you have date-fns and react-day-picker installed (they are in package.json)
-// this component would typically be in its own file.
-// For now, this is a placeholder to satisfy the import.
-// A full implementation would use Popover, Calendar from shadcn/ui.
-const DatePickerWithRange = ({ date, onDateChange, className }: { date?: DateRange, onDateChange: (range?: DateRange) => void, className?: string }) => {
-  return (
-    <Button
-      variant={"outline"}
-      className={`w-full justify-start text-left font-normal ${className} ${!date && "text-muted-foreground"}`}
-      onClick={() => {/* Implement Popover with Calendar */}}
-    >
-      <CalendarDays className="mr-2 h-4 w-4" />
-      {date?.from ? (
-        date.to ? (
-          <>
-            {new Date(date.from).toLocaleDateString("pt-BR")} - {new Date(date.to).toLocaleDateString("pt-BR")}
-          </>
-        ) : (
-          new Date(date.from).toLocaleDateString("pt-BR")
-        )
-      ) : (
-        <span>Selecione um período</span>
-      )}
-    </Button>
-  );
-};
