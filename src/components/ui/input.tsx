@@ -2,8 +2,12 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, style, onInput, ...props }, ref) => {
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  prefixIcon?: React.ReactNode;
+}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, style, onInput, prefixIcon, ...rest }, ref) => {
     const handleInput = (event: React.FormEvent<HTMLInputElement>) => {
       if (type !== 'password') {
         event.currentTarget.value = event.currentTarget.value.toUpperCase();
@@ -14,18 +18,39 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
       }
     };
 
+    const inputClasses = cn(
+      "flex h-10 w-full rounded-md border border-input bg-background py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+      type !== 'password' ? "uppercase" : "",
+      prefixIcon ? "pl-10 pr-3" : "px-3", // Add left padding if prefixIcon exists
+      className
+    );
+
+    if (prefixIcon) {
+      return (
+        <div className="relative flex items-center w-full">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            {prefixIcon}
+          </div>
+          <input
+            type={type}
+            className={inputClasses}
+            style={style}
+            onInput={handleInput}
+            ref={ref}
+            {...rest}
+          />
+        </div>
+      );
+    }
+
     return (
       <input
         type={type}
-        className={cn(
-          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          type !== 'password' ? "uppercase" : "",
-          className
-        )}
+        className={inputClasses}
         style={style}
         onInput={handleInput}
         ref={ref}
-        {...props}
+        {...rest}
       />
     )
   }
