@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { Driver, Assistant, TransportCompany, InternalDestination } from '@/lib/types';
-import { PlusCircle, Edit2, Trash2, User, Users, Truck, MapPin } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin } from 'lucide-react'; // Changed User to Users
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,7 +50,7 @@ type InternalDestinationFormData = z.infer<typeof internalDestinationSchema>;
 
 // Mock data stores (replace with API/Firebase calls)
 let driversStore: Driver[] = [];
-let assistantsStore: Assistant[] = [];
+// let assistantsStore: Assistant[] = []; // Removed, will be part of driversStore
 let transportCompaniesStore: TransportCompany[] = [];
 let internalDestinationsStore: InternalDestination[] = [];
 
@@ -128,7 +128,7 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
             <CardTitle className="text-xl font-semibold text-primary font-headline">{title}s</CardTitle>
         </div>
         <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); form.reset(defaultValues);}}>
-          <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : `Novo(a) ${title}`}
+          <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : `Nova ${title}`}
         </Button>
       </CardHeader>
       <CardContent>
@@ -156,7 +156,7 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
             </TableBody>
           </Table>
         ) : (
-          <p className="text-muted-foreground text-center py-4">Nenhum(a) {title.toLowerCase()} cadastrado(a).</p>
+          <p className="text-muted-foreground text-center py-4">Nenhuma {title.toLowerCase()} cadastrada.</p>
         )}
       </CardContent>
     </Card>
@@ -166,13 +166,13 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
 
 export default function CadastrosGeraisPage() {
   const [drivers, setDrivers] = useState<Driver[]>(driversStore);
-  const [assistants, setAssistants] = useState<Assistant[]>(assistantsStore);
+  // const [assistants, setAssistants] = useState<Assistant[]>(assistantsStore); // Removed
   const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>(transportCompaniesStore);
   const [internalDestinations, setInternalDestinations] = useState<InternalDestination[]>(internalDestinationsStore);
 
   // Update stores when local state changes (for demo persistence across soft reloads)
   useEffect(() => { driversStore = drivers }, [drivers]);
-  useEffect(() => { assistantsStore = assistants }, [assistants]);
+  // useEffect(() => { assistantsStore = assistants }, [assistants]); // Removed
   useEffect(() => { transportCompaniesStore = transportCompanies }, [transportCompanies]);
   useEffect(() => { internalDestinationsStore = internalDestinations }, [internalDestinations]);
   
@@ -260,18 +260,18 @@ export default function CadastrosGeraisPage() {
         <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras e destinos internos.</p>
       </div>
       <Tabs defaultValue="drivers" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-6">
-          <TabsTrigger value="drivers" className="flex items-center gap-2"><User className="h-4 w-4" /> Motoristas</TabsTrigger>
-          <TabsTrigger value="assistants" className="flex items-center gap-2"><Users className="h-4 w-4" /> Ajudantes</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 mb-6"> {/* Changed grid-cols */}
+          <TabsTrigger value="drivers" className="flex items-center gap-2"><Users className="h-4 w-4" /> Motoristas e Ajudantes</TabsTrigger> {/* Changed label and icon */}
+          {/* <TabsTrigger value="assistants" className="flex items-center gap-2"><Users className="h-4 w-4" /> Ajudantes</TabsTrigger> Removed */}
           <TabsTrigger value="transportCompanies" className="flex items-center gap-2"><Truck className="h-4 w-4" />Transportadoras</TabsTrigger>
           <TabsTrigger value="internalDestinations" className="flex items-center gap-2"><MapPin className="h-4 w-4" />Destinos Internos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="drivers">
           <CadastroSection
-            title="Motorista"
-            icon={User}
-            data={drivers}
+            title="Pessoa" // Changed title to be generic
+            icon={Users} // Changed icon
+            data={drivers} // This state now manages both drivers and assistants conceptually
             setData={setDrivers}
             formSchema={driverSchema}
             formFields={renderDriverFormFields}
@@ -280,19 +280,19 @@ export default function CadastrosGeraisPage() {
             defaultValues={{ name: '', cpf: '', cnh: '', phone: '' }}
           />
         </TabsContent>
-        <TabsContent value="assistants">
+        {/* <TabsContent value="assistants"> Removed
           <CadastroSection
             title="Ajudante"
             icon={Users}
             data={assistants}
             setData={setAssistants}
-            formSchema={driverSchema} // Reusing driver schema for assistants
-            formFields={renderDriverFormFields} // Reusing driver form fields
+            formSchema={driverSchema} 
+            formFields={renderDriverFormFields} 
             tableHeaders={['Nome', 'CPF', 'CNH', 'Telefone']}
-            renderTableRow={renderDriverTableRow as any} // Cast because it expects Driver specific type, but structure is same
+            renderTableRow={renderDriverTableRow as any} 
             defaultValues={{ name: '', cpf: '', cnh: '', phone: '' }}
           />
-        </TabsContent>
+        </TabsContent> */}
         <TabsContent value="transportCompanies">
            <CadastroSection
             title="Transportadora"
@@ -327,8 +327,10 @@ export default function CadastrosGeraisPage() {
 // Initialize with some mock data for development if stores are empty
 if (process.env.NODE_ENV === 'development') {
     if (driversStore.length === 0) {
-        driversStore.push({ id: 'd1', name: 'Carlos Pereira', cpf: '11122233344', cnh: '123456789', phone: '11999998888' });
+        driversStore.push({ id: 'd1', name: 'Carlos Pereira (Motorista)', cpf: '11122233344', cnh: '123456789', phone: '11999998888' });
+        driversStore.push({ id: 'a1', name: 'Joana Silva (Ajudante)', cpf: '44455566677', cnh: '987654321', phone: '11988887777' }); // Example assistant
     }
+    // assistantsStore is no longer separately populated or managed by dedicated state.
     if (transportCompaniesStore.length === 0) {
         transportCompaniesStore.push({ id: 'tc1', name: 'Logistica Veloz Ltda', cnpj: '12.345.678/0001-99' });
     }
@@ -336,5 +338,4 @@ if (process.env.NODE_ENV === 'development') {
         internalDestinationsStore.push({ id: 'id1', name: 'Galpão Central', sector: 'GC-01' });
     }
 }
-
     
