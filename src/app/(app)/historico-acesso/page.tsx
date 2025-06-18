@@ -42,7 +42,7 @@ if (process.env.NODE_ENV === 'development') {
 
     if (entriesStore.length === 0) {
         entriesStore = [
-            { id: '20230115100000', driverName: 'ANA CLARA', transportCompanyName: 'LOGMAX', plate1: 'ABC-1111', internalDestinationName: 'DOCAS 1-3', movementType: 'DESCARGA', entryTimestamp: yesterday.toISOString(), exitTimestamp: new Date(yesterday.getTime() + 2 * 3600 * 1000).toISOString(), status: 'saiu', registeredBy: 'admin' },
+            { id: '20230115100000', driverName: 'ANA CLARA', transportCompanyName: 'LOGMAX', plate1: 'ABC-1111', internalDestinationName: 'DOCAS 1-3', movementType: 'DESCARGA', entryTimestamp: yesterday.toISOString(), exitTimestamp: new Date(yesterday.getTime() + 2 * 3600 * 1000).toISOString(), status: 'saiu', registeredBy: 'admin', observation: 'Material "frágil", manusear com cuidado.' },
             { id: '20230115113000', driverName: 'BRUNO COSTA', transportCompanyName: 'TRANSFAST', plate1: 'DEF-2222', internalDestinationName: 'ARMAZÉM SUL', movementType: 'CARGA', entryTimestamp: new Date().toISOString(), status: 'entrada_liberada', registeredBy: 'user1' },
             { id: '20220110090000', driverName: 'CARLOS DIAS', transportCompanyName: 'LOGMAX', plate1: 'GHI-3333', internalDestinationName: 'BLOCO C', movementType: 'DEVOLUÇÃO', entryTimestamp: lastYear.toISOString(), exitTimestamp: new Date(lastYear.getTime() + 4 * 3600 * 1000).toISOString(), status: 'saiu', registeredBy: 'admin' },
         ];
@@ -52,6 +52,19 @@ if (process.env.NODE_ENV === 'development') {
     }
 }
 
+const escapeCsvField = (field: any): string => {
+  if (field === null || typeof field === 'undefined') {
+    return '';
+  }
+  let stringField = String(field);
+  // If the field contains a comma, a double quote, or a newline,
+  // it needs to be enclosed in double quotes.
+  // Also, any double quote within the field must be escaped by doubling it.
+  if (stringField.search(/("|,|\n)/g) >= 0) {
+    stringField = '"' + stringField.replace(/"/g, '""') + '"';
+  }
+  return stringField;
+};
 
 export default function HistoricoAcessoPage() {
   const { toast } = useToast();
@@ -106,27 +119,27 @@ export default function HistoricoAcessoPage() {
     }
     const headers = ["ID/Código", "Motorista", "Ajudante1", "Ajudante2", "Transportadora", "Placa1", "Placa2", "Placa3", "Destino Interno", "Tipo Mov.", "Observação", "Data/Hora Entrada", "Data/Hora Saída", "Status", "Registrado Por"];
     const csvRows = [
-        headers.join(','),
+        headers.map(escapeCsvField).join(','), // Headers can also be escaped for robustness
         ...filteredEntries.map(e => [
-            e.id,
-            e.driverName,
-            e.assistant1Name || '',
-            e.assistant2Name || '',
-            e.transportCompanyName,
-            e.plate1,
-            e.plate2 || '',
-            e.plate3 || '',
-            e.internalDestinationName,
-            e.movementType,
-            e.observation?.replace(/,/g, ';') || '', // Escape commas in observation
-            new Date(e.entryTimestamp).toLocaleString('pt-BR'),
-            e.exitTimestamp ? new Date(e.exitTimestamp).toLocaleString('pt-BR') : '',
-            e.status,
-            e.registeredBy
+            escapeCsvField(e.id),
+            escapeCsvField(e.driverName),
+            escapeCsvField(e.assistant1Name || ''),
+            escapeCsvField(e.assistant2Name || ''),
+            escapeCsvField(e.transportCompanyName),
+            escapeCsvField(e.plate1),
+            escapeCsvField(e.plate2 || ''),
+            escapeCsvField(e.plate3 || ''),
+            escapeCsvField(e.internalDestinationName),
+            escapeCsvField(e.movementType),
+            escapeCsvField(e.observation || ''),
+            escapeCsvField(new Date(e.entryTimestamp).toLocaleString('pt-BR')),
+            escapeCsvField(e.exitTimestamp ? new Date(e.exitTimestamp).toLocaleString('pt-BR') : ''),
+            escapeCsvField(e.status),
+            escapeCsvField(e.registeredBy)
         ].join(','))
     ];
     const csvString = csvRows.join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' }); // Added BOM for Excel
     const link = document.createElement('a');
     if (link.download !== undefined) {
         const url = URL.createObjectURL(blob);
