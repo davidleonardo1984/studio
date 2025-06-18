@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,22 +11,34 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import type { VehicleEntryFormData, VehicleEntry } from '@/lib/types'; // Assuming types are defined
-import { AlertCircle, CheckCircle, Clock, Save, SendToBack } from 'lucide-react';
+import type { VehicleEntryFormData, VehicleEntry } from '@/lib/types';
+import { Save, SendToBack, Clock, CheckCircle, Printer, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // Mock data for dropdowns - in real app, this would come from Cadastros Gerais / API
-const mockTransportCompanies = ['TransAlpha', 'BetaLog', 'CargaExpress'];
-const mockInternalDestinations = ['Almoxarifado A', 'Produção Bloco B', 'Expedição Setor C'];
-const mockMovementTypes = ['Carga', 'Descarga', 'Devolução', 'Visita Técnica', 'Manutenção'];
+const mockTransportCompanies = ['TransAlpha', 'BetaLog', 'CargaExpress', 'GamaTrans'];
+const mockInternalDestinations = ['Almoxarifado A', 'Produção Bloco B', 'Expedição Setor C', 'Pátio Espera', 'Verificação'];
+const mockMovementTypes = ['Carga', 'Descarga', 'Devolução', 'Visita Técnica', 'Manutenção', 'Carga Pendente', 'Inspeção'];
 
 // Store entries in memory for this demo
 // This should be replaced with API calls to Firebase in a real app
 let entriesStore: VehicleEntry[] = [];
 let waitingYardStore: VehicleEntry[] = [];
+
+// Populate with some mock data for development if stores are empty
+if (process.env.NODE_ENV === 'development') {
+    if (waitingYardStore.length === 0) {
+        waitingYardStore.push( { id: '20230115140000', driverName: 'Daniela Silva', transportCompanyName: 'BetaLog', plate1: 'JKL-4444', internalDestinationName: 'Pátio Espera', movementType: 'Carga Pendente', entryTimestamp: new Date().toISOString(), status: 'aguardando_patio', registeredBy: 'user2' });
+        waitingYardStore.push( { id: '20230115150000', driverName: 'Eduardo Lima', transportCompanyName: 'GamaTrans', plate1: 'MNO-5555', internalDestinationName: 'Verificação', movementType: 'Inspeção', entryTimestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), status: 'aguardando_patio', registeredBy: 'user1' });
+    }
+     if (entriesStore.length === 0) {
+        // Can add some initial entriesStore items here if needed for direct navigation to this page in dev
+    }
+}
 
 
 const entrySchema = z.object({
@@ -48,6 +61,31 @@ export default function RegistroEntradaPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAssistants, setShowAssistants] = useState(false);
+
+  const [waitingVehicles, setWaitingVehicles] = useState<VehicleEntry[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Sync with global waitingYardStore
+  useEffect(() => {
+    setWaitingVehicles([...waitingYardStore]); // Create a new array to trigger re-render
+  }, []); // Initial load
+
+  // Listen for changes in waitingYardStore (e.g., after adding a new vehicle to wait)
+  // This is a bit of a hack for global array mutation. Proper state management would be better.
+  useEffect(() => {
+    // This effect is tricky because waitingYardStore is mutated directly.
+    // A more robust solution would involve a shared state/context for these stores.
+    // For now, we assume that after an action that modifies waitingYardStore (like handleFormSubmit),
+    // we might need to refresh if this component doesn't re-render automatically.
+    // The setWaitingVehicles in handleApproveEntry and handleFormSubmit (for 'aguardando_patio') helps.
+    const interval = setInterval(() => {
+        if (waitingVehicles.length !== waitingYardStore.length) {
+            setWaitingVehicles([...waitingYardStore]);
+        }
+    }, 1000); // Check every second for changes
+    return () => clearInterval(interval);
+  }, [waitingVehicles.length]);
+
 
   const form = useForm<VehicleEntryFormData>({
     resolver: zodResolver(entrySchema),
@@ -91,18 +129,18 @@ export default function RegistroEntradaPage() {
       registeredBy: user.login,
     };
     
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (status === 'aguardando_patio') {
       waitingYardStore.push(newEntry);
+      setWaitingVehicles([...waitingYardStore]); // Update local state
       toast({
         title: 'Registro Enviado para o Pátio',
         description: `Veículo ${newEntry.plate1} aguardando liberação. Código: ${newEntry.id}`,
         className: 'bg-yellow-500 text-white',
         icon: <Clock className="h-6 w-6 text-white" />
       });
-      router.push('/aguardando-liberacao');
+      // Don't redirect, show the list on the same page
     } else {
       entriesStore.push(newEntry);
       toast({
@@ -111,7 +149,6 @@ export default function RegistroEntradaPage() {
         className: 'bg-green-600 text-white',
         icon: <CheckCircle className="h-6 w-6 text-white" />,
       });
-      // Here you would trigger printing the document with newEntry data
       console.log("Printing document for entry:", newEntry);
     }
     
@@ -119,8 +156,44 @@ export default function RegistroEntradaPage() {
     setIsSubmitting(false);
   };
 
+  const filteredWaitingVehicles = useMemo(() => {
+    if (!searchTerm) return waitingVehicles;
+    return waitingVehicles.filter(v =>
+      v.plate1.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.transportCompanyName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [waitingVehicles, searchTerm]);
+
+  const handleApproveEntry = (vehicleId: string) => {
+    const vehicleToApproveIndex = waitingYardStore.findIndex(v => v.id === vehicleId);
+    if (vehicleToApproveIndex > -1) {
+      const vehicleToApprove = waitingYardStore[vehicleToApproveIndex];
+      const updatedVehicle = { ...vehicleToApprove, status: 'entrada_liberada' as 'entrada_liberada' };
+      
+      waitingYardStore.splice(vehicleToApproveIndex, 1); // Remove from waiting
+      entriesStore.push(updatedVehicle); // Add to general entries
+
+      setWaitingVehicles([...waitingYardStore]); // Update local state
+
+      toast({
+        title: 'Entrada Aprovada!',
+        description: `Veículo ${updatedVehicle.plate1} liberado para entrada. Código: ${updatedVehicle.id}`,
+        className: 'bg-green-600 text-white',
+        icon: <CheckCircle className="h-6 w-6 text-white" />
+      });
+      console.log("Printing document for approved entry:", updatedVehicle);
+    }
+  };
+  
+  const handlePrintWaitingEntry = (entry: VehicleEntry) => {
+    console.log("Printing waiting entry:", entry);
+    toast({ title: "Imprimir Documento de Espera", description: `Simulando impressão para ${entry.plate1}. Código: ${entry.id}` });
+  };
+
+
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 space-y-8">
       <Card className="max-w-4xl mx-auto shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Nova Entrada</CardTitle>
@@ -279,7 +352,7 @@ export default function RegistroEntradaPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Observação (Opcional)</FormLabel>
-                    <FormControl><Textarea placeholder="Detalhes adicionais..." {...field} rows={4} /></FormControl>
+                    <FormControl><Textarea placeholder="Detalhes adicionais..." {...field} rows={3} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -307,6 +380,87 @@ export default function RegistroEntradaPage() {
             </Button>
         </CardFooter>
       </Card>
+
+      {/* Section for Vehicles Awaiting Release */}
+      <Card className="max-w-4xl mx-auto shadow-xl">
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div>
+                <CardTitle className="text-xl font-semibold text-primary font-headline flex items-center">
+                    <Clock className="mr-3 h-7 w-7 text-accent" />
+                    Veículos Aguardando Liberação ({filteredWaitingVehicles.length})
+                </CardTitle>
+                <CardDescription>Lista de veículos no pátio que necessitam de aprovação para entrada.</CardDescription>
+            </div>
+             <div className="mt-4 sm:mt-0 w-full sm:w-auto max-w-xs">
+                <Label htmlFor="searchWaiting" className="sr-only">Buscar</Label>
+                <Input 
+                    id="searchWaiting"
+                    type="text"
+                    placeholder="Buscar por placa, motorista..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full"
+                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredWaitingVehicles.length > 0 ? (
+            <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID/Código</TableHead>
+                  <TableHead>Motorista</TableHead>
+                  <TableHead>Transportadora</TableHead>
+                  <TableHead>Placa 1</TableHead>
+                  <TableHead>Data/Hora Registro</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredWaitingVehicles.map((vehicle) => (
+                  <TableRow key={vehicle.id}>
+                    <TableCell className="font-mono text-xs">{vehicle.id}</TableCell>
+                    <TableCell>{vehicle.driverName}</TableCell>
+                    <TableCell>{vehicle.transportCompanyName}</TableCell>
+                    <TableCell>{vehicle.plate1}</TableCell>
+                    <TableCell>{new Date(vehicle.entryTimestamp).toLocaleString('pt-BR')}</TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button 
+                        variant="default" 
+                        size="sm" 
+                        onClick={() => handleApproveEntry(vehicle.id)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" /> Aprovar
+                      </Button>
+                       <Button variant="outline" size="sm" onClick={() => handlePrintWaitingEntry(vehicle)} title="Imprimir Documento de Espera">
+                        <Printer className="mr-2 h-4 w-4" /> Imprimir
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            </div>
+          ) : (
+             <div className="text-center py-12">
+                <Clock className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />
+                <p className="text-xl font-medium text-muted-foreground">
+                    {searchTerm ? "Nenhum veículo encontrado." : "Nenhum veículo aguardando liberação."}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                    Veículos enviados para o pátio aparecerão aqui.
+                </p>
+             </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
+    

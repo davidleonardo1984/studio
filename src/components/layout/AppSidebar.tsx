@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Home, LogIn, LogOut, ClipboardList, Edit3, Users, History, Building, Truck, MapPin, Settings, ShieldCheck } from 'lucide-react';
+import { Home, LogIn, LogOut, Edit3, Users, History, Settings, ShieldCheck, ClipboardList } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface NavItem {
@@ -28,12 +28,12 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Painel Inicial', icon: Home },
-  { href: '/registro-entrada', label: 'Registro de Entrada', icon: LogIn },
+  { href: '/registro-entrada', label: 'Registro de Entrada', icon: LogIn }, // This now includes "Aguardando Liberação"
   { href: '/registro-saida', label: 'Registro de Saída', icon: LogOut },
   { href: '/cadastros-gerais', label: 'Cadastros Gerais', icon: Edit3 },
   { href: '/historico-acesso', label: 'Histórico de Acesso', icon: History },
   { href: '/cadastro-acesso', label: 'Cadastro de Acesso', icon: Users, adminOnly: true },
-  { href: '/aguardando-liberacao', label: 'Aguardando Liberação', icon: ClipboardList },
+  // { href: '/aguardando-liberacao', label: 'Aguardando Liberação', icon: ClipboardList }, // Removed
 ];
 
 export function AppSidebar() {
@@ -58,7 +58,7 @@ export function AppSidebar() {
           <SidebarMenu className="p-2">
             {filteredNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
+                <Link href={item.href} >
                   <SidebarMenuButton
                     isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
                     tooltip={{children: item.label, side: "right", className: "bg-sidebar-accent text-sidebar-accent-foreground"}}
@@ -90,3 +90,5 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+    
