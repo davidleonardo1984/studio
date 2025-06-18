@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -57,17 +58,17 @@ export function AppSidebar() {
           <SidebarMenu className="p-2">
             {filteredNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href} legacyBehavior passHref>
+                <Link href={item.href}>
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
                     tooltip={{children: item.label, side: "right", className: "bg-sidebar-accent text-sidebar-accent-foreground"}}
                     className="justify-start"
                   >
-                    <a>
+                    <>
                       <item.icon className="h-5 w-5" />
                       <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                    </a>
+                    </>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
