@@ -18,31 +18,13 @@ import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry } from '@/lib/types';
 import { Save, SendToBack, Clock, CheckCircle, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { personsStore, transportCompaniesStore, internalDestinationsStore } from '@/lib/store';
+import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; // Using centralized vehicle entry stores
 
-// Mock data for dropdowns - in real app, this would come from Cadastros Gerais / API
-const mockTransportCompanies = ['TransAlpha', 'BetaLog', 'CargaExpress', 'GamaTrans'];
-const mockInternalDestinations = ['Almoxarifado A', 'Produção Bloco B', 'Expedição Setor C', 'Pátio Espera', 'Verificação'];
-const mockMovementTypes = ["Carga", "Descarga", "Prestação de Serviço", "Transferencia Interna", "Devolução", "Visita", "Outros"];
-
-// Store entries in memory for this demo
-// This should be replaced with API calls to Firebase in a real app
-let entriesStore: VehicleEntry[] = [];
-let waitingYardStore: VehicleEntry[] = [];
-
-// Populate with some mock data for development if stores are empty
-if (process.env.NODE_ENV === 'development') {
-    if (waitingYardStore.length === 0) {
-        waitingYardStore.push( { id: '20230115140000', driverName: 'Daniela Silva', transportCompanyName: 'BetaLog', plate1: 'JKL-4444', internalDestinationName: 'Pátio Espera', movementType: 'Carga Pendente', entryTimestamp: new Date().toISOString(), status: 'aguardando_patio', registeredBy: 'user2', observation: 'Aguardando NF' });
-        waitingYardStore.push( { id: '20230115150000', driverName: 'Eduardo Lima', transportCompanyName: 'GamaTrans', plate1: 'MNO-5555', internalDestinationName: 'Verificação', movementType: 'Inspeção', entryTimestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), status: 'aguardando_patio', registeredBy: 'user1' });
-    }
-     if (entriesStore.length === 0) {
-        // Can add some initial entriesStore items here if needed for direct navigation to this page in dev
-    }
-}
-
+const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
 const entrySchema = z.object({
-  driverName: z.string().min(3, { message: 'Nome do motorista é obrigatório (mín. 3 caracteres).' }),
+  driverName: z.string().min(1, { message: 'Nome do motorista é obrigatório.' }),
   assistant1Name: z.string().optional(),
   assistant2Name: z.string().optional(),
   transportCompanyName: z.string().min(1, { message: 'Transportadora é obrigatória.' }),
@@ -62,23 +44,25 @@ export default function RegistroEntradaPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAssistants, setShowAssistants] = useState(false);
 
-  const [waitingVehicles, setWaitingVehicles] = useState<VehicleEntry[]>([]);
+  const [currentWaitingVehicles, setCurrentWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Sync with global waitingYardStore
-  useEffect(() => {
-    setWaitingVehicles([...waitingYardStore]); 
-  }, []); 
+   useEffect(() => {
+    // Function to update local state from global store
+    const syncWaitingVehicles = () => {
+      // Basic check to see if an update is needed. For more complex scenarios, consider deep comparison or versioning.
+      if (JSON.stringify(currentWaitingVehicles) !== JSON.stringify(waitingYardStore)) {
+        setCurrentWaitingVehicles([...waitingYardStore]);
+      }
+    };
+    syncWaitingVehicles(); // Initial sync
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-        if (waitingVehicles.length !== waitingYardStore.length || 
-            JSON.stringify(waitingVehicles) !== JSON.stringify(waitingYardStore)) { // Deeper check for content change
-            setWaitingVehicles([...waitingYardStore]);
-        }
-    }, 1000); 
-    return () => clearInterval(interval);
-  }, [waitingVehicles]);
+    // Optionally, set up an interval for periodic checks if changes can happen from outside this component
+    const intervalId = setInterval(syncWaitingVehicles, 2000); // Check every 2 seconds
+
+    return () => clearInterval(intervalId); // Cleanup interval on component unmount
+  }, [currentWaitingVehicles]); // Rerun effect if local state changes (e.g., after an approval)
 
 
   const form = useForm<VehicleEntryFormData>({
@@ -122,12 +106,12 @@ export default function RegistroEntradaPage() {
       status: status,
       registeredBy: user.login,
     };
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
 
     if (status === 'aguardando_patio') {
       waitingYardStore.push(newEntry);
-      setWaitingVehicles([...waitingYardStore]); 
+      setCurrentWaitingVehicles([...waitingYardStore]);
       toast({
         title: 'Registro Enviado para o Pátio',
         description: `Veículo ${newEntry.plate1} aguardando liberação. Código: ${newEntry.id}`,
@@ -142,32 +126,32 @@ export default function RegistroEntradaPage() {
         className: 'bg-green-600 text-white',
         icon: <CheckCircle className="h-6 w-6 text-white" />,
       });
-      console.log("Printing document for entry:", newEntry);
+      console.log("Simulando impressão do documento para entrada liberada:", newEntry);
     }
-    
+
     form.reset();
     setIsSubmitting(false);
   };
 
   const filteredWaitingVehicles = useMemo(() => {
-    if (!searchTerm) return waitingVehicles;
-    return waitingVehicles.filter(v =>
+    if (!searchTerm) return currentWaitingVehicles;
+    return currentWaitingVehicles.filter(v =>
       v.plate1.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.transportCompanyName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [waitingVehicles, searchTerm]);
+    ).sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()); // Sort oldest first
+  }, [currentWaitingVehicles, searchTerm]);
 
   const handleApproveEntry = (vehicleId: string) => {
     const vehicleToApproveIndex = waitingYardStore.findIndex(v => v.id === vehicleId);
     if (vehicleToApproveIndex > -1) {
       const vehicleToApprove = waitingYardStore[vehicleToApproveIndex];
       const updatedVehicle = { ...vehicleToApprove, status: 'entrada_liberada' as 'entrada_liberada' };
-      
-      waitingYardStore.splice(vehicleToApproveIndex, 1); 
-      entriesStore.push(updatedVehicle); 
 
-      setWaitingVehicles([...waitingYardStore]); 
+      waitingYardStore.splice(vehicleToApproveIndex, 1);
+      entriesStore.push(updatedVehicle);
+
+      setCurrentWaitingVehicles([...waitingYardStore]);
 
       toast({
         title: 'Entrada Liberada!',
@@ -175,10 +159,10 @@ export default function RegistroEntradaPage() {
         className: 'bg-green-600 text-white',
         icon: <CheckCircle className="h-6 w-6 text-white" />
       });
-      console.log("Printing document for approved entry:", updatedVehicle);
+      console.log("Simulando impressão do documento para entrada aprovada do pátio:", updatedVehicle);
     }
   };
-  
+
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -197,7 +181,16 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nome do Motorista</FormLabel>
-                      <FormControl><Input placeholder="Ex: João Silva" {...field} /></FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Selecione o motorista" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {personsStore.map(person => (
+                            <SelectItem key={person.id} value={person.name}>{person.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -213,8 +206,8 @@ export default function RegistroEntradaPage() {
                           <SelectTrigger><SelectValue placeholder="Selecione a transportadora" /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockTransportCompanies.map(company => (
-                            <SelectItem key={company} value={company}>{company}</SelectItem>
+                          {transportCompaniesStore.map(company => (
+                            <SelectItem key={company.id} value={company.name}>{company.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -236,7 +229,16 @@ export default function RegistroEntradaPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ajudante 1 (Opcional)</FormLabel>
-                        <FormControl><Input placeholder="Nome do Ajudante 1" {...field} /></FormControl>
+                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger><SelectValue placeholder="Selecione o ajudante 1" /></SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {personsStore.map(person => (
+                                <SelectItem key={person.id} value={person.name}>{person.name}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -247,14 +249,23 @@ export default function RegistroEntradaPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ajudante 2 (Opcional)</FormLabel>
-                        <FormControl><Input placeholder="Nome do Ajudante 2" {...field} /></FormControl>
+                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger><SelectValue placeholder="Selecione o ajudante 2" /></SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {personsStore.map(person => (
+                                <SelectItem key={person.id} value={person.name}>{person.name}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
               )}
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField
                   control={form.control}
@@ -303,8 +314,8 @@ export default function RegistroEntradaPage() {
                           <SelectTrigger><SelectValue placeholder="Selecione o destino" /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockInternalDestinations.map(dest => (
-                            <SelectItem key={dest} value={dest}>{dest}</SelectItem>
+                          {internalDestinationsStore.map(dest => (
+                            <SelectItem key={dest.id} value={dest.name}>{dest.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -349,8 +360,8 @@ export default function RegistroEntradaPage() {
           </Form>
         </CardContent>
         <CardFooter className="flex flex-col sm:flex-row justify-end gap-4 pt-6">
-            <Button 
-                variant="outline" 
+            <Button
+                variant="outline"
                 onClick={form.handleSubmit(data => handleFormSubmit(data, 'aguardando_patio'))}
                 disabled={isSubmitting}
                 className="w-full sm:w-auto"
@@ -358,7 +369,7 @@ export default function RegistroEntradaPage() {
                 {isSubmitting ? <Clock className="mr-2 h-4 w-4 animate-spin" /> : <SendToBack className="mr-2 h-4 w-4" /> }
                 Aguardar no Pátio
             </Button>
-            <Button 
+            <Button
                 onClick={form.handleSubmit(data => handleFormSubmit(data, 'entrada_liberada'))}
                 disabled={isSubmitting}
                 className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
@@ -369,7 +380,6 @@ export default function RegistroEntradaPage() {
         </CardFooter>
       </Card>
 
-      {/* Section for Vehicles Awaiting Release */}
       <Card className="max-w-4xl mx-auto shadow-xl">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
@@ -382,7 +392,7 @@ export default function RegistroEntradaPage() {
             </div>
              <div className="mt-4 sm:mt-0 w-full sm:w-auto max-w-xs">
                 <Label htmlFor="searchWaiting" className="sr-only">Buscar</Label>
-                <Input 
+                <Input
                     id="searchWaiting"
                     type="text"
                     placeholder="Buscar por placa, motorista..."
@@ -416,12 +426,12 @@ export default function RegistroEntradaPage() {
                     <TableCell>{vehicle.driverName}</TableCell>
                     <TableCell>{vehicle.transportCompanyName}</TableCell>
                     <TableCell>{vehicle.plate1}</TableCell>
-                    <TableCell>{vehicle.observation || '-'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{vehicle.observation || '-'}</TableCell>
                     <TableCell>{new Date(vehicle.entryTimestamp).toLocaleString('pt-BR')}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button 
-                        variant="default" 
-                        size="sm" 
+                      <Button
+                        variant="default"
+                        size="sm"
                         onClick={() => handleApproveEntry(vehicle.id)}
                         className="bg-green-600 hover:bg-green-700 text-white"
                       >
@@ -449,4 +459,3 @@ export default function RegistroEntradaPage() {
     </div>
   );
 }
-

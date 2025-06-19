@@ -13,7 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { Driver, TransportCompany, InternalDestination } from '@/lib/types';
-import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin } from 'lucide-react'; 
+import { personsStore, transportCompaniesStore, internalDestinationsStore } from '@/lib/store';
+import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,19 +47,14 @@ const internalDestinationSchema = z.object({
 type InternalDestinationFormData = z.infer<typeof internalDestinationSchema>;
 
 
-// Mock data stores (replace with API/Firebase calls)
-let personsStore: Driver[] = []; // Renamed from driversStore
-let transportCompaniesStore: TransportCompany[] = [];
-let internalDestinationsStore: InternalDestination[] = [];
-
 // Generic form and table component
 interface CadastroSectionProps<TData, TFormData> {
   title: string;
   icon: React.ElementType;
   data: TData[];
-  setData: React.Dispatch<React.SetStateAction<TData[]>>;
+  setDataStore: (data: TData[]) => void; // Function to update the global store
   formSchema: z.ZodSchema<TFormData>;
-  formFields: (form: any) => React.ReactNode; 
+  formFields: (form: any) => React.ReactNode;
   tableHeaders: string[];
   renderTableRow: (item: TData, index: number, onDelete: (id: string) => void, onEdit: (item: TData) => void) => React.ReactNode;
   defaultValues: TFormData;
@@ -68,7 +64,7 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
   title,
   icon: Icon,
   data,
-  setData,
+  setDataStore,
   formSchema,
   formFields,
   tableHeaders,
@@ -78,12 +74,17 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<TData | null>(null);
+  const [localData, setLocalData] = useState<TData[]>(data);
+
+  useEffect(() => {
+    setLocalData(data);
+  }, [data]);
 
   const form = useForm<TFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: editingItem ? (editingItem as unknown as TFormData) : defaultValues,
   });
-  
+
   useEffect(() => {
     if (editingItem) {
       form.reset(editingItem as unknown as TFormData);
@@ -95,26 +96,31 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
 
 
   const onSubmit = (formData: TFormData) => {
+    let updatedData;
     if (editingItem) {
-        setData(prev => prev.map(item => item.id === editingItem.id ? {...editingItem, ...formData} : item));
+        updatedData = localData.map(item => item.id === editingItem.id ? {...editingItem, ...formData} : item);
         toast({ title: `${title} atualizado(a)!`, description: `${formData.name} foi atualizado(a) com sucesso.` });
         setEditingItem(null);
     } else {
-        const newItem = { ...formData, id: Date.now().toString() } as unknown as TData; 
-        setData(prev => [...prev, newItem]);
+        const newItem = { ...formData, id: Date.now().toString() } as unknown as TData;
+        updatedData = [...localData, newItem];
         toast({ title: `${title} cadastrado(a)!`, description: `${formData.name} foi cadastrado(a) com sucesso.` });
     }
+    setLocalData(updatedData);
+    setDataStore(updatedData); // Update global store
     setShowForm(false);
     form.reset(defaultValues);
   };
 
   const handleDelete = (id: string) => {
-    setData(prev => prev.filter(item => item.id !== id));
+    const updatedData = localData.filter(item => item.id !== id);
+    setLocalData(updatedData);
+    setDataStore(updatedData); // Update global store
     toast({ title: `${title} excluído(a)!`, description: `Item foi excluído com sucesso.` });
   };
-  
+
   const handleEdit = (item: TData) => {
-    setEditingItem(item);    
+    setEditingItem(item);
   };
 
   return (
@@ -140,7 +146,7 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
             </form>
           </Form>
         )}
-        {data.length > 0 ? (
+        {localData.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -149,7 +155,7 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((item, index) => renderTableRow(item, index, handleDelete, handleEdit))}
+              {localData.map((item, index) => renderTableRow(item, index, handleDelete, handleEdit))}
             </TableBody>
           </Table>
         ) : (
@@ -162,30 +168,40 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
 
 
 export default function CadastrosGeraisPage() {
-  const [persons, setPersons] = useState<Driver[]>(personsStore); // Renamed from drivers
-  const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>(transportCompaniesStore);
-  const [internalDestinations, setInternalDestinations] = useState<InternalDestination[]>(internalDestinationsStore);
+  // Use local state for rendering, but sync with global stores
+  const [persons, setPersonsState] = useState<Driver[]>(personsStore);
+  const [transportCompanies, setTransportCompaniesState] = useState<TransportCompany[]>(transportCompaniesStore);
+  const [internalDestinations, setInternalDestinationsState] = useState<InternalDestination[]>(internalDestinationsStore);
 
-  useEffect(() => { personsStore = persons }, [persons]);
-  useEffect(() => { transportCompaniesStore = transportCompanies }, [transportCompanies]);
-  useEffect(() => { internalDestinationsStore = internalDestinations }, [internalDestinations]);
+  // Update global stores when local state changes
+  const updatePersonsStore = (data: Driver[]) => { personsStore.length = 0; personsStore.push(...data); };
+  const updateTransportCompaniesStore = (data: TransportCompany[]) => { transportCompaniesStore.length = 0; transportCompaniesStore.push(...data); };
+  const updateInternalDestinationsStore = (data: InternalDestination[]) => { internalDestinationsStore.length = 0; internalDestinationsStore.push(...data); };
   
+  // Sync local state if global stores change (e.g. on initial load or from other components if stores were reactive)
+  useEffect(() => setPersonsState([...personsStore]), []);
+  useEffect(() => setTransportCompaniesState([...transportCompaniesStore]), []);
+  useEffect(() => setInternalDestinationsState([...internalDestinationsStore]), []);
+
+
   const formatDisplayPhoneNumber = (val: string): string => {
     if (typeof val !== 'string' || !val) return "";
-    const digits = val.replace(/\D/g, ""); // Keep only digits
+    const digits = val.replace(/\D/g, "");
 
     if (digits.length === 0) return "";
-    if (digits.length === 1) return `(${digits[0]}`; // (X
-    // For (XX)YYYYYYYYY (total 11 digits, formatted length 13)
-    return `(${digits.substring(0, 2)})${digits.substring(2, 11)}`;
+    let formatted = `(${digits.substring(0, 2)}`;
+    if (digits.length > 2) {
+      formatted += `)${digits.substring(2, 11)}`;
+    }
+    return formatted;
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (value: string) => void) => {
     let rawValue = e.target.value.replace(/\D/g, "");
-    if (rawValue.length > 11) { // Limit raw digits to 11
+    if (rawValue.length > 11) {
       rawValue = rawValue.substring(0, 11);
     }
-    fieldOnChange(rawValue); // Store raw digits
+    fieldOnChange(rawValue);
   };
 
   const renderPersonFormFields = (form: any) => (
@@ -193,25 +209,25 @@ export default function CadastrosGeraisPage() {
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} maxLength={11} /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} /></FormControl><FormMessage /></FormItem>)} />
-      <FormField 
-        control={form.control} 
-        name="phone" 
-        render={({ field }) => ( 
+      <FormField
+        control={form.control}
+        name="phone"
+        render={({ field }) => (
           <FormItem>
             <FormLabel>Telefone (Opcional)</FormLabel>
             <FormControl>
-              <Input 
-                placeholder="(XX)XXXXXXXXX" 
-                {...field} 
+              <Input
+                placeholder="(XX)XXXXXXXXX"
+                {...field}
                 value={formatDisplayPhoneNumber(field.value || "")}
                 onChange={(e) => handlePhoneChange(e, field.onChange)}
                 type="tel"
-                maxLength={13} 
+                maxLength={13}
               />
             </FormControl>
             <FormMessage />
           </FormItem>
-        )} 
+        )}
       />
     </>
   );
@@ -234,7 +250,7 @@ export default function CadastrosGeraisPage() {
       </TableCell>
     </TableRow>
   );
-  
+
   const renderTransportCompanyFormFields = (form: any) => (
     <>
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome da Transportadora</FormLabel><FormControl><Input placeholder="Ex: Transportes Rápidos S.A." {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -256,7 +272,7 @@ export default function CadastrosGeraisPage() {
       </TableCell>
     </TableRow>
   );
-  
+
    const renderInternalDestinationFormFields = (form: any) => (
     <>
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome do Destino</FormLabel><FormControl><Input placeholder="Ex: Almoxarifado Principal" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -287,18 +303,18 @@ export default function CadastrosGeraisPage() {
         <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras e destinos internos.</p>
       </div>
       <Tabs defaultValue="persons" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 mb-6"> 
-          <TabsTrigger value="persons" className="flex items-center gap-2"><Users className="h-4 w-4" /> Motoristas e Ajudantes</TabsTrigger> 
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 mb-6">
+          <TabsTrigger value="persons" className="flex items-center gap-2"><Users className="h-4 w-4" /> Motoristas e Ajudantes</TabsTrigger>
           <TabsTrigger value="transportCompanies" className="flex items-center gap-2"><Truck className="h-4 w-4" />Transportadoras</TabsTrigger>
           <TabsTrigger value="internalDestinations" className="flex items-center gap-2"><MapPin className="h-4 w-4" />Destinos Internos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="persons">
           <CadastroSection
-            title="Pessoa" 
-            icon={Users} 
-            data={persons} 
-            setData={setPersons}
+            title="Pessoa"
+            icon={Users}
+            data={persons}
+            setDataStore={updatePersonsStore}
             formSchema={personSchema}
             formFields={renderPersonFormFields}
             tableHeaders={['Nome', 'CPF', 'CNH', 'Telefone']}
@@ -311,7 +327,7 @@ export default function CadastrosGeraisPage() {
             title="Transportadora"
             icon={Truck}
             data={transportCompanies}
-            setData={setTransportCompanies}
+            setDataStore={updateTransportCompaniesStore}
             formSchema={transportCompanySchema}
             formFields={renderTransportCompanyFormFields}
             tableHeaders={['Nome']}
@@ -324,7 +340,7 @@ export default function CadastrosGeraisPage() {
             title="Destino Interno"
             icon={MapPin}
             data={internalDestinations}
-            setData={setInternalDestinations}
+            setDataStore={updateInternalDestinationsStore}
             formSchema={internalDestinationSchema}
             formFields={renderInternalDestinationFormFields}
             tableHeaders={['Nome']}
@@ -336,20 +352,3 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
-
-// Initialize with some mock data for development if stores are empty
-if (process.env.NODE_ENV === 'development') {
-    if (personsStore.length === 0) {
-        personsStore.push({ id: 'd1', name: 'Carlos Pereira (Motorista)', cpf: '11122233344', cnh: '123456789', phone: '11999998888' });
-        personsStore.push({ id: 'a1', name: 'Joana Silva (Ajudante)', cpf: '44455566677', cnh: '987654321', phone: '11988887777' }); 
-    }
-    if (transportCompaniesStore.length === 0) {
-        transportCompaniesStore.push({ id: 'tc1', name: 'Logistica Veloz Ltda' });
-        transportCompaniesStore.push({ id: 'tc2', name: 'Transportes Rápidos S.A.' });
-    }
-    if (internalDestinationsStore.length === 0) {
-        internalDestinationsStore.push({ id: 'id1', name: 'Galpão Central' });
-        internalDestinationsStore.push({ id: 'id2', name: 'Almoxarifado Principal' });
-    }
-}
-    

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -10,13 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, AlertTriangle, LogOutIcon, Search } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Search } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
+import { entriesStore } from '@/lib/vehicleEntryStores'; // Using centralized vehicle entry stores
 
-// This would typically come from a shared store or context, or fetched from Firebase
-// For now, let's assume `entriesStore` from `registro-entrada` is accessible or passed.
-// This is a simplification for the demo. In a real app, you'd fetch from a database.
-let entriesStore: VehicleEntry[] = []; // Placeholder. Needs proper data management.
 
 const exitSchema = z.object({
   barcode: z.string().length(14, { message: 'Código de barras deve ter 14 dígitos.' }).regex(/^\d+$/, { message: 'Código de barras deve conter apenas números.' }),
@@ -37,12 +35,7 @@ export default function RegistroSaidaPage() {
     },
   });
 
-  // Function to simulate finding and updating an entry.
-  // In a real app, this would be an API call.
   const processExit = async (barcode: string): Promise<VehicleEntry | null> => {
-    // This is a mock. Replace with actual data fetching and update.
-    // For now, let's assume entriesStore is populated from somewhere (e.g., another page or context)
-    // This is a major simplification.
     const entryIndex = entriesStore.findIndex(e => e.id === barcode && e.status !== 'saiu');
     if (entryIndex !== -1) {
       entriesStore[entryIndex] = {
@@ -61,8 +54,7 @@ export default function RegistroSaidaPage() {
     setFoundEntry(null);
     setEntryNotFound(false);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
     const updatedEntry = await processExit(data.barcode);
 
     if (updatedEntry) {
@@ -103,9 +95,9 @@ export default function RegistroSaidaPage() {
                     <FormLabel>Código de Barras (14 dígitos)</FormLabel>
                     <FormControl>
                       <div className="flex">
-                        <Input 
-                          placeholder="Ex: 20230101120000" 
-                          {...field} 
+                        <Input
+                          placeholder="Ex: 20230101120000"
+                          {...field}
                           className="rounded-r-none"
                           maxLength={14}
                         />
@@ -123,15 +115,6 @@ export default function RegistroSaidaPage() {
                   </FormItem>
                 )}
               />
-               {/* <Button type="submit" className="w-full" disabled={isProcessing}>
-                {isProcessing ? (
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : <LogOutIcon className="mr-2 h-4 w-4" /> }
-                Registrar Saída
-              </Button> */}
             </form>
           </Form>
 
@@ -168,20 +151,3 @@ export default function RegistroSaidaPage() {
   );
 }
 
-// Mocking entriesStore for demonstration. In a real app, this data would come from Firebase/API.
-// This is typically done in a context or fetched, not hardcoded like this.
-// For the demo, let's add a sample entry that could be exited.
-if (process.env.NODE_ENV === 'development' && entriesStore.length === 0) {
-    const sampleBarcode = new Date().toISOString().slice(0,10).replace(/-/g,'') + "100000"; // YYYYMMDD + HHMMSS
-    entriesStore.push({
-        id: sampleBarcode, // Example: 20240115100000
-        driverName: 'Motorista Teste Saida',
-        transportCompanyName: 'TransLog Saida',
-        plate1: 'SAI-1234',
-        internalDestinationName: 'Patio Saida',
-        movementType: 'Carga',
-        entryTimestamp: new Date(Date.now() - 3600 * 1000).toISOString(), // 1 hour ago
-        status: 'entrada_liberada',
-        registeredBy: 'admin',
-    });
-}

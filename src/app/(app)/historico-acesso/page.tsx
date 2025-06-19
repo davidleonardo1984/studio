@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry } from '@/lib/types';
-import { Download, Filter, Printer, Trash2, CalendarDays, Search, Truck, RotateCcw } from 'lucide-react';
+import { Download, Printer, Trash2, Search, Truck, RotateCcw } from 'lucide-react';
 import type { DateRange } from "react-day-picker";
 import {
   AlertDialog,
@@ -24,42 +24,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; // Using centralized vehicle entry stores
 
-
-// Mock data - replace with API/Firebase calls
-// Using entriesStore and waitingYardStore from registro-entrada for demo purposes.
-// This is a major simplification.
-let entriesStore: VehicleEntry[] = [];
-let waitingYardStore: VehicleEntry[] = [];
-
-// Populate with some mock data for development if stores are empty
-if (process.env.NODE_ENV === 'development') {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    const lastYear = new Date(today);
-    lastYear.setFullYear(today.getFullYear() - 1);
-
-    if (entriesStore.length === 0) {
-        entriesStore = [
-            { id: '20230115100000', driverName: 'ANA CLARA', transportCompanyName: 'LOGMAX', plate1: 'ABC-1111', internalDestinationName: 'DOCAS 1-3', movementType: 'DESCARGA', entryTimestamp: yesterday.toISOString(), exitTimestamp: new Date(yesterday.getTime() + 2 * 3600 * 1000).toISOString(), status: 'saiu', registeredBy: 'admin', observation: 'Material "frágil", manusear com cuidado.' },
-            { id: '20230115113000', driverName: 'BRUNO COSTA', transportCompanyName: 'TRANSFAST', plate1: 'DEF-2222', internalDestinationName: 'ARMAZÉM SUL', movementType: 'CARGA', entryTimestamp: new Date().toISOString(), status: 'entrada_liberada', registeredBy: 'user1' },
-            { id: '20220110090000', driverName: 'CARLOS DIAS', transportCompanyName: 'LOGMAX', plate1: 'GHI-3333', internalDestinationName: 'BLOCO C', movementType: 'DEVOLUÇÃO', entryTimestamp: lastYear.toISOString(), exitTimestamp: new Date(lastYear.getTime() + 4 * 3600 * 1000).toISOString(), status: 'saiu', registeredBy: 'admin' },
-        ];
-    }
-    if (waitingYardStore.length === 0) {
-        waitingYardStore.push( { id: '20230115140000', driverName: 'DANIELA SILVA', transportCompanyName: 'BETALOG', plate1: 'JKL-4444', internalDestinationName: 'PÁTIO ESPERA', movementType: 'CARGA PENDENTE', entryTimestamp: new Date().toISOString(), status: 'aguardando_patio', registeredBy: 'user2' });
-    }
-}
 
 const escapeCsvField = (field: any): string => {
   if (field === null || typeof field === 'undefined') {
     return '';
   }
   let stringField = String(field);
-  // If the field contains a comma, a double quote, or a newline,
-  // it needs to be enclosed in double quotes.
-  // Also, any double quote within the field must be escaped by doubling it.
   if (stringField.search(/("|,|\n)/g) >= 0) {
     stringField = '"' + stringField.replace(/"/g, '""') + '"';
   }
@@ -68,7 +40,27 @@ const escapeCsvField = (field: any): string => {
 
 export default function HistoricoAcessoPage() {
   const { toast } = useToast();
-  const [allEntries, setAllEntries] = useState<VehicleEntry[]>([...entriesStore, ...waitingYardStore]);
+  // Combine stores for a complete history view.
+  // This local combined state is fine for display, actual data modification happens in original stores.
+  const [allEntries, setAllEntries] = useState<VehicleEntry[]>([]);
+
+  useEffect(() => {
+    // Function to update local state from global stores
+    const syncAllEntries = () => {
+      const combined = [...entriesStore, ...waitingYardStore];
+      // Basic check to see if an update is needed.
+      if (JSON.stringify(allEntries) !== JSON.stringify(combined)) {
+        setAllEntries(combined);
+      }
+    };
+    syncAllEntries(); // Initial sync
+
+    // Optionally, set up an interval for periodic checks
+    const intervalId = setInterval(syncAllEntries, 2000); // Check every 2 seconds
+
+    return () => clearInterval(intervalId); // Cleanup interval
+  }, [allEntries]); // Rerun if local allEntries changes
+
 
   const [filters, setFilters] = useState({
     transportCompany: '',
@@ -79,18 +71,15 @@ export default function HistoricoAcessoPage() {
 
 
   const filteredEntries = useMemo(() => {
-    let entries = allEntries;
+    let entries = [...allEntries]; // Create a mutable copy for filtering
 
     if (searchTerm) {
-      // If searchTerm is used, it's the dominant filter.
-      // The results will ONLY be based on searchTerm.
       entries = entries.filter(e =>
         Object.values(e).some(val =>
           String(val).toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
     } else {
-      // If searchTerm is not used, apply the other filters.
       if (filters.transportCompany) {
         entries = entries.filter(e => e.transportCompanyName.toLowerCase().includes(filters.transportCompany.toLowerCase()));
       }
@@ -102,11 +91,13 @@ export default function HistoricoAcessoPage() {
         );
       }
       if (filters.dateRange?.from) {
-          entries = entries.filter(e => new Date(e.entryTimestamp) >= (filters.dateRange?.from as Date));
+          const fromDate = new Date(filters.dateRange.from);
+          fromDate.setHours(0,0,0,0);
+          entries = entries.filter(e => new Date(e.entryTimestamp) >= fromDate);
       }
       if (filters.dateRange?.to) {
           const toDate = new Date(filters.dateRange.to);
-          toDate.setHours(23, 59, 59, 999); // Include the whole "to" day
+          toDate.setHours(23, 59, 59, 999);
           entries = entries.filter(e => new Date(e.entryTimestamp) <= toDate);
       }
     }
@@ -114,17 +105,20 @@ export default function HistoricoAcessoPage() {
   }, [allEntries, filters, searchTerm]);
 
   const vehiclesInsideFactory = useMemo(() => {
-    return allEntries.filter(e => e.status === 'entrada_liberada');
+    // Filter from 'allEntries' to ensure it reflects the most current combined data
+    return allEntries.filter(e => e.status === 'entrada_liberada')
+                     .sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()); // oldest first
   }, [allEntries]);
+
 
   const handleExportToCSV = () => {
     if (filteredEntries.length === 0) {
         toast({variant: 'destructive', title: "Nenhum dado", description: "Não há dados para exportar com os filtros atuais."});
         return;
     }
-    const headers = ["ID/Código", "Motorista", "Ajudante1", "Ajudante2", "Transportadora", "Placa1", "Placa2", "Placa3", "Destino Interno", "Tipo Mov.", "Observação", "Data/Hora Entrada", "Data/Hora Saída", "Status", "Registrado Por"];
+    const headers = ["ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA", "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", "DATA/HORA ENTRADA", "DATA/HORA SAÍDA", "STATUS", "REGISTRADO POR"];
     const csvRows = [
-        headers.map(escapeCsvField).join(','), // Headers can also be escaped for robustness
+        headers.map(escapeCsvField).join(','),
         ...filteredEntries.map(e => [
             escapeCsvField(e.id),
             escapeCsvField(e.driverName),
@@ -144,7 +138,7 @@ export default function HistoricoAcessoPage() {
         ].join(','))
     ];
     const csvString = csvRows.join('\n');
-    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' }); // Added BOM for Excel
+    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     if (link.download !== undefined) {
         const url = URL.createObjectURL(blob);
@@ -163,24 +157,36 @@ export default function HistoricoAcessoPage() {
   const handleDeleteOldRecords = () => {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    const updatedEntries = allEntries.filter(e => {
+
+    // Filter entriesStore
+    const updatedEntriesStore = entriesStore.filter(e => {
         if (e.status === 'saiu' && e.exitTimestamp) {
             return new Date(e.exitTimestamp) > oneYearAgo;
         }
-        return true; // Keep active entries or entries without exit timestamp
+        return true;
     });
-    setAllEntries(updatedEntries);
-    // Persist this change to your backend
-    entriesStore = updatedEntries.filter(e => e.status !== 'aguardando_patio'); // crude update
-    waitingYardStore = updatedEntries.filter(e => e.status === 'aguardando_patio'); // crude update
+    entriesStore.length = 0; // Clear original array
+    entriesStore.push(...updatedEntriesStore); // Repopulate with filtered items
+
+    // Filter waitingYardStore (though less likely to have old "saiu" records)
+    const updatedWaitingYardStore = waitingYardStore.filter(e => {
+        if (e.status === 'saiu' && e.exitTimestamp) { // Should not happen for waiting yard
+            return new Date(e.exitTimestamp) > oneYearAgo;
+        }
+        return true;
+    });
+    waitingYardStore.length = 0;
+    waitingYardStore.push(...updatedWaitingYardStore);
+
+    setAllEntries([...entriesStore, ...waitingYardStore]); // Update local combined state
+
     toast({ title: 'Registros Antigos Excluídos', description: 'Registros com mais de 365 dias e status "saiu" foram removidos.' });
   };
 
+
   const handlePrintEntry = (entry: VehicleEntry) => {
-    // In a real app, this would open a formatted print view or generate a PDF
     console.log("Printing entry:", entry);
     toast({ title: "Imprimir Documento", description: `Simulando impressão para ${entry.plate1}. Código: ${entry.id}` });
-    // Example: window.print() would print the current page. You'd need a specific print component/route.
   };
 
   const transportCompanyOptions = useMemo(() => {
@@ -213,7 +219,7 @@ export default function HistoricoAcessoPage() {
             </div>
              <div className="space-y-1">
                 <Label htmlFor="transportCompanyFilter">Transportadora</Label>
-                <Select value={filters.transportCompany} onValueChange={(value) => setFilters(prev => ({...prev, transportCompany: value === 'all' ? '' : value}))}>
+                <Select value={filters.transportCompany} onValueChange={(value) => setFilters(prev => ({...prev, transportCompany: value === 'all' ? '' : value}))} disabled={!!searchTerm}>
                     <SelectTrigger id="transportCompanyFilter"><SelectValue placeholder="TODAS TRANSPORTADORAS" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">TODAS TRANSPORTADORAS</SelectItem>
@@ -223,7 +229,7 @@ export default function HistoricoAcessoPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="plateFilter">Placa</Label>
-              <Input id="plateFilter" placeholder="FILTRAR POR PLACA..." value={filters.plate} onChange={(e) => setFilters(prev => ({...prev, plate: e.target.value}))} />
+              <Input id="plateFilter" placeholder="FILTRAR POR PLACA..." value={filters.plate} onChange={(e) => setFilters(prev => ({...prev, plate: e.target.value}))} disabled={!!searchTerm} />
             </div>
             <div className="space-y-1">
               <Label>Período de Entrada</Label>
@@ -231,6 +237,7 @@ export default function HistoricoAcessoPage() {
                 date={filters.dateRange}
                 onDateChange={(range) => setFilters(prev => ({...prev, dateRange: range}))}
                 className="w-full"
+                disabled={!!searchTerm}
               />
             </div>
           </div>
@@ -355,4 +362,3 @@ export default function HistoricoAcessoPage() {
     </div>
   );
 }
-
