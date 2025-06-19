@@ -79,7 +79,7 @@ export default function RegistroEntradaPage() {
 
   const form = useForm<VehicleEntryFormData>({
     resolver: zodResolver(entrySchema),
-    mode: "onBlur", // Enable onBlur validation for Zod schema if desired, but manual setError is more targeted here
+    mode: "onBlur",
     defaultValues: {
       driverName: '',
       assistant1Name: '',
@@ -201,7 +201,7 @@ export default function RegistroEntradaPage() {
                               const value = e.target.value;
                               if (value && !personsStore.some(p => p.name.toUpperCase() === value.toUpperCase())) {
                                 form.setError('driverName', { type: 'manual', message: 'Motorista não cadastrado. Verifique ou cadastre em Cadastros Gerais.' });
-                              } else if (value === "" && !form.formState.errors.driverName?.message?.includes("obrigatório")) { // Clear only if not empty error
+                              } else if (value === "" && !form.formState.errors.driverName?.message?.includes("obrigatório")) { 
                                 form.clearErrors('driverName');
                               } else if (value && personsStore.some(p => p.name.toUpperCase() === value.toUpperCase())) {
                                 form.clearErrors('driverName');
@@ -307,7 +307,7 @@ export default function RegistroEntradaPage() {
                             <Input 
                               placeholder="Digite ou selecione o ajudante 2" 
                               {...field} 
-                              list="assistant-list" // Can reuse the same datalist
+                              list="assistant-list" 
                               onBlur={(e) => {
                                 const value = e.target.value;
                                 if (value && !personsStore.some(p => p.name.toUpperCase() === value.toUpperCase())) {
@@ -405,7 +405,7 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Movimentação</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
                         </FormControl>
