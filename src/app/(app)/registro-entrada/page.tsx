@@ -28,11 +28,11 @@ const entrySchema = z.object({
     .refine(value => personsStore.some(p => p.name.toUpperCase() === value.toUpperCase()), {
       message: "Motorista não encontrado. Selecione um motorista da lista ou cadastre-o em Cadastros Gerais."
     }),
-  assistant1Name: z.string().optional().transform(val => val === "" ? undefined : val) // Treat empty string as undefined
+  assistant1Name: z.string().optional().transform(val => val === "" ? undefined : val) 
     .refine(value => !value || personsStore.some(p => p.name.toUpperCase() === value.toUpperCase()), {
       message: "Ajudante 1 não encontrado. Selecione um ajudante da lista ou cadastre-o em Cadastros Gerais."
     }),
-  assistant2Name: z.string().optional().transform(val => val === "" ? undefined : val) // Treat empty string as undefined
+  assistant2Name: z.string().optional().transform(val => val === "" ? undefined : val) 
     .refine(value => !value || personsStore.some(p => p.name.toUpperCase() === value.toUpperCase()), {
       message: "Ajudante 2 não encontrado. Selecione um ajudante da lista ou cadastre-o em Cadastros Gerais."
     }),
@@ -79,6 +79,7 @@ export default function RegistroEntradaPage() {
 
   const form = useForm<VehicleEntryFormData>({
     resolver: zodResolver(entrySchema),
+    mode: "onBlur", // Enable onBlur validation for Zod schema if desired, but manual setError is more targeted here
     defaultValues: {
       driverName: '',
       assistant1Name: '',
@@ -192,7 +193,22 @@ export default function RegistroEntradaPage() {
                       <>
                         <FormLabel>Nome do Motorista</FormLabel>
                         <FormControl>
-                          <Input placeholder="Digite ou selecione o motorista" {...field} list="driver-list" />
+                          <Input 
+                            placeholder="Digite ou selecione o motorista" 
+                            {...field} 
+                            list="driver-list" 
+                            onBlur={(e) => {
+                              const value = e.target.value;
+                              if (value && !personsStore.some(p => p.name.toUpperCase() === value.toUpperCase())) {
+                                form.setError('driverName', { type: 'manual', message: 'Motorista não cadastrado. Verifique ou cadastre em Cadastros Gerais.' });
+                              } else if (value === "" && !form.formState.errors.driverName?.message?.includes("obrigatório")) { // Clear only if not empty error
+                                form.clearErrors('driverName');
+                              } else if (value && personsStore.some(p => p.name.toUpperCase() === value.toUpperCase())) {
+                                form.clearErrors('driverName');
+                              }
+                              field.onBlur(e);
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </>
@@ -212,7 +228,22 @@ export default function RegistroEntradaPage() {
                         <>
                         <FormLabel>Transportadora</FormLabel>
                         <FormControl>
-                            <Input placeholder="Digite ou selecione a transportadora" {...field} list="transport-company-list" />
+                            <Input 
+                              placeholder="Digite ou selecione a transportadora" 
+                              {...field} 
+                              list="transport-company-list"
+                              onBlur={(e) => {
+                                const value = e.target.value;
+                                if (value && !transportCompaniesStore.some(tc => tc.name.toUpperCase() === value.toUpperCase())) {
+                                  form.setError('transportCompanyName', { type: 'manual', message: 'Transportadora não cadastrada. Verifique ou cadastre em Cadastros Gerais.' });
+                                } else if (value === "" && !form.formState.errors.transportCompanyName?.message?.includes("obrigatória")) {
+                                  form.clearErrors('transportCompanyName');
+                                } else if (value && transportCompaniesStore.some(tc => tc.name.toUpperCase() === value.toUpperCase())){
+                                   form.clearErrors('transportCompanyName');
+                                }
+                                field.onBlur(e);
+                              }}
+                            />
                         </FormControl>
                         <FormMessage />
                         </>
@@ -240,7 +271,20 @@ export default function RegistroEntradaPage() {
                             <>
                             <FormLabel>Ajudante 1 (Opcional)</FormLabel>
                             <FormControl>
-                            <Input placeholder="Digite ou selecione o ajudante 1" {...field} list="assistant-list" />
+                            <Input 
+                              placeholder="Digite ou selecione o ajudante 1" 
+                              {...field} 
+                              list="assistant-list" 
+                              onBlur={(e) => {
+                                const value = e.target.value;
+                                if (value && !personsStore.some(p => p.name.toUpperCase() === value.toUpperCase())) {
+                                  form.setError('assistant1Name', { type: 'manual', message: 'Ajudante 1 não cadastrado. Verifique ou cadastre.' });
+                                } else {
+                                  form.clearErrors('assistant1Name');
+                                }
+                                field.onBlur(e);
+                              }}
+                            />
                             </FormControl>
                             <FormMessage />
                             </>
@@ -260,7 +304,20 @@ export default function RegistroEntradaPage() {
                             <>
                             <FormLabel>Ajudante 2 (Opcional)</FormLabel>
                             <FormControl>
-                            <Input placeholder="Digite ou selecione o ajudante 2" {...field} list="assistant-list" />
+                            <Input 
+                              placeholder="Digite ou selecione o ajudante 2" 
+                              {...field} 
+                              list="assistant-list" // Can reuse the same datalist
+                              onBlur={(e) => {
+                                const value = e.target.value;
+                                if (value && !personsStore.some(p => p.name.toUpperCase() === value.toUpperCase())) {
+                                  form.setError('assistant2Name', { type: 'manual', message: 'Ajudante 2 não cadastrado. Verifique ou cadastre.' });
+                                } else {
+                                  form.clearErrors('assistant2Name');
+                                }
+                                field.onBlur(e);
+                              }}
+                            />
                             </FormControl>
                             <FormMessage />
                             </>
@@ -315,7 +372,22 @@ export default function RegistroEntradaPage() {
                         <>
                         <FormLabel>Destino Interno</FormLabel>
                         <FormControl>
-                            <Input placeholder="Digite ou selecione o destino" {...field} list="internal-destination-list" />
+                            <Input 
+                              placeholder="Digite ou selecione o destino" 
+                              {...field} 
+                              list="internal-destination-list" 
+                              onBlur={(e) => {
+                                const value = e.target.value;
+                                if (value && !internalDestinationsStore.some(id => id.name.toUpperCase() === value.toUpperCase())) {
+                                  form.setError('internalDestinationName', { type: 'manual', message: 'Destino Interno não cadastrado. Verifique ou cadastre.' });
+                                } else if (value === "" && !form.formState.errors.internalDestinationName?.message?.includes("obrigatório")) {
+                                   form.clearErrors('internalDestinationName');
+                                } else if (value && internalDestinationsStore.some(id => id.name.toUpperCase() === value.toUpperCase())) {
+                                   form.clearErrors('internalDestinationName');
+                                }
+                                field.onBlur(e);
+                              }}
+                            />
                         </FormControl>
                         <FormMessage />
                         </>
