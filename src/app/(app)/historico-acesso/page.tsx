@@ -81,15 +81,6 @@ export default function HistoricoAcessoPage() {
             .sort((a,b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
     }
 
-    // "Pesquisa Rápida" is empty, apply other filters if they are active
-    // Only proceed with filtering if at least one specific filter is active (this is implicitly handled by areAnyFiltersOrSearchActive for display)
-    // but for calculation, we check here.
-    if (!filters.transportCompany.trim() && !filters.plate.trim() && !filters.dateRange?.from) {
-        // If no searchTerm and no specific filters are truly active for filtering, return empty or all based on requirements.
-        // Given areAnyFiltersOrSearchActive will hide this, returning [] if no individual filters active is cleaner.
-        if (!areAnyFiltersOrSearchActive) return []; // Should not happen if areAnyFiltersOrSearchActive handles display
-    }
-
     let tempEntries = [...allEntries];
     const lowerPlate = filters.plate.trim().toLowerCase();
 
@@ -114,18 +105,13 @@ export default function HistoricoAcessoPage() {
         tempEntries = tempEntries.filter(e => new Date(e.entryTimestamp) <= toDate);
     }
     
-    // If no filters were applied (e.g. all filter strings were empty, dateRange was null)
-    // and searchTerm was also empty, tempEntries would be allEntries.
-    // However, if areAnyFiltersOrSearchActive is false, this won't be displayed.
-    // If specific individual filters were actually empty strings, they won't filter.
-    // To ensure an empty list is returned if NO filters are active (matching areAnyFiltersOrSearchActive logic):
     if (!filters.transportCompany.trim() && !filters.plate.trim() && !filters.dateRange?.from && !searchTerm.trim()){
       return [];
     }
 
 
     return tempEntries.sort((a, b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
-  }, [allEntries, filters, searchTerm, areAnyFiltersOrSearchActive]);
+  }, [allEntries, filters, searchTerm]);
 
 
   const vehiclesInsideFactory = useMemo(() => {
@@ -284,7 +270,6 @@ export default function HistoricoAcessoPage() {
         </CardFooter>
       </Card>
 
-      {/* Conditional Rendering for Results Section */}
       {areAnyFiltersOrSearchActive ? (
         <Card className="shadow-lg">
           <CardHeader>
@@ -370,6 +355,7 @@ export default function HistoricoAcessoPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>ID/CÓDIGO</TableHead>
                   <TableHead>PLACA 1</TableHead>
                   <TableHead>MOTORISTA</TableHead>
                   <TableHead>TRANSPORTADORA</TableHead>
@@ -381,6 +367,7 @@ export default function HistoricoAcessoPage() {
               <TableBody>
                 {vehiclesInsideFactory.map((entry) => (
                   <TableRow key={entry.id}>
+                    <TableCell className="font-mono text-xs">{entry.id}</TableCell>
                     <TableCell>{entry.plate1}</TableCell>
                     <TableCell>{entry.driverName}</TableCell>
                     <TableCell>{entry.transportCompanyName}</TableCell>
