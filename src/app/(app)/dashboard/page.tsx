@@ -1,10 +1,10 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, BarChart3, Edit, ListChecks, LogIn, LogOut, Settings, Users, History, Truck } from "lucide-react";
-import Image from "next/image";
+import { ArrowRight, Edit, LogIn, LogOut, ListChecks, History, Users } from "lucide-react";
 
 interface QuickLinkProps {
   href: string;
@@ -72,8 +72,8 @@ export default function DashboardPage() {
       </div>
 
       <Card className="mb-12 overflow-hidden shadow-xl">
-        <div className="md:flex">
-          <div className="md:w-1/2 p-8 flex flex-col justify-center">
+        <div>
+          <div className="p-8 flex flex-col justify-center">
             <h2 className="text-2xl font-semibold text-primary mb-3 font-headline">Gerenciamento Completo</h2>
             <p className="text-muted-foreground mb-6">
               A Portaria Única RES oferece ferramentas robustas para cadastros gerais, controle de usuários e relatórios detalhados, otimizando a segurança e a logística da sua operação.
@@ -82,17 +82,6 @@ export default function DashboardPage() {
               <Link href="/cadastros-gerais" passHref><Button variant="secondary"><Edit className="mr-2 h-4 w-4" />Cadastros Gerais</Button></Link>
               <Link href="/cadastro-acesso" passHref><Button variant="secondary"><Users className="mr-2 h-4 w-4" />Usuários</Button></Link>
             </div>
-          </div>
-          <div className="md:w-1/2 relative h-64 md:h-auto min-h-[300px]">
-            <Image 
-              src="https://placehold.co/600x400.png" 
-              alt="Factory gate illustration"
-              data-ai-hint="factory gate logistics"
-              layout="fill"
-              objectFit="cover"
-              className="opacity-90"
-            />
-             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent md:bg-gradient-to-r"></div>
           </div>
         </div>
       </Card>
