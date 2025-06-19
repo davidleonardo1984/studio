@@ -34,9 +34,9 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
   const pdfContentHtml = `
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">COMPROVANTE DE ENTRADA</h2>
-      <div style="text-align: center; margin-bottom: 25px; padding: 15px 15px 5px 15px; border: 2px dashed #333; background-color: #f9f9f9;">
+      <div style="text-align: center; margin-bottom: 25px; padding: 15px; border: 2px dashed #333; background-color: #f9f9f9;">
         <p style="font-family: 'Libre Barcode 39 Text', 'Courier New', monospace; font-size: 48px; text-align: center; margin: 0; color: #000; line-height: 1;">*${entry.id}*</p>
-        <p style="font-size: 9px; text-align: center; margin: 0px 0 10px 0; color: #555;">(CÓDIGO DE BARRAS)</p>
+        <p style="font-size: 9px; text-align: center; margin: 2px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
       </div>
 
       <div style="display: flex; justify-content: space-between; font-size: 11px; line-height: 1.5;">
