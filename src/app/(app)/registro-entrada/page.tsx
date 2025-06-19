@@ -24,14 +24,29 @@ import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores';
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
 const entrySchema = z.object({
-  driverName: z.string().min(1, { message: 'Nome do motorista é obrigatório.' }),
-  assistant1Name: z.string().optional(),
-  assistant2Name: z.string().optional(),
-  transportCompanyName: z.string().min(1, { message: 'Transportadora é obrigatória.' }),
+  driverName: z.string().min(1, { message: 'Nome do motorista é obrigatório.' })
+    .refine(value => personsStore.some(p => p.name.toUpperCase() === value.toUpperCase()), {
+      message: "Motorista não encontrado. Selecione um motorista da lista ou cadastre-o em Cadastros Gerais."
+    }),
+  assistant1Name: z.string().optional().transform(val => val === "" ? undefined : val) // Treat empty string as undefined
+    .refine(value => !value || personsStore.some(p => p.name.toUpperCase() === value.toUpperCase()), {
+      message: "Ajudante 1 não encontrado. Selecione um ajudante da lista ou cadastre-o em Cadastros Gerais."
+    }),
+  assistant2Name: z.string().optional().transform(val => val === "" ? undefined : val) // Treat empty string as undefined
+    .refine(value => !value || personsStore.some(p => p.name.toUpperCase() === value.toUpperCase()), {
+      message: "Ajudante 2 não encontrado. Selecione um ajudante da lista ou cadastre-o em Cadastros Gerais."
+    }),
+  transportCompanyName: z.string().min(1, { message: 'Transportadora é obrigatória.' })
+    .refine(value => transportCompaniesStore.some(tc => tc.name.toUpperCase() === value.toUpperCase()), {
+      message: "Transportadora não encontrada. Selecione uma transportadora da lista ou cadastre-a em Cadastros Gerais."
+    }),
   plate1: z.string().min(7, { message: 'Placa 1 é obrigatória (mín. 7 caracteres).' }).max(8),
   plate2: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 2 inválida (mín. 7 caracteres)."}),
   plate3: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 3 inválida (mín. 7 caracteres)."}),
-  internalDestinationName: z.string().min(1, { message: 'Destino interno é obrigatório.' }),
+  internalDestinationName: z.string().min(1, { message: 'Destino interno é obrigatório.' })
+    .refine(value => internalDestinationsStore.some(id => id.name.toUpperCase() === value.toUpperCase()), {
+      message: "Destino interno não encontrado. Selecione um destino da lista ou cadastre-o em Cadastros Gerais."
+    }),
   movementType: z.string().min(1, { message: 'Tipo de movimentação é obrigatório.' }),
   observation: z.string().max(500, { message: 'Observação muito longa (máx. 500 caracteres).' }).optional(),
 });
@@ -49,7 +64,6 @@ export default function RegistroEntradaPage() {
 
    useEffect(() => {
     const syncWaitingVehicles = () => {
-      // Create string representations for comparison to avoid deep comparison issues.
       const currentWaitingStr = JSON.stringify(currentWaitingVehicles.map(v => v.id).sort());
       const globalWaitingStr = JSON.stringify(waitingYardStore.map(v => v.id).sort());
 
@@ -57,10 +71,10 @@ export default function RegistroEntradaPage() {
         setCurrentWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()));
       }
     };
-    syncWaitingVehicles(); // Initial sync
-    const intervalId = setInterval(syncWaitingVehicles, 2000); // Check every 2 seconds
-    return () => clearInterval(intervalId); // Cleanup interval
-  }, [currentWaitingVehicles]); // Rerun if local currentWaitingVehicles changes, or to ensure consistency
+    syncWaitingVehicles(); 
+    const intervalId = setInterval(syncWaitingVehicles, 2000); 
+    return () => clearInterval(intervalId); 
+  }, [currentWaitingVehicles]); 
 
 
   const form = useForm<VehicleEntryFormData>({
@@ -109,7 +123,6 @@ export default function RegistroEntradaPage() {
 
     if (status === 'aguardando_patio') {
       waitingYardStore.push(newEntry);
-      // setCurrentWaitingVehicles will be updated by the useEffect polling/syncing logic
       toast({
         title: 'Registro Enviado para o Pátio',
         description: `Veículo ${newEntry.plate1} aguardando liberação. Código: ${newEntry.id}`,
@@ -124,7 +137,6 @@ export default function RegistroEntradaPage() {
         className: 'bg-green-600 text-white',
         icon: <CheckCircle className="h-6 w-6 text-white" />,
       });
-      // Simulate printing document
       console.log("Simulando impressão do documento para entrada liberada:", newEntry);
     }
 
@@ -138,7 +150,7 @@ export default function RegistroEntradaPage() {
       v.plate1.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.transportCompanyName.toLowerCase().includes(searchTerm.toLowerCase())
-    ); // Sorting is now handled in useEffect for currentWaitingVehicles
+    ); 
   }, [currentWaitingVehicles, searchTerm]);
 
   const handleApproveEntryAndPrint = (vehicleId: string) => {
@@ -147,10 +159,8 @@ export default function RegistroEntradaPage() {
       const vehicleToApprove = waitingYardStore[vehicleToApproveIndex];
       const updatedVehicle = { ...vehicleToApprove, status: 'entrada_liberada' as 'entrada_liberada' };
       
-      waitingYardStore.splice(vehicleToApproveIndex, 1); // Remove from waiting
-      entriesStore.push(updatedVehicle); // Add to main entries
-
-      // setCurrentWaitingVehicles will be updated by the useEffect polling/syncing logic
+      waitingYardStore.splice(vehicleToApproveIndex, 1); 
+      entriesStore.push(updatedVehicle); 
 
       toast({
         title: 'Entrada Liberada!',
@@ -158,7 +168,6 @@ export default function RegistroEntradaPage() {
         className: 'bg-green-600 text-white',
         icon: <CheckCircle className="h-6 w-6 text-white" />
       });
-      // Simulate printing document
       console.log("Simulando impressão do documento para entrada aprovada do pátio:", updatedVehicle);
     }
   };
@@ -175,42 +184,46 @@ export default function RegistroEntradaPage() {
           <Form {...form}>
             <form className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="driverName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome do Motorista</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Digite ou selecione o motorista" {...field} list="driver-list" />
-                      </FormControl>
-                      <datalist id="driver-list">
-                        {personsStore.map(person => (
-                          <option key={person.id} value={person.name} />
-                        ))}
-                      </datalist>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="transportCompanyName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Transportadora</FormLabel>
-                       <FormControl>
-                        <Input placeholder="Digite ou selecione a transportadora" {...field} list="transport-company-list" />
-                      </FormControl>
-                      <datalist id="transport-company-list">
-                        {transportCompaniesStore.map(company => (
-                          <option key={company.id} value={company.name} />
-                        ))}
-                      </datalist>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormItem>
+                  <FormField
+                    control={form.control}
+                    name="driverName"
+                    render={({ field }) => (
+                      <>
+                        <FormLabel>Nome do Motorista</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Digite ou selecione o motorista" {...field} list="driver-list" />
+                        </FormControl>
+                        <FormMessage />
+                      </>
+                    )}
+                  />
+                  <datalist id="driver-list">
+                    {personsStore.map(person => (
+                      <option key={person.id} value={person.name} />
+                    ))}
+                  </datalist>
+                </FormItem>
+                <FormItem>
+                    <FormField
+                    control={form.control}
+                    name="transportCompanyName"
+                    render={({ field }) => (
+                        <>
+                        <FormLabel>Transportadora</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Digite ou selecione a transportadora" {...field} list="transport-company-list" />
+                        </FormControl>
+                        <FormMessage />
+                        </>
+                    )}
+                    />
+                    <datalist id="transport-company-list">
+                    {transportCompaniesStore.map(company => (
+                        <option key={company.id} value={company.name} />
+                    ))}
+                    </datalist>
+                </FormItem>
               </div>
 
               <Button type="button" variant="outline" size="sm" onClick={() => setShowAssistants(!showAssistants)}>
@@ -219,38 +232,41 @@ export default function RegistroEntradaPage() {
 
               {showAssistants && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-md">
-                  <FormField
-                    control={form.control}
-                    name="assistant1Name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ajudante 1 (Opcional)</FormLabel>
-                         <FormControl>
-                          <Input placeholder="Digite ou selecione o ajudante 1" {...field} list="assistant-list" />
-                        </FormControl>
+                    <FormItem>
+                        <FormField
+                        control={form.control}
+                        name="assistant1Name"
+                        render={({ field }) => (
+                            <>
+                            <FormLabel>Ajudante 1 (Opcional)</FormLabel>
+                            <FormControl>
+                            <Input placeholder="Digite ou selecione o ajudante 1" {...field} list="assistant-list" />
+                            </FormControl>
+                            <FormMessage />
+                            </>
+                        )}
+                        />
                         <datalist id="assistant-list">
-                          {personsStore.map(person => (
-                              <option key={person.id} value={person.name} />
-                          ))}
+                        {personsStore.map(person => (
+                            <option key={person.id} value={person.name} />
+                        ))}
                         </datalist>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="assistant2Name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ajudante 2 (Opcional)</FormLabel>
-                         <FormControl>
-                           <Input placeholder="Digite ou selecione o ajudante 2" {...field} list="assistant-list" />
-                        </FormControl>
-                        {/* Re-uses assistant-list datalist defined above or can have its own if source is different */}
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    </FormItem>
+                    <FormItem>
+                        <FormField
+                        control={form.control}
+                        name="assistant2Name"
+                        render={({ field }) => (
+                            <>
+                            <FormLabel>Ajudante 2 (Opcional)</FormLabel>
+                            <FormControl>
+                            <Input placeholder="Digite ou selecione o ajudante 2" {...field} list="assistant-list" />
+                            </FormControl>
+                            <FormMessage />
+                            </>
+                        )}
+                        />
+                    </FormItem>
                 </div>
               )}
 
@@ -291,24 +307,26 @@ export default function RegistroEntradaPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <FormField
-                  control={form.control}
-                  name="internalDestinationName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Destino Interno</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Digite ou selecione o destino" {...field} list="internal-destination-list" />
-                      </FormControl>
-                      <datalist id="internal-destination-list">
-                        {internalDestinationsStore.map(dest => (
-                          <option key={dest.id} value={dest.name} />
-                        ))}
-                      </datalist>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormItem>
+                    <FormField
+                    control={form.control}
+                    name="internalDestinationName"
+                    render={({ field }) => (
+                        <>
+                        <FormLabel>Destino Interno</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Digite ou selecione o destino" {...field} list="internal-destination-list" />
+                        </FormControl>
+                        <FormMessage />
+                        </>
+                    )}
+                    />
+                    <datalist id="internal-destination-list">
+                    {internalDestinationsStore.map(dest => (
+                        <option key={dest.id} value={dest.name} />
+                    ))}
+                    </datalist>
+                </FormItem>
                 <FormField
                   control={form.control}
                   name="movementType"
@@ -445,3 +463,4 @@ export default function RegistroEntradaPage() {
     </div>
   );
 }
+
