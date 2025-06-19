@@ -156,7 +156,11 @@ export default function HistoricoAcessoPage() {
             escapeCsvField(e.observation || ''),
             escapeCsvField(new Date(e.entryTimestamp).toLocaleString('pt-BR')),
             escapeCsvField(e.exitTimestamp ? new Date(e.exitTimestamp).toLocaleString('pt-BR') : ''),
-            escapeCsvField(e.status),
+            escapeCsvField(
+                e.status === 'saiu' ? 'Saiu' :
+                e.status === 'entrada_liberada' ? 'Na fábrica' :
+                'No pátio'
+            ),
             escapeCsvField(e.registeredBy)
         ].join(','))
     ];
@@ -317,7 +321,7 @@ export default function HistoricoAcessoPage() {
                               entry.status === 'entrada_liberada' ? 'bg-green-100 text-green-700' :
                               'bg-yellow-100 text-yellow-700'
                           }`}>
-                              {entry.status === 'saiu' ? 'SAIU' : entry.status === 'entrada_liberada' ? 'DENTRO DA FÁBRICA' : 'AGUARDANDO PÁTIO'}
+                              {entry.status === 'saiu' ? 'Saiu' : entry.status === 'entrada_liberada' ? 'Na fábrica' : 'No pátio'}
                           </span>
                       </TableCell>
                       <TableCell className="text-right">
@@ -383,7 +387,7 @@ export default function HistoricoAcessoPage() {
                     <TableCell>{new Date(entry.entryTimestamp).toLocaleString('pt-BR')}</TableCell>
                      <TableCell>
                         <span className="px-2 py-1 text-xs rounded-full whitespace-nowrap bg-green-100 text-green-700">
-                            LIBERADO
+                            Na fábrica
                         </span>
                     </TableCell>
                     <TableCell className="text-right">
