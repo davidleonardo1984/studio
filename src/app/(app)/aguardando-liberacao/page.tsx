@@ -20,7 +20,7 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
   const pdfContentHtml = `
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">COMPROVANTE DE ENTRADA</h2>
-      <div style="text-align: center; margin-bottom: 25px; padding: 15px; border: 2px dashed #333; background-color: #f9f9f9;">
+      <div style="text-align: center; margin-bottom: 25px; padding: 10px 15px 15px 15px; border: 2px dashed #333; background-color: #f9f9f9;">
         <p style="font-family: 'Libre Barcode 39 Text', 'Courier New', monospace; font-size: 48px; text-align: center; margin: 0; color: #000; line-height: 0.9;">*${entry.id}*</p>
         <p style="font-size: 9px; text-align: center; margin: 2px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
       </div>
@@ -57,12 +57,12 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
 
       <div style="margin-top: 20px; font-size: 11px; page-break-inside: avoid; border: 1px solid #ddd; padding: 15px 10px; border-radius: 4px;">
         <div style="display: inline-block; width: 45%; margin-right: 5%;">
-          <hr style="border: 0; border-top: 1px solid #333; margin-bottom: 5px;" />
-          <p style="text-align: center; margin: 0;">Assinatura Responsável</p>
+          <p style="text-align: center; margin: 0 0 5px 0;">Assinatura Responsável</p>
+          <hr style="border: 0; border-top: 1px solid #333; margin-bottom: 0;" />
         </div>
         <div style="display: inline-block; width: 45%;">
-          <hr style="border: 0; border-top: 1px solid #333; margin-bottom: 5px;" />
-          <p style="text-align: center; margin: 0;">Registro</p>
+          <p style="text-align: center; margin: 0 0 5px 0;">Registro</p>
+          <hr style="border: 0; border-top: 1px solid #333; margin-bottom: 0;" />
         </div>
       </div>
 
