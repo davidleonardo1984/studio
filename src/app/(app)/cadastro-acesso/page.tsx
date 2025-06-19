@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -31,7 +32,7 @@ import {
 const userAccessSchema = z.object({
   name: z.string().min(3, { message: 'Nome é obrigatório (mín. 3 caracteres).' }),
   login: z.string().min(3, { message: 'Login é obrigatório (mín. 3 caracteres).' }),
-  password: z.string().min(6, { message: 'Senha deve ter no mínimo 6 caracteres.' }),
+  password: z.string().optional().refine(val => !val || val.length >= 6, { message: 'Senha deve ter no mínimo 6 caracteres se fornecida.'}),
   role: z.enum(['admin', 'user'], { required_error: 'Perfil é obrigatório.' }),
 });
 
@@ -79,12 +80,15 @@ export default function CadastroAcessoPage() {
 
   const onSubmit = (data: UserAccessFormData) => {
     if (editingUser) {
-      // Update existing user
+      // Validate password for existing user only if provided
+      if (data.password && data.password.length < 6) {
+         form.setError("password", {type: "manual", message: "Nova senha deve ter no mínimo 6 caracteres."});
+         return;
+      }
       const updatedUserData: User = {
         ...editingUser,
         name: data.name,
         login: data.login,
-        // Password update logic: only if provided
         ...(data.password && { password: data.password }), 
         role: data.role as UserRole,
       };
@@ -92,12 +96,17 @@ export default function CadastroAcessoPage() {
       if (success) {
         toast({ title: 'Usuário Atualizado!', description: `Usuário ${data.login} foi atualizado.` });
       } else {
-        // This case might not happen with current simple updateUser logic
-        toast({ variant: "destructive", title: 'Erro ao Atualizar', description: `Não foi possível atualizar o usuário ${data.login}.` });
+        form.setError("login", {type: "manual", message: "Este login já está em uso por outro usuário."});
+        toast({ variant: "destructive", title: 'Erro ao Atualizar', description: `Login ${data.login} já está em uso.` });
+        return;
       }
       setEditingUser(null);
     } else {
-      // Add new user
+      // Validate password for new user
+      if (!data.password || data.password.length < 6) {
+        form.setError("password", {type: "manual", message: "Senha é obrigatória e deve ter no mínimo 6 caracteres."});
+        return;
+      }
       if (findUserByLogin(data.login)) {
         form.setError("login", {type: "manual", message: "Este login já está em uso."});
         toast({ variant: 'destructive', title: 'Erro de Cadastro', description: 'Login já existe. Escolha outro.' });
@@ -107,14 +116,16 @@ export default function CadastroAcessoPage() {
         id: Date.now().toString(), // Simple ID for demo
         name: data.name,
         login: data.login,
-        password: data.password,
+        password: data.password, // Password is now validated
         role: data.role as UserRole,
       };
       const success = addUser(newUser);
       if(success) {
         toast({ title: 'Usuário Cadastrado!', description: `Usuário ${data.login} foi criado com sucesso.` });
       } else {
+        // This case should be caught by findUserByLogin above
         toast({ variant: 'destructive', title: 'Erro de Cadastro', description: 'Login já existe. Escolha outro.' });
+        return;
       }
     }
     setShowForm(false);
@@ -164,7 +175,7 @@ export default function CadastroAcessoPage() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Maria Souza" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="login" render={({ field }) => ( <FormItem><FormLabel>Login de Acesso</FormLabel><FormControl><Input placeholder="Ex: maria.souza" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="login" render={({ field }) => ( <FormItem><FormLabel>Login de Acesso</FormLabel><FormControl><Input placeholder="Ex: maria.souza" {...field} disabled={!!editingUser && editingUser.login.toUpperCase() === 'ADMIN'} /></FormControl><FormMessage /></FormItem>)} />
                 </div>
                 <FormField
                   control={form.control}
@@ -197,7 +208,7 @@ export default function CadastroAcessoPage() {
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Perfil de Acesso</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!!editingUser && editingUser.login.toUpperCase() === 'ADMIN'}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Selecione o perfil" /></SelectTrigger></FormControl>
                             <SelectContent>
                                 <SelectItem value="user">Usuário</SelectItem>
@@ -243,8 +254,7 @@ export default function CadastroAcessoPage() {
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(u)} title="Editar">
                         <Edit2 className="h-4 w-4 text-blue-600" />
                       </Button>
-                      {/* Admin cannot delete self, and delete logic is not fully implemented in AuthContext for this scope */}
-                       {user?.login !== u.login && (
+                       {user?.login !== u.login && u.login.toUpperCase() !== 'ADMIN' && (
                            <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" title="Excluir" disabled={true}> {/* Disabled for now */}
@@ -270,3 +280,4 @@ export default function CadastroAcessoPage() {
     </div>
   );
 }
+

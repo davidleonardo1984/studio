@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -37,6 +38,7 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
+    // The login function in AuthContext now handles case-insensitivity for 'ADMIN'
     const success = await login(data.login, data.password);
     setIsLoading(false);
 
@@ -77,7 +79,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Usuário</FormLabel>
                     <FormControl>
-                      <Input placeholder="admin" {...field} />
+                      <Input placeholder="ADMIN" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
