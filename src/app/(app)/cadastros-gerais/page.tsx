@@ -27,13 +27,13 @@ import {
 } from "@/components/ui/alert-dialog";
 
 // Schemas for forms
-const driverSchema = z.object({
+const personSchema = z.object({
   name: z.string().min(3, 'Nome é obrigatório (mín. 3 caracteres).'),
   cpf: z.string().length(11, 'CPF deve ter 11 dígitos.').regex(/^\d+$/, 'CPF deve conter apenas números.'),
   cnh: z.string().optional(),
   phone: z.string().optional(),
 });
-type DriverFormData = z.infer<typeof driverSchema>;
+type PersonFormData = z.infer<typeof personSchema>;
 
 const transportCompanySchema = z.object({
   name: z.string().min(3, 'Nome da transportadora é obrigatório (mín. 3 caracteres).'),
@@ -47,7 +47,7 @@ type InternalDestinationFormData = z.infer<typeof internalDestinationSchema>;
 
 
 // Mock data stores (replace with API/Firebase calls)
-let driversStore: Driver[] = [];
+let personsStore: Driver[] = []; // Renamed from driversStore
 let transportCompaniesStore: TransportCompany[] = [];
 let internalDestinationsStore: InternalDestination[] = [];
 
@@ -162,36 +162,73 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
 
 
 export default function CadastrosGeraisPage() {
-  const [drivers, setDrivers] = useState<Driver[]>(driversStore);
+  const [persons, setPersons] = useState<Driver[]>(personsStore); // Renamed from drivers
   const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>(transportCompaniesStore);
   const [internalDestinations, setInternalDestinations] = useState<InternalDestination[]>(internalDestinationsStore);
 
-  useEffect(() => { driversStore = drivers }, [drivers]);
+  useEffect(() => { personsStore = persons }, [persons]);
   useEffect(() => { transportCompaniesStore = transportCompanies }, [transportCompanies]);
   useEffect(() => { internalDestinationsStore = internalDestinations }, [internalDestinations]);
   
-  const renderDriverFormFields = (form: any) => (
+  const formatDisplayPhoneNumber = (val: string): string => {
+    if (typeof val !== 'string' || !val) return "";
+    const digits = val.replace(/\D/g, ""); // Keep only digits
+
+    if (digits.length === 0) return "";
+    if (digits.length === 1) return `(${digits[0]}`; // (X
+    // For (XX)YYYYYYYYY (total 11 digits, formatted length 13)
+    return `(${digits.substring(0, 2)})${digits.substring(2, 11)}`;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (value: string) => void) => {
+    let rawValue = e.target.value.replace(/\D/g, "");
+    if (rawValue.length > 11) { // Limit raw digits to 11
+      rawValue = rawValue.substring(0, 11);
+    }
+    fieldOnChange(rawValue); // Store raw digits
+  };
+
+  const renderPersonFormFields = (form: any) => (
     <>
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} maxLength={11} /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} /></FormControl><FormMessage /></FormItem>)} />
-      <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>Telefone (Opcional)</FormLabel><FormControl><Input placeholder="(00) 91234-5678" {...field} /></FormControl><FormMessage /></FormItem>)} />
+      <FormField 
+        control={form.control} 
+        name="phone" 
+        render={({ field }) => ( 
+          <FormItem>
+            <FormLabel>Telefone (Opcional)</FormLabel>
+            <FormControl>
+              <Input 
+                placeholder="(XX)XXXXXXXXX" 
+                {...field} 
+                value={formatDisplayPhoneNumber(field.value || "")}
+                onChange={(e) => handlePhoneChange(e, field.onChange)}
+                type="tel"
+                maxLength={13} 
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} 
+      />
     </>
   );
 
-  const renderDriverTableRow = (driver: Driver, index: number, onDelete: (id: string) => void, onEdit: (item: Driver) => void) => (
-    <TableRow key={driver.id}>
-      <TableCell>{driver.name}</TableCell>
-      <TableCell>{driver.cpf}</TableCell>
-      <TableCell>{driver.cnh || 'N/A'}</TableCell>
-      <TableCell>{driver.phone || 'N/A'}</TableCell>
+  const renderPersonTableRow = (person: Driver, index: number, onDelete: (id: string) => void, onEdit: (item: Driver) => void) => (
+    <TableRow key={person.id}>
+      <TableCell>{person.name}</TableCell>
+      <TableCell>{person.cpf}</TableCell>
+      <TableCell>{person.cnh || 'N/A'}</TableCell>
+      <TableCell>{person.phone ? formatDisplayPhoneNumber(person.phone) : 'N/A'}</TableCell>
       <TableCell className="text-right space-x-2">
-        <Button variant="ghost" size="icon" onClick={() => onEdit(driver)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
+        <Button variant="ghost" size="icon" onClick={() => onEdit(person)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
         <AlertDialog>
             <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
             <AlertDialogContent>
-                <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {driver.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(driver.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
+                <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {person.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(person.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
       </TableCell>
@@ -249,23 +286,23 @@ export default function CadastrosGeraisPage() {
         <h1 className="text-3xl font-bold text-primary font-headline">Cadastros Gerais</h1>
         <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras e destinos internos.</p>
       </div>
-      <Tabs defaultValue="drivers" className="w-full">
+      <Tabs defaultValue="persons" className="w-full">
         <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 mb-6"> 
-          <TabsTrigger value="drivers" className="flex items-center gap-2"><Users className="h-4 w-4" /> Motoristas e Ajudantes</TabsTrigger> 
+          <TabsTrigger value="persons" className="flex items-center gap-2"><Users className="h-4 w-4" /> Motoristas e Ajudantes</TabsTrigger> 
           <TabsTrigger value="transportCompanies" className="flex items-center gap-2"><Truck className="h-4 w-4" />Transportadoras</TabsTrigger>
           <TabsTrigger value="internalDestinations" className="flex items-center gap-2"><MapPin className="h-4 w-4" />Destinos Internos</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="drivers">
+        <TabsContent value="persons">
           <CadastroSection
             title="Pessoa" 
             icon={Users} 
-            data={drivers} 
-            setData={setDrivers}
-            formSchema={driverSchema}
-            formFields={renderDriverFormFields}
+            data={persons} 
+            setData={setPersons}
+            formSchema={personSchema}
+            formFields={renderPersonFormFields}
             tableHeaders={['Nome', 'CPF', 'CNH', 'Telefone']}
-            renderTableRow={renderDriverTableRow}
+            renderTableRow={renderPersonTableRow}
             defaultValues={{ name: '', cpf: '', cnh: '', phone: '' }}
           />
         </TabsContent>
@@ -302,9 +339,9 @@ export default function CadastrosGeraisPage() {
 
 // Initialize with some mock data for development if stores are empty
 if (process.env.NODE_ENV === 'development') {
-    if (driversStore.length === 0) {
-        driversStore.push({ id: 'd1', name: 'Carlos Pereira (Motorista)', cpf: '11122233344', cnh: '123456789', phone: '11999998888' });
-        driversStore.push({ id: 'a1', name: 'Joana Silva (Ajudante)', cpf: '44455566677', cnh: '987654321', phone: '11988887777' }); 
+    if (personsStore.length === 0) {
+        personsStore.push({ id: 'd1', name: 'Carlos Pereira (Motorista)', cpf: '11122233344', cnh: '123456789', phone: '11999998888' });
+        personsStore.push({ id: 'a1', name: 'Joana Silva (Ajudante)', cpf: '44455566677', cnh: '987654321', phone: '11988887777' }); 
     }
     if (transportCompaniesStore.length === 0) {
         transportCompaniesStore.push({ id: 'tc1', name: 'Logistica Veloz Ltda' });
