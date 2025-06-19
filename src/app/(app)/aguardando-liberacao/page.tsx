@@ -22,26 +22,38 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">COMPROVANTE DE ENTRADA</h2>
       <div style="text-align: center; margin-bottom: 25px; padding: 15px; border: 2px dashed #333; background-color: #f9f9f9;">
         <p style="font-size: 32px; font-weight: bold; letter-spacing: 3px; margin: 0; color: #000;">${entry.id}</p>
-        <p style="font-size: 10px; margin: 5px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
+        <p style="font-size: 9px; margin: 5px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
       </div>
-      <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-        <tbody>
-          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold; width: 150px;">Motorista:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.driverName}</td></tr>
-          ${entry.assistant1Name ? `<tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Ajudante 1:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.assistant1Name}</td></tr>` : ''}
-          ${entry.assistant2Name ? `<tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Ajudante 2:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.assistant2Name}</td></tr>` : ''}
-          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Transportadora:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.transportCompanyName}</td></tr>
-          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Placa 1:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.plate1}</td></tr>
-          ${entry.plate2 ? `<tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Placa 2:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.plate2}</td></tr>` : ''}
-          ${entry.plate3 ? `<tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Placa 3:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.plate3}</td></tr>` : ''}
-          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Destino Interno:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.internalDestinationName}</td></tr>
-          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Tipo Mov.:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.movementType}</td></tr>
-          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Observação:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.observation || '-'}</td></tr>
-          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Data/Hora Chegada:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</td></tr>
-          ${entry.liberationTimestamp ? `<tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Data/Hora Liberação:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(entry.liberationTimestamp).toLocaleString('pt-BR')}</td></tr>` : ''}
-          <tr><td style="padding: 6px; font-weight: bold;">Registrado Por:</td><td style="padding: 6px;">${entry.registeredBy}</td></tr>
-        </tbody>
-      </table>
-      <p style="text-align: center; font-size: 10px; margin-top: 25px; color: #777;">Portaria Única RES - Comprovante de Entrada</p>
+
+      <div style="display: flex; justify-content: space-between; font-size: 11px; line-height: 1.5;">
+        <div style="width: 55%;">
+          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Motorista:</span> ${entry.driverName}</p>
+          ${entry.assistant1Name ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Ajudante 1:</span> ${entry.assistant1Name}</p>` : ''}
+          ${entry.assistant2Name ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Ajudante 2:</span> ${entry.assistant2Name}</p>` : ''}
+          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 1:</span> ${entry.plate1}</p>
+          ${entry.plate2 ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 2:</span> ${entry.plate2}</p>` : ''}
+          ${entry.plate3 ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 3:</span> ${entry.plate3}</p>` : ''}
+        </div>
+        <div style="width: 40%; text-align: left;">
+          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora:</span>${entry.transportCompanyName}</p>
+          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Destino Interno:</span>${entry.internalDestinationName}</p>
+          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Tipo Mov.:</span>${entry.movementType}</p>
+        </div>
+      </div>
+      
+      <div style="font-size: 11px; line-height: 1.5; margin-top: 5px;">
+        <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Observação:</span> ${entry.observation || '-'}</p>
+      </div>
+      
+      <hr style="margin-top: 15px; margin-bottom: 10px; border: 0; border-top: 1px solid #eee;" />
+      
+      <div style="font-size: 11px; line-height: 1.5;">
+        <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 140px; display: inline-block;">Data/Hora Chegada:</span> ${new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</p>
+        ${entry.liberationTimestamp ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 140px; display: inline-block;">Data/Hora Liberação:</span> ${new Date(entry.liberationTimestamp).toLocaleString('pt-BR')}</p>` : ''}
+        <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 140px; display: inline-block;">Registrado Por:</span> ${entry.registeredBy}</p>
+      </div>
+
+      <p style="text-align: center; font-size: 9px; margin-top: 25px; color: #777;">Portaria Única RES - Comprovante de Entrada</p>
     </div>
   `;
 
@@ -55,6 +67,7 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
     const contentElement = document.getElementById(`pdf-content-${entry.id}`);
     if (!contentElement) {
       console.error('PDF content element not found');
+      document.body.removeChild(hiddenDiv);
       return { success: false, error: 'PDF content element not found' };
     }
     
@@ -134,7 +147,7 @@ export default function AguardandoLiberacaoPage() {
         
         toast({
             title: `Veículo ${updatedVehicle.plate1} Liberado!`,
-            description: `Código: ${updatedVehicle.id}. Gerando documento...`,
+            description: `Aguarde, gerando documento...`,
             className: 'bg-green-600 text-white',
             icon: <CheckCircle className="h-6 w-6 text-white" />
         });
@@ -144,9 +157,9 @@ export default function AguardandoLiberacaoPage() {
         if (pdfResult.success && pdfResult.blobUrl) {
             setPdfPreviewUrl(pdfResult.blobUrl);
             setIsPdfPreviewOpen(true);
-            toast({
-                title: 'Documento Gerado',
-                description: `Documento para ${updatedVehicle.plate1} pronto para visualização e impressão.`,
+             toast({ // Update toast or show new one
+                title: 'Documento Pronto',
+                description: `Documento para ${updatedVehicle.plate1} gerado. Visualize e imprima.`,
             });
         } else {
             toast({
