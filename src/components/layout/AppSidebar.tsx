@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarTrigger,
+  // SidebarTrigger, // Removed import
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -28,12 +28,11 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Painel Inicial', icon: Home },
-  { href: '/registro-entrada', label: 'Registro de Entrada', icon: LogIn }, // This now includes "Aguardando Liberação"
+  { href: '/registro-entrada', label: 'Registro de Entrada', icon: LogIn },
   { href: '/registro-saida', label: 'Registro de Saída', icon: LogOut },
   { href: '/cadastros-gerais', label: 'Cadastros Gerais', icon: Edit3 },
   { href: '/historico-acesso', label: 'Histórico de Acesso', icon: History },
   { href: '/cadastro-acesso', label: 'Cadastro de Acesso', icon: Users, adminOnly: true },
-  // { href: '/aguardando-liberacao', label: 'Aguardando Liberação', icon: ClipboardList }, // Removed
 ];
 
 export function AppSidebar() {
@@ -51,7 +50,7 @@ export function AppSidebar() {
           <ShieldCheck className="h-7 w-7 text-sidebar-primary" />
           <span className="text-lg group-data-[collapsible=icon]:hidden font-headline">PortariaRES</span>
         </Link>
-        <SidebarTrigger className="group-data-[collapsible=icon]:hidden text-sidebar-foreground hover:text-sidebar-primary" />
+        {/* <SidebarTrigger className="group-data-[collapsible=icon]:hidden text-sidebar-foreground hover:text-sidebar-primary" /> */} {/* Removed SidebarTrigger button */}
       </SidebarHeader>
       <SidebarContent asChild>
         <ScrollArea className="flex-1">
