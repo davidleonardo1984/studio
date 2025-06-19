@@ -15,7 +15,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 
-const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; action: 'print_dialog_opened' | 'fallback_new_tab' | 'fallback_downloaded' | 'error'; error?: any }> => {
+const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; action: 'opened_in_new_tab' | 'downloaded_fallback' | 'error'; error?: any }> => {
   const pdfContentHtml = `
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">COMPROVANTE DE ENTRADA</h2>
@@ -56,6 +56,8 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
     return { success: false, action: 'error', error: 'PDF content element not found' };
   }
 
+  let blobUrl: string | null = null;
+
   try {
     const canvas = await html2canvas(contentElement, { scale: 2 });
     const imgData = canvas.toDataURL('image/png');
@@ -66,81 +68,25 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
     const imgHeight = canvas.height;
     const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
     const imgX = (pdfWidth - imgWidth * ratio) / 2;
-    const imgY = 15; 
+    const imgY = 15;
 
     pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
     
     const pdfBlob = pdf.output('blob');
-    const blobUrl = URL.createObjectURL(pdfBlob);
+    blobUrl = URL.createObjectURL(pdfBlob);
 
-    return new Promise((resolve) => {
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.left = '-9999px';
-      iframe.style.width = '1px';
-      iframe.style.height = '1px';
-      iframe.src = blobUrl;
-
-      let fallbackTimeout: NodeJS.Timeout;
-
-      iframe.onload = () => {
-        clearTimeout(fallbackTimeout); // Clear fallback timeout if iframe loads
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-          resolve({ success: true, action: 'print_dialog_opened' });
-        } catch (e) {
-          console.error("Error triggering print dialog from iframe:", e);
-          const newWindow = window.open(blobUrl, '_blank');
-          if (newWindow) {
-            resolve({ success: true, action: 'fallback_new_tab' });
-          } else {
-            pdf.save(`comprovante-entrada-${entry.id}.pdf`);
-            resolve({ success: true, action: 'fallback_downloaded' });
-          }
-        } finally {
-           setTimeout(() => { // Delay cleanup
-            if (document.body.contains(iframe)) document.body.removeChild(iframe);
-            URL.revokeObjectURL(blobUrl);
-          }, 3000);
-        }
-      };
-
-      iframe.onerror = () => {
-        clearTimeout(fallbackTimeout);
-        console.error("Iframe failed to load PDF for printing.");
-        if (document.body.contains(iframe)) document.body.removeChild(iframe);
-        const newWindow = window.open(blobUrl, '_blank');
-        if (newWindow) {
-          resolve({ success: true, action: 'fallback_new_tab' });
-        } else {
-          pdf.save(`comprovante-entrada-${entry.id}.pdf`);
-          resolve({ success: true, action: 'fallback_downloaded' });
-        }
-        URL.revokeObjectURL(blobUrl); // Ensure revoked on error too
-      };
-      
-      document.body.appendChild(iframe);
-
-      // Fallback if iframe.onload doesn't fire (e.g. some sandboxing issues)
-      fallbackTimeout = setTimeout(() => {
-        if (!iframe.contentWindow && document.body.contains(iframe)) { // Check if onload likely didn't run
-            console.warn("Iframe for printing did not load in time, falling back.");
-            document.body.removeChild(iframe);
-            const newWindow = window.open(blobUrl, '_blank');
-            if (newWindow) {
-                resolve({ success: true, action: 'fallback_new_tab' });
-            } else {
-                pdf.save(`comprovante-entrada-${entry.id}.pdf`);
-                resolve({ success: true, action: 'fallback_downloaded' });
-            }
-            URL.revokeObjectURL(blobUrl);
-        }
-      }, 5000); // 5 seconds timeout
-    });
-
+    const newWindow = window.open(blobUrl, '_blank');
+    if (newWindow) {
+      return { success: true, action: 'opened_in_new_tab' };
+    } else {
+      console.warn("Falha ao abrir PDF em nova aba (bloqueado). Tentando download.");
+      pdf.save(`comprovante-entrada-${entry.id}.pdf`);
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      return { success: true, action: 'downloaded_fallback' };
+    }
   } catch (error) {
-    console.error("Erro ao gerar PDF:", error);
+    console.error("Erro ao gerar ou tentar abrir/baixar PDF:", error);
+    if (blobUrl) URL.revokeObjectURL(blobUrl);
     return { success: false, action: 'error', error };
   } finally {
     if (document.body.contains(hiddenDiv)) document.body.removeChild(hiddenDiv);
@@ -196,16 +142,13 @@ export default function AguardandoLiberacaoPage() {
             let title = 'Documento Gerado';
             let description = `Veículo ${updatedVehicle.plate1} liberado. Código: ${updatedVehicle.id}.`;
 
-            if (pdfResult.action === 'print_dialog_opened') {
-                title = 'Documento Enviado para Impressão!';
-                description = `Verifique a caixa de diálogo de impressão. Veículo ${updatedVehicle.plate1}.`;
-            } else if (pdfResult.action === 'fallback_new_tab') {
+            if (pdfResult.action === 'opened_in_new_tab') {
                 title = 'PDF Aberto em Nova Aba';
-                description = `Impressão direta falhou. Veículo ${updatedVehicle.plate1}, Código: ${updatedVehicle.id}.`;
+                description = `O PDF para ${updatedVehicle.plate1} foi aberto. Você pode imprimir a partir dele.`;
                  toast({ variant: 'default', title: 'Aviso', description: 'O PDF foi aberto em nova aba. Você pode imprimir a partir dela.'});
-            } else if (pdfResult.action === 'fallback_downloaded') {
+            } else if (pdfResult.action === 'downloaded_fallback') {
                 title = 'PDF Baixado';
-                description = `Impressão e abertura em nova aba falharam. Veículo ${updatedVehicle.plate1}, Código: ${updatedVehicle.id}.`;
+                description = `Abertura em nova aba falhou. O PDF para ${updatedVehicle.plate1} foi baixado.`;
                 toast({ variant: 'default', title: 'Aviso', description: 'O PDF foi baixado. Verifique seus downloads.'});
             }
             toast({
