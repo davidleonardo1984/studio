@@ -29,7 +29,7 @@ import {
 // Mock data - replace with API/Firebase calls
 // Using entriesStore and waitingYardStore from registro-entrada for demo purposes.
 // This is a major simplification.
-let entriesStore: VehicleEntry[] = []; 
+let entriesStore: VehicleEntry[] = [];
 let waitingYardStore: VehicleEntry[] = [];
 
 // Populate with some mock data for development if stores are empty
@@ -69,7 +69,7 @@ const escapeCsvField = (field: any): string => {
 export default function HistoricoAcessoPage() {
   const { toast } = useToast();
   const [allEntries, setAllEntries] = useState<VehicleEntry[]>([...entriesStore, ...waitingYardStore]);
-  
+
   const [filters, setFilters] = useState({
     transportCompany: '',
     plate: '',
@@ -80,34 +80,39 @@ export default function HistoricoAcessoPage() {
 
   const filteredEntries = useMemo(() => {
     let entries = allEntries;
-    if (filters.transportCompany) {
-      entries = entries.filter(e => e.transportCompanyName.toLowerCase().includes(filters.transportCompany.toLowerCase()));
-    }
-    if (filters.plate) {
-      entries = entries.filter(e => 
-        e.plate1.toLowerCase().includes(filters.plate.toLowerCase()) ||
-        e.plate2?.toLowerCase().includes(filters.plate.toLowerCase()) ||
-        e.plate3?.toLowerCase().includes(filters.plate.toLowerCase())
-      );
-    }
-    if (filters.dateRange?.from) {
-        entries = entries.filter(e => new Date(e.entryTimestamp) >= (filters.dateRange?.from as Date));
-    }
-    if (filters.dateRange?.to) {
-        const toDate = new Date(filters.dateRange.to);
-        toDate.setHours(23, 59, 59, 999); // Include the whole "to" day
-        entries = entries.filter(e => new Date(e.entryTimestamp) <= toDate);
-    }
+
     if (searchTerm) {
-        entries = entries.filter(e => 
-            Object.values(e).some(val => 
-                String(val).toLowerCase().includes(searchTerm.toLowerCase())
-            )
+      // If searchTerm is used, it's the dominant filter.
+      // The results will ONLY be based on searchTerm.
+      entries = entries.filter(e =>
+        Object.values(e).some(val =>
+          String(val).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    } else {
+      // If searchTerm is not used, apply the other filters.
+      if (filters.transportCompany) {
+        entries = entries.filter(e => e.transportCompanyName.toLowerCase().includes(filters.transportCompany.toLowerCase()));
+      }
+      if (filters.plate) {
+        entries = entries.filter(e =>
+          e.plate1.toLowerCase().includes(filters.plate.toLowerCase()) ||
+          e.plate2?.toLowerCase().includes(filters.plate.toLowerCase()) ||
+          e.plate3?.toLowerCase().includes(filters.plate.toLowerCase())
         );
+      }
+      if (filters.dateRange?.from) {
+          entries = entries.filter(e => new Date(e.entryTimestamp) >= (filters.dateRange?.from as Date));
+      }
+      if (filters.dateRange?.to) {
+          const toDate = new Date(filters.dateRange.to);
+          toDate.setHours(23, 59, 59, 999); // Include the whole "to" day
+          entries = entries.filter(e => new Date(e.entryTimestamp) <= toDate);
+      }
     }
     return entries.sort((a,b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
   }, [allEntries, filters, searchTerm]);
-  
+
   const vehiclesInsideFactory = useMemo(() => {
     return allEntries.filter(e => e.status === 'entrada_liberada' || e.status === 'aguardando_patio');
   }, [allEntries]);
@@ -170,7 +175,7 @@ export default function HistoricoAcessoPage() {
     waitingYardStore = updatedEntries.filter(e => e.status === 'aguardando_patio'); // crude update
     toast({ title: 'Registros Antigos Excluídos', description: 'Registros com mais de 365 dias e status "saiu" foram removidos.' });
   };
-  
+
   const handlePrintEntry = (entry: VehicleEntry) => {
     // In a real app, this would open a formatted print view or generate a PDF
     console.log("Printing entry:", entry);
@@ -182,7 +187,7 @@ export default function HistoricoAcessoPage() {
     const companies = new Set(allEntries.map(e => e.transportCompanyName));
     return Array.from(companies);
   }, [allEntries]);
-  
+
   const resetFilters = () => {
     setFilters({ transportCompany: '', plate: '', dateRange: undefined });
     setSearchTerm('');
@@ -222,8 +227,8 @@ export default function HistoricoAcessoPage() {
             </div>
             <div className="space-y-1">
               <Label>Período de Entrada</Label>
-              <DatePickerWithRange 
-                date={filters.dateRange} 
+              <DatePickerWithRange
+                date={filters.dateRange}
                 onDateChange={(range) => setFilters(prev => ({...prev, dateRange: range}))}
                 className="w-full"
               />
@@ -246,7 +251,7 @@ export default function HistoricoAcessoPage() {
           </AlertDialog>
         </CardFooter>
       </Card>
-      
+
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-primary">Resultados ({filteredEntries.length})</CardTitle>
@@ -280,7 +285,7 @@ export default function HistoricoAcessoPage() {
                         <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
                             entry.status === 'saiu' ? 'bg-red-100 text-red-700' :
                             entry.status === 'entrada_liberada' ? 'bg-green-100 text-green-700' :
-                            'bg-yellow-100 text-yellow-700' 
+                            'bg-yellow-100 text-yellow-700'
                         }`}>
                             {entry.status === 'saiu' ? 'SAIU' : entry.status === 'entrada_liberada' ? 'DENTRO DA FÁBRICA' : 'AGUARDANDO PÁTIO'}
                         </span>
@@ -329,7 +334,7 @@ export default function HistoricoAcessoPage() {
                     <TableCell>{new Date(entry.entryTimestamp).toLocaleString('pt-BR')}</TableCell>
                      <TableCell>
                         <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
-                            entry.status === 'entrada_liberada' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' 
+                            entry.status === 'entrada_liberada' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                         }`}>
                             {entry.status === 'entrada_liberada' ? 'LIBERADO' : 'AGUARDANDO'}
                         </span>
@@ -352,4 +357,3 @@ export default function HistoricoAcessoPage() {
     </div>
   );
 }
-
