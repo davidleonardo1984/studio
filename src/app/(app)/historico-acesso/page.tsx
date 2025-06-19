@@ -40,26 +40,19 @@ const escapeCsvField = (field: any): string => {
 
 export default function HistoricoAcessoPage() {
   const { toast } = useToast();
-  // Combine stores for a complete history view.
-  // This local combined state is fine for display, actual data modification happens in original stores.
   const [allEntries, setAllEntries] = useState<VehicleEntry[]>([]);
 
   useEffect(() => {
-    // Function to update local state from global stores
     const syncAllEntries = () => {
       const combined = [...entriesStore, ...waitingYardStore];
-      // Basic check to see if an update is needed.
       if (JSON.stringify(allEntries) !== JSON.stringify(combined)) {
         setAllEntries(combined);
       }
     };
-    syncAllEntries(); // Initial sync
-
-    // Optionally, set up an interval for periodic checks
-    const intervalId = setInterval(syncAllEntries, 2000); // Check every 2 seconds
-
-    return () => clearInterval(intervalId); // Cleanup interval
-  }, [allEntries]); // Rerun if local allEntries changes
+    syncAllEntries();
+    const intervalId = setInterval(syncAllEntries, 2000);
+    return () => clearInterval(intervalId);
+  }, [allEntries]);
 
 
   const [filters, setFilters] = useState({
@@ -69,45 +62,75 @@ export default function HistoricoAcessoPage() {
   });
   const [searchTerm, setSearchTerm] = useState('');
 
+  const areAnyFiltersOrSearchActive = useMemo(() => {
+    return (
+        searchTerm.trim() !== '' ||
+        filters.transportCompany.trim() !== '' ||
+        filters.plate.trim() !== '' ||
+        !!filters.dateRange?.from 
+    );
+  }, [searchTerm, filters]);
 
   const filteredEntries = useMemo(() => {
-    let entries = [...allEntries]; // Create a mutable copy for filtering
-
-    if (searchTerm) {
-      entries = entries.filter(e =>
-        Object.values(e).some(val =>
-          String(val).toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
-    } else {
-      if (filters.transportCompany) {
-        entries = entries.filter(e => e.transportCompanyName.toLowerCase().includes(filters.transportCompany.toLowerCase()));
-      }
-      if (filters.plate) {
-        entries = entries.filter(e =>
-          e.plate1.toLowerCase().includes(filters.plate.toLowerCase()) ||
-          e.plate2?.toLowerCase().includes(filters.plate.toLowerCase()) ||
-          e.plate3?.toLowerCase().includes(filters.plate.toLowerCase())
-        );
-      }
-      if (filters.dateRange?.from) {
-          const fromDate = new Date(filters.dateRange.from);
-          fromDate.setHours(0,0,0,0);
-          entries = entries.filter(e => new Date(e.entryTimestamp) >= fromDate);
-      }
-      if (filters.dateRange?.to) {
-          const toDate = new Date(filters.dateRange.to);
-          toDate.setHours(23, 59, 59, 999);
-          entries = entries.filter(e => new Date(e.entryTimestamp) <= toDate);
-      }
+    if (searchTerm.trim()) { // If "Pesquisa Rápida" has a value, it's the ONLY filter
+        const lowerSearchTerm = searchTerm.trim().toLowerCase();
+        return allEntries
+            .filter(e =>
+                Object.values(e).some(val => String(val).toLowerCase().includes(lowerSearchTerm))
+            )
+            .sort((a,b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
     }
-    return entries.sort((a,b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
-  }, [allEntries, filters, searchTerm]);
+
+    // "Pesquisa Rápida" is empty, apply other filters if they are active
+    // Only proceed with filtering if at least one specific filter is active (this is implicitly handled by areAnyFiltersOrSearchActive for display)
+    // but for calculation, we check here.
+    if (!filters.transportCompany.trim() && !filters.plate.trim() && !filters.dateRange?.from) {
+        // If no searchTerm and no specific filters are truly active for filtering, return empty or all based on requirements.
+        // Given areAnyFiltersOrSearchActive will hide this, returning [] if no individual filters active is cleaner.
+        if (!areAnyFiltersOrSearchActive) return []; // Should not happen if areAnyFiltersOrSearchActive handles display
+    }
+
+    let tempEntries = [...allEntries];
+    const lowerPlate = filters.plate.trim().toLowerCase();
+
+    if (filters.transportCompany.trim()) {
+        tempEntries = tempEntries.filter(e => e.transportCompanyName.toLowerCase().includes(filters.transportCompany.trim().toLowerCase()));
+    }
+    if (filters.plate.trim()) {
+        tempEntries = tempEntries.filter(e =>
+            (e.plate1?.toLowerCase() || '').includes(lowerPlate) ||
+            (e.plate2?.toLowerCase() || '').includes(lowerPlate) ||
+            (e.plate3?.toLowerCase() || '').includes(lowerPlate)
+        );
+    }
+    if (filters.dateRange?.from) {
+        const fromDate = new Date(filters.dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        tempEntries = tempEntries.filter(e => new Date(e.entryTimestamp) >= fromDate);
+    }
+    if (filters.dateRange?.to) {
+        const toDate = new Date(filters.dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        tempEntries = tempEntries.filter(e => new Date(e.entryTimestamp) <= toDate);
+    }
+    
+    // If no filters were applied (e.g. all filter strings were empty, dateRange was null)
+    // and searchTerm was also empty, tempEntries would be allEntries.
+    // However, if areAnyFiltersOrSearchActive is false, this won't be displayed.
+    // If specific individual filters were actually empty strings, they won't filter.
+    // To ensure an empty list is returned if NO filters are active (matching areAnyFiltersOrSearchActive logic):
+    if (!filters.transportCompany.trim() && !filters.plate.trim() && !filters.dateRange?.from && !searchTerm.trim()){
+      return [];
+    }
+
+
+    return tempEntries.sort((a, b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
+  }, [allEntries, filters, searchTerm, areAnyFiltersOrSearchActive]);
+
 
   const vehiclesInsideFactory = useMemo(() => {
-    // Filter from 'allEntries' to ensure it reflects the most current combined data
     return allEntries.filter(e => e.status === 'entrada_liberada')
-                     .sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()); // oldest first
+                     .sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime());
   }, [allEntries]);
 
 
@@ -158,19 +181,17 @@ export default function HistoricoAcessoPage() {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-    // Filter entriesStore
     const updatedEntriesStore = entriesStore.filter(e => {
         if (e.status === 'saiu' && e.exitTimestamp) {
             return new Date(e.exitTimestamp) > oneYearAgo;
         }
         return true;
     });
-    entriesStore.length = 0; // Clear original array
-    entriesStore.push(...updatedEntriesStore); // Repopulate with filtered items
+    entriesStore.length = 0; 
+    entriesStore.push(...updatedEntriesStore); 
 
-    // Filter waitingYardStore (though less likely to have old "saiu" records)
     const updatedWaitingYardStore = waitingYardStore.filter(e => {
-        if (e.status === 'saiu' && e.exitTimestamp) { // Should not happen for waiting yard
+        if (e.status === 'saiu' && e.exitTimestamp) { 
             return new Date(e.exitTimestamp) > oneYearAgo;
         }
         return true;
@@ -178,7 +199,7 @@ export default function HistoricoAcessoPage() {
     waitingYardStore.length = 0;
     waitingYardStore.push(...updatedWaitingYardStore);
 
-    setAllEntries([...entriesStore, ...waitingYardStore]); // Update local combined state
+    setAllEntries([...entriesStore, ...waitingYardStore]); 
 
     toast({ title: 'Registros Antigos Excluídos', description: 'Registros com mais de 365 dias e status "saiu" foram removidos.' });
   };
@@ -219,7 +240,7 @@ export default function HistoricoAcessoPage() {
             </div>
              <div className="space-y-1">
                 <Label htmlFor="transportCompanyFilter">Transportadora</Label>
-                <Select value={filters.transportCompany} onValueChange={(value) => setFilters(prev => ({...prev, transportCompany: value === 'all' ? '' : value}))} disabled={!!searchTerm}>
+                <Select value={filters.transportCompany} onValueChange={(value) => setFilters(prev => ({...prev, transportCompany: value === 'all' ? '' : value}))} disabled={!!searchTerm.trim()}>
                     <SelectTrigger id="transportCompanyFilter"><SelectValue placeholder="TODAS TRANSPORTADORAS" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">TODAS TRANSPORTADORAS</SelectItem>
@@ -229,7 +250,7 @@ export default function HistoricoAcessoPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="plateFilter">Placa</Label>
-              <Input id="plateFilter" placeholder="FILTRAR POR PLACA..." value={filters.plate} onChange={(e) => setFilters(prev => ({...prev, plate: e.target.value}))} disabled={!!searchTerm} />
+              <Input id="plateFilter" placeholder="FILTRAR POR PLACA..." value={filters.plate} onChange={(e) => setFilters(prev => ({...prev, plate: e.target.value}))} disabled={!!searchTerm.trim()} />
             </div>
             <div className="space-y-1">
               <Label>Período de Entrada</Label>
@@ -237,7 +258,7 @@ export default function HistoricoAcessoPage() {
                 date={filters.dateRange}
                 onDateChange={(range) => setFilters(prev => ({...prev, dateRange: range}))}
                 className="w-full"
-                disabled={!!searchTerm}
+                disabled={!!searchTerm.trim()}
               />
             </div>
           </div>
@@ -246,7 +267,7 @@ export default function HistoricoAcessoPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-wrap gap-2 justify-end">
-          <Button onClick={handleExportToCSV} variant="default"><Download className="mr-2 h-4 w-4" /> EXPORTAR PARA CSV</Button>
+          <Button onClick={handleExportToCSV} variant="default" disabled={!areAnyFiltersOrSearchActive || filteredEntries.length === 0}><Download className="mr-2 h-4 w-4" /> EXPORTAR PARA CSV</Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
                 <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> EXCLUIR ANTIGOS (+365D)</Button>
@@ -259,59 +280,80 @@ export default function HistoricoAcessoPage() {
         </CardFooter>
       </Card>
 
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-primary">Resultados ({filteredEntries.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredEntries.length > 0 ? (
-            <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID/CÓDIGO</TableHead>
-                  <TableHead>MOTORISTA</TableHead>
-                  <TableHead>TRANSPORTADORA</TableHead>
-                  <TableHead>PLACA 1</TableHead>
-                  <TableHead>ENTRADA</TableHead>
-                  <TableHead>SAÍDA</TableHead>
-                  <TableHead>STATUS</TableHead>
-                  <TableHead className="text-right">AÇÕES</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEntries.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell className="font-mono text-xs">{entry.id}</TableCell>
-                    <TableCell>{entry.driverName}</TableCell>
-                    <TableCell>{entry.transportCompanyName}</TableCell>
-                    <TableCell>{entry.plate1}</TableCell>
-                    <TableCell>{new Date(entry.entryTimestamp).toLocaleString('pt-BR')}</TableCell>
-                    <TableCell>{entry.exitTimestamp ? new Date(entry.exitTimestamp).toLocaleString('pt-BR') : 'N/A'}</TableCell>
-                    <TableCell>
-                        <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
-                            entry.status === 'saiu' ? 'bg-red-100 text-red-700' :
-                            entry.status === 'entrada_liberada' ? 'bg-green-100 text-green-700' :
-                            'bg-yellow-100 text-yellow-700'
-                        }`}>
-                            {entry.status === 'saiu' ? 'SAIU' : entry.status === 'entrada_liberada' ? 'DENTRO DA FÁBRICA' : 'AGUARDANDO PÁTIO'}
-                        </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handlePrintEntry(entry)} title="Reimprimir Documento">
-                        <Printer className="h-4 w-4 text-primary" />
-                      </Button>
-                    </TableCell>
+      {/* Conditional Rendering for Results Section */}
+      {areAnyFiltersOrSearchActive ? (
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-primary">Resultados ({filteredEntries.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {filteredEntries.length > 0 ? (
+              <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID/CÓDIGO</TableHead>
+                    <TableHead>MOTORISTA</TableHead>
+                    <TableHead>TRANSPORTADORA</TableHead>
+                    <TableHead>PLACA 1</TableHead>
+                    <TableHead>ENTRADA</TableHead>
+                    <TableHead>SAÍDA</TableHead>
+                    <TableHead>STATUS</TableHead>
+                    <TableHead className="text-right">AÇÕES</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredEntries.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell className="font-mono text-xs">{entry.id}</TableCell>
+                      <TableCell>{entry.driverName}</TableCell>
+                      <TableCell>{entry.transportCompanyName}</TableCell>
+                      <TableCell>{entry.plate1}</TableCell>
+                      <TableCell>{new Date(entry.entryTimestamp).toLocaleString('pt-BR')}</TableCell>
+                      <TableCell>{entry.exitTimestamp ? new Date(entry.exitTimestamp).toLocaleString('pt-BR') : 'N/A'}</TableCell>
+                      <TableCell>
+                          <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
+                              entry.status === 'saiu' ? 'bg-red-100 text-red-700' :
+                              entry.status === 'entrada_liberada' ? 'bg-green-100 text-green-700' :
+                              'bg-yellow-100 text-yellow-700'
+                          }`}>
+                              {entry.status === 'saiu' ? 'SAIU' : entry.status === 'entrada_liberada' ? 'DENTRO DA FÁBRICA' : 'AGUARDANDO PÁTIO'}
+                          </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handlePrintEntry(entry)} title="Reimprimir Documento">
+                          <Printer className="h-4 w-4 text-primary" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">NENHUM REGISTRO ENCONTRADO COM OS FILTROS APLICADOS.</p>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-primary">Resultados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-12">
+                <Search className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />
+                <p className="text-xl font-medium text-muted-foreground">
+                    APLIQUE UM FILTRO OU FAÇA UMA PESQUISA
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                    Utilize os campos acima para buscar no histórico de acessos.
+                </p>
             </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-8">NENHUM REGISTRO ENCONTRADO COM OS FILTROS APLICADOS.</p>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card className="shadow-lg">
         <CardHeader>
@@ -362,3 +404,4 @@ export default function HistoricoAcessoPage() {
     </div>
   );
 }
+
