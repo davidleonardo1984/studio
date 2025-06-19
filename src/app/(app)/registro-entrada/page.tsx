@@ -16,13 +16,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry } from '@/lib/types';
-import { Save, SendToBack, Clock, CheckCircle, Printer, Search } from 'lucide-react';
+import { Save, SendToBack, Clock, CheckCircle, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // Mock data for dropdowns - in real app, this would come from Cadastros Gerais / API
 const mockTransportCompanies = ['TransAlpha', 'BetaLog', 'CargaExpress', 'GamaTrans'];
 const mockInternalDestinations = ['Almoxarifado A', 'Produção Bloco B', 'Expedição Setor C', 'Pátio Espera', 'Verificação'];
-const mockMovementTypes = ['Carga', 'Descarga', 'Devolução', 'Visita Técnica', 'Manutenção', 'Carga Pendente', 'Inspeção'];
+const mockMovementTypes = ["Carga", "Descarga", "Prestação de Serviço", "Transferencia Interna", "Devolução", "Visita", "Outros"];
 
 // Store entries in memory for this demo
 // This should be replaced with API calls to Firebase in a real app
@@ -449,3 +449,4 @@ export default function RegistroEntradaPage() {
     </div>
   );
 }
+
