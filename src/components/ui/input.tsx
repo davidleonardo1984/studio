@@ -1,23 +1,23 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   prefixIcon?: React.ReactNode;
+  noAutoUppercase?: boolean; // New prop
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, style, onInput, prefixIcon, ...rest }, ref) => {
+  ({ className, type, style, onInput, prefixIcon, noAutoUppercase, ...rest }, ref) => {
     const handleInput = (event: React.FormEvent<HTMLInputElement>) => {
-      // Only apply uppercase to general text inputs. Exclude password, tel, email, etc.
-      const noAutoUppercaseTypes = ['password', 'tel', 'email', 'number', 'url', 'date']; // Add more as needed
-      const currentType = type || 'text'; // Default to 'text' if type is undefined
+      const noAutoUppercaseTypes = ['password', 'tel', 'email', 'number', 'url', 'date'];
+      const currentType = type || 'text';
 
-      if (!noAutoUppercaseTypes.includes(currentType)) {
+      if (!noAutoUppercaseTypes.includes(currentType) && !noAutoUppercase) {
         event.currentTarget.value = event.currentTarget.value.toUpperCase();
       }
       
-      // Call original onInput if it exists
       if (onInput) {
         onInput(event);
       }
@@ -25,9 +25,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     const inputClasses = cn(
       "flex h-10 w-full rounded-md border border-input bg-background py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-      // Uppercase class is conditional based on type, matching handleInput logic
-      !['password', 'tel', 'email', 'number', 'url', 'date'].includes(type || 'text') ? "uppercase" : "",
-      prefixIcon ? "pl-10 pr-3" : "px-3", // Add left padding if prefixIcon exists
+      !['password', 'tel', 'email', 'number', 'url', 'date'].includes(type || 'text') && !noAutoUppercase ? "uppercase" : "",
+      prefixIcon ? "pl-10 pr-3" : "px-3",
       className
     );
 

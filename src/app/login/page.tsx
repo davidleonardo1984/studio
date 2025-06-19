@@ -38,7 +38,7 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-    // The login function in AuthContext now handles case-insensitivity for 'ADMIN'
+    // The login function in AuthContext now handles case-sensitivity for 'admin'
     const success = await login(data.login, data.password);
     setIsLoading(false);
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Usuário</FormLabel>
                     <FormControl>
-                      <Input placeholder="ADMIN" {...field} />
+                      <Input placeholder="admin" {...field} noAutoUppercase={true} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -92,7 +92,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Senha</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" {...field} noAutoUppercase={true} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

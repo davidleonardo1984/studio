@@ -23,8 +23,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const ADMIN_USER: User = {
   id: 'admin001',
   name: 'Administrador',
-  login: 'ADMIN', // Changed from 'admin'
-  password: 'MICHELIN', // Changed from 'michelin'
+  login: 'admin', // Changed to lowercase
+  password: 'Michelin', // Changed to uppercase M
   role: 'admin',
 };
 
@@ -40,22 +40,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (storedUser) {
       const parsedUser: User = JSON.parse(storedUser);
        // Re-validate user, e.g. if roles changed. For this demo, just set.
-      const foundUser = users.find(u => u.login === parsedUser.login);
+      const foundUser = users.find(u => u.login === parsedUser.login); // Login comparison should be case-sensitive here for rehydration
       if (foundUser) setUser(foundUser); else localStorage.removeItem('currentUser');
     }
     setIsLoading(false);
-  }, [users]);
+  }, [users]); // Re-run if users array changes, e.g. after addUser/updateUser
 
 
   const login = async (loginInput: string, pass: string): Promise<boolean> => {
     setIsLoading(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
-    // Case-insensitive login comparison for admin, but password is case sensitive
+    
     const foundUser = users.find(u => {
-      if (u.login.toUpperCase() === 'ADMIN' && u.login.toUpperCase() === loginInput.toUpperCase()) {
+      // Admin login is case-sensitive 'admin', password 'Michelin'
+      if (u.login === 'admin' && loginInput === 'admin') {
         return u.password === pass;
       }
+      // Other users are case-sensitive for login and password
       return u.login === loginInput && u.password === pass;
     });
 
@@ -78,8 +80,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addUser = (newUser: User): boolean => {
-    // Ensure login is unique, case-insensitive for new users to prevent "admin" vs "ADMIN" conflicts.
-    if (users.some(u => u.login.toUpperCase() === newUser.login.toUpperCase())) {
+    // Ensure login is unique, case-sensitive.
+    if (users.some(u => u.login === newUser.login)) {
       return false; // User with this login already exists
     }
     setUsers(prevUsers => [...prevUsers, newUser]);
@@ -87,9 +89,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateUser = (updatedUser: User): boolean => {
-     // Check if new login conflicts with an existing user (excluding self)
-    if (users.some(u => u.id !== updatedUser.id && u.login.toUpperCase() === updatedUser.login.toUpperCase())) {
-      // Potentially set form error or toast here, for now just block update
+     // Check if new login conflicts with an existing user (excluding self), case-sensitive.
+    if (users.some(u => u.id !== updatedUser.id && u.login === updatedUser.login)) {
       console.error("Login conflict during update");
       return false; 
     }
@@ -107,8 +108,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const findUserByLogin = (loginInput: string): User | undefined => {
-    // Case-insensitive find for login
-    return users.find(u => u.login.toUpperCase() === loginInput.toUpperCase());
+    // Case-sensitive find for login
+    return users.find(u => u.login === loginInput);
   }
 
 
@@ -126,4 +127,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-

@@ -88,7 +88,7 @@ export default function CadastroAcessoPage() {
       const updatedUserData: User = {
         ...editingUser,
         name: data.name,
-        login: data.login,
+        login: data.login, // Login might have been changed, it's case-sensitive from form.
         ...(data.password && { password: data.password }), 
         role: data.role as UserRole,
       };
@@ -107,7 +107,7 @@ export default function CadastroAcessoPage() {
         form.setError("password", {type: "manual", message: "Senha é obrigatória e deve ter no mínimo 6 caracteres."});
         return;
       }
-      if (findUserByLogin(data.login)) {
+      if (findUserByLogin(data.login)) { // findUserByLogin is now case-sensitive
         form.setError("login", {type: "manual", message: "Este login já está em uso."});
         toast({ variant: 'destructive', title: 'Erro de Cadastro', description: 'Login já existe. Escolha outro.' });
         return;
@@ -115,8 +115,8 @@ export default function CadastroAcessoPage() {
       const newUser: User = {
         id: Date.now().toString(), // Simple ID for demo
         name: data.name,
-        login: data.login,
-        password: data.password, // Password is now validated
+        login: data.login, // Login is case-sensitive from form
+        password: data.password, 
         role: data.role as UserRole,
       };
       const success = addUser(newUser);
@@ -136,9 +136,6 @@ export default function CadastroAcessoPage() {
     setEditingUser(userToEdit);
   };
   
-  // Admin cannot delete self. Implement deleteUser in AuthContext if needed.
-  // For now, delete is not implemented.
-
   if (user?.role !== 'admin') {
     return (
       <div className="container mx-auto py-8 text-center">
@@ -175,7 +172,7 @@ export default function CadastroAcessoPage() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Maria Souza" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="login" render={({ field }) => ( <FormItem><FormLabel>Login de Acesso</FormLabel><FormControl><Input placeholder="Ex: maria.souza" {...field} disabled={!!editingUser && editingUser.login.toUpperCase() === 'ADMIN'} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="login" render={({ field }) => ( <FormItem><FormLabel>Login de Acesso</FormLabel><FormControl><Input placeholder="Ex: maria.souza" {...field} disabled={!!editingUser && editingUser.login === 'admin'} noAutoUppercase={true} /></FormControl><FormMessage /></FormItem>)} />
                 </div>
                 <FormField
                   control={form.control}
@@ -185,7 +182,7 @@ export default function CadastroAcessoPage() {
                       <FormLabel>{editingUser ? 'Nova Senha (deixe em branco para não alterar)' : 'Senha'}</FormLabel>
                       <div className="relative">
                         <FormControl>
-                          <Input type={showPassword ? "text" : "password"} placeholder="Mínimo 6 caracteres" {...field} />
+                          <Input type={showPassword ? "text" : "password"} placeholder="Mínimo 6 caracteres" {...field} noAutoUppercase={true} />
                         </FormControl>
                         <Button
                             type="button"
@@ -208,7 +205,7 @@ export default function CadastroAcessoPage() {
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Perfil de Acesso</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={!!editingUser && editingUser.login.toUpperCase() === 'ADMIN'}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!!editingUser && editingUser.login === 'admin'}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Selecione o perfil" /></SelectTrigger></FormControl>
                             <SelectContent>
                                 <SelectItem value="user">Usuário</SelectItem>
@@ -251,10 +248,10 @@ export default function CadastroAcessoPage() {
                     <TableCell>{u.login}</TableCell>
                     <TableCell><span className={`px-2 py-1 text-xs rounded-full ${u.role === 'admin' ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground'}`}>{u.role === 'admin' ? 'Admin' : 'Usuário'}</span></TableCell>
                     <TableCell className="text-right space-x-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(u)} title="Editar">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(u)} title="Editar" disabled={u.login === 'admin' && user?.login !== 'admin' /* Allow admin to edit self, but not other admins if any */}>
                         <Edit2 className="h-4 w-4 text-blue-600" />
                       </Button>
-                       {user?.login !== u.login && u.login.toUpperCase() !== 'ADMIN' && (
+                       {user?.login !== u.login && u.login !== 'admin' && ( // Prevent deleting self and the main 'admin' account
                            <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" title="Excluir" disabled={true}> {/* Disabled for now */}
@@ -280,4 +277,3 @@ export default function CadastroAcessoPage() {
     </div>
   );
 }
-
