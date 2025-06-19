@@ -1,7 +1,8 @@
+
 "use client"
 
 import * as React from "react"
-import { addDays, format } from "date-fns"
+import { format } from "date-fns"
 import { ptBR } from 'date-fns/locale';
 import { Calendar as CalendarIcon } from "lucide-react"
 import type { DateRange } from "react-day-picker"
@@ -27,10 +28,19 @@ export function DatePickerWithRange({
   onDateChange,
   disabled
 }: DatePickerWithRangeProps) {
+  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+
+  const handleDateSelect = (selectedRange: DateRange | undefined) => {
+    onDateChange(selectedRange);
+    // If both 'from' and 'to' dates are selected, close the popover.
+    if (selectedRange?.from && selectedRange?.to) {
+      setIsPopoverOpen(false);
+    }
+  };
 
   return (
     <div className={cn("grid gap-2", className)}>
-      <Popover>
+      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         <PopoverTrigger asChild>
           <Button
             id="date"
@@ -40,6 +50,7 @@ export function DatePickerWithRange({
               !date && "text-muted-foreground"
             )}
             disabled={disabled}
+            onClick={() => setIsPopoverOpen(true)}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {date?.from ? (
@@ -62,7 +73,7 @@ export function DatePickerWithRange({
             mode="range"
             defaultMonth={date?.from}
             selected={date}
-            onSelect={onDateChange}
+            onSelect={handleDateSelect}
             numberOfMonths={2}
             locale={ptBR}
             disabled={disabled}
