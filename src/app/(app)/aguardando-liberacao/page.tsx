@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -6,40 +7,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry } from '@/lib/types';
-import { CheckCircle, Clock, Printer, Search } from 'lucide-react';
+import { CheckCircle, Clock, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
-
-// Mock data - replace with API/Firebase calls
-// Using entriesStore and waitingYardStore from registro-entrada for demo purposes.
-// This is a major simplification.
-let entriesStore: VehicleEntry[] = []; 
-let waitingYardStore: VehicleEntry[] = [];
-
-// Populate with some mock data for development if stores are empty
-if (process.env.NODE_ENV === 'development') {
-    if (waitingYardStore.length === 0) {
-        waitingYardStore.push( { id: '20230115140000', driverName: 'Daniela Silva', transportCompanyName: 'BetaLog', plate1: 'JKL-4444', internalDestinationName: 'Pátio Espera', movementType: 'Carga Pendente', entryTimestamp: new Date().toISOString(), status: 'aguardando_patio', registeredBy: 'user2' });
-        waitingYardStore.push( { id: '20230115150000', driverName: 'Eduardo Lima', transportCompanyName: 'GamaTrans', plate1: 'MNO-5555', internalDestinationName: 'Verificação', movementType: 'Inspeção', entryTimestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), status: 'aguardando_patio', registeredBy: 'user1' });
-    }
-}
+import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores';
 
 
 export default function AguardandoLiberacaoPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const [waitingVehicles, setWaitingVehicles] = useState<VehicleEntry[]>(waitingYardStore);
+  const [waitingVehicles, setWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Update mock store if local state changes
   useEffect(() => {
-    waitingYardStore = waitingVehicles;
-  }, [waitingVehicles]);
-  
-  // Update local state if mock store changes (e.g. from registro-entrada)
-  useEffect(() => {
-    setWaitingVehicles(waitingYardStore);
-  }, []); // Run once on mount to get latest from mock store
+    const syncWaitingVehicles = () => {
+      // Create a string representation of current and global waiting vehicle IDs to detect structural changes or actual content changes.
+      const currentWaitingStr = JSON.stringify(waitingVehicles.map(v => v.id).sort());
+      const globalWaitingStr = JSON.stringify(waitingYardStore.map(v => v.id).sort());
+
+      if (currentWaitingStr !== globalWaitingStr || waitingVehicles.length !== waitingYardStore.length) {
+        // Deep clone and sort to ensure consistent order for comparison and rendering
+        setWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()));
+      }
+    };
+    syncWaitingVehicles(); // Initial sync
+    const intervalId = setInterval(syncWaitingVehicles, 2000); // Periodically check for updates from global store
+    return () => clearInterval(intervalId); // Cleanup interval on component unmount
+  }, [waitingVehicles]); // Re-run effect if local waitingVehicles change (e.g., after an approval)
 
 
   const filteredVehicles = useMemo(() => {
@@ -52,29 +46,31 @@ export default function AguardandoLiberacaoPage() {
   }, [waitingVehicles, searchTerm]);
 
   const handleApproveEntry = (vehicleId: string) => {
-    const vehicleToApprove = waitingVehicles.find(v => v.id === vehicleId);
-    if (vehicleToApprove) {
-      const updatedVehicle = { ...vehicleToApprove, status: 'entrada_liberada' as 'entrada_liberada' };
-      
-      // Move from waiting to main entries
-      setWaitingVehicles(prev => prev.filter(v => v.id !== vehicleId));
-      entriesStore.push(updatedVehicle); // Add to general entries (mock)
+    const vehicleToApproveIndex = waitingYardStore.findIndex(v => v.id === vehicleId);
 
-      toast({
-        title: 'Entrada Aprovada!',
-        description: `Veículo ${updatedVehicle.plate1} liberado para entrada. Código: ${updatedVehicle.id}`,
-        className: 'bg-green-600 text-white',
-        icon: <CheckCircle className="h-6 w-6 text-white" />
-      });
-      // Here you would trigger printing the document
-      console.log("Printing document for approved entry:", updatedVehicle);
+    if (vehicleToApproveIndex > -1) {
+        const vehicleToApprove = waitingYardStore[vehicleToApproveIndex];
+        const updatedVehicle = { ...vehicleToApprove, status: 'entrada_liberada' as 'entrada_liberada' };
+        
+        // Remove from waitingYardStore and add to entriesStore
+        waitingYardStore.splice(vehicleToApproveIndex, 1);
+        entriesStore.push(updatedVehicle);
+
+        // Force a re-sync of local state from the now-updated global store
+        setWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()));
+
+
+        toast({
+            title: 'Entrada Liberada!',
+            description: `Veículo ${updatedVehicle.plate1} liberado para entrada. Código: ${updatedVehicle.id}`,
+            className: 'bg-green-600 text-white',
+            icon: <CheckCircle className="h-6 w-6 text-white" />
+        });
+        // Here you would trigger printing the document
+        console.log("Printing document for approved entry:", updatedVehicle);
     }
   };
   
-  const handlePrintEntry = (entry: VehicleEntry) => {
-    console.log("Printing entry:", entry);
-    toast({ title: "Imprimir Documento", description: `Simulando impressão para ${entry.plate1}. Código: ${entry.id}` });
-  };
 
   return (
     <div className="container mx-auto py-8">
@@ -131,10 +127,7 @@ export default function AguardandoLiberacaoPage() {
                         onClick={() => handleApproveEntry(vehicle.id)}
                         className="bg-green-600 hover:bg-green-700 text-white"
                       >
-                        <CheckCircle className="mr-2 h-4 w-4" /> Aprovar Entrada
-                      </Button>
-                       <Button variant="outline" size="sm" onClick={() => handlePrintEntry(vehicle)} title="Imprimir Documento de Espera">
-                        <Printer className="mr-2 h-4 w-4" /> Imprimir
+                        <CheckCircle className="mr-2 h-4 w-4" /> Liberar Entrada
                       </Button>
                     </TableCell>
                   </TableRow>
