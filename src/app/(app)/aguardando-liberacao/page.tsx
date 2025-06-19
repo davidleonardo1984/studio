@@ -20,9 +20,27 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
   const pdfContentHtml = `
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">COMPROVANTE DE ENTRADA</h2>
-      <div style="text-align: center; margin-bottom: 25px; padding: 10px 15px 15px 15px; border: 2px dashed #333; background-color: #f9f9f9;">
+      <div style="text-align: center; margin-bottom: 15px; padding: 10px 15px 15px 15px; border: 2px dashed #333; background-color: #f9f9f9;">
         <p style="font-family: 'Libre Barcode 39 Text', 'Courier New', monospace; font-size: 48px; text-align: center; margin: 0; color: #000; line-height: 0.9;">*${entry.id}*</p>
         <p style="font-size: 9px; text-align: center; margin: 2px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
+      </div>
+
+      <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; line-height: 1.4;">
+        <div style="display: inline-block; width: 48%; margin-right: 2%; vertical-align: top;">
+          <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Chegada:</p>
+          <p style="margin: 0;">${new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</p>
+        </div>
+        ${entry.liberationTimestamp ? `
+        <div style="display: inline-block; width: 48%; vertical-align: top;">
+          <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Liberação:</p>
+          <p style="margin: 0;">${new Date(entry.liberationTimestamp).toLocaleString('pt-BR')}</p>
+        </div>
+        ` : `
+        <div style="display: inline-block; width: 48%; vertical-align: top;">
+          <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Liberação:</p>
+          <p style="margin: 0;">-</p>
+        </div>
+        `}
       </div>
 
       <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
@@ -50,8 +68,6 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
       <hr style="margin-top: 15px; margin-bottom: 10px; border: 0; border-top: 1px solid #eee;" />
       
       <div style="font-size: 11px; line-height: 1.5;">
-        <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 140px; display: inline-block;">Data/Hora Chegada:</span> ${new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</p>
-        ${entry.liberationTimestamp ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 140px; display: inline-block;">Data/Hora Liberação:</span> ${new Date(entry.liberationTimestamp).toLocaleString('pt-BR')}</p>` : ''}
         <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 140px; display: inline-block;">Registrado Por:</span> ${entry.registeredBy}</p>
       </div>
 
@@ -84,8 +100,7 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
       return { success: false, error: 'PDF content element not found' };
     }
     
-    // Ensure fonts are loaded before capturing
-    await new Promise(resolve => setTimeout(resolve, 500)); // Delay for font loading
+    await new Promise(resolve => setTimeout(resolve, 500)); 
 
     const canvas = await html2canvas(contentElement, { scale: 2, useCORS: true, allowTaint: true });
     const imgData = canvas.toDataURL('image/png');
