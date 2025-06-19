@@ -22,13 +22,11 @@ export interface Assistant extends Driver {}
 export interface TransportCompany {
   id: string;
   name: string;
-  cnpj?: string;
 }
 
 export interface InternalDestination {
   id: string;
   name: string;
-  sector?: string;
 }
 
 export type EntryStatus = 'aguardando_patio' | 'entrada_liberada' | 'saiu';

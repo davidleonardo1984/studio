@@ -12,8 +12,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import type { Driver, Assistant, TransportCompany, InternalDestination } from '@/lib/types';
-import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin } from 'lucide-react'; // Changed User to Users
+import type { Driver, TransportCompany, InternalDestination } from '@/lib/types';
+import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin } from 'lucide-react'; 
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,20 +37,17 @@ type DriverFormData = z.infer<typeof driverSchema>;
 
 const transportCompanySchema = z.object({
   name: z.string().min(3, 'Nome da transportadora é obrigatório (mín. 3 caracteres).'),
-  cnpj: z.string().optional(),
 });
 type TransportCompanyFormData = z.infer<typeof transportCompanySchema>;
 
 const internalDestinationSchema = z.object({
   name: z.string().min(3, 'Nome do destino é obrigatório (mín. 3 caracteres).'),
-  sector: z.string().optional(),
 });
 type InternalDestinationFormData = z.infer<typeof internalDestinationSchema>;
 
 
 // Mock data stores (replace with API/Firebase calls)
 let driversStore: Driver[] = [];
-// let assistantsStore: Assistant[] = []; // Removed, will be part of driversStore
 let transportCompaniesStore: TransportCompany[] = [];
 let internalDestinationsStore: InternalDestination[] = [];
 
@@ -61,7 +58,7 @@ interface CadastroSectionProps<TData, TFormData> {
   data: TData[];
   setData: React.Dispatch<React.SetStateAction<TData[]>>;
   formSchema: z.ZodSchema<TFormData>;
-  formFields: (form: any) => React.ReactNode; // Function to render form fields
+  formFields: (form: any) => React.ReactNode; 
   tableHeaders: string[];
   renderTableRow: (item: TData, index: number, onDelete: (id: string) => void, onEdit: (item: TData) => void) => React.ReactNode;
   defaultValues: TFormData;
@@ -103,7 +100,7 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
         toast({ title: `${title} atualizado(a)!`, description: `${formData.name} foi atualizado(a) com sucesso.` });
         setEditingItem(null);
     } else {
-        const newItem = { ...formData, id: Date.now().toString() } as unknown as TData; // Simple ID generation
+        const newItem = { ...formData, id: Date.now().toString() } as unknown as TData; 
         setData(prev => [...prev, newItem]);
         toast({ title: `${title} cadastrado(a)!`, description: `${formData.name} foi cadastrado(a) com sucesso.` });
     }
@@ -166,13 +163,10 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
 
 export default function CadastrosGeraisPage() {
   const [drivers, setDrivers] = useState<Driver[]>(driversStore);
-  // const [assistants, setAssistants] = useState<Assistant[]>(assistantsStore); // Removed
   const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>(transportCompaniesStore);
   const [internalDestinations, setInternalDestinations] = useState<InternalDestination[]>(internalDestinationsStore);
 
-  // Update stores when local state changes (for demo persistence across soft reloads)
   useEffect(() => { driversStore = drivers }, [drivers]);
-  // useEffect(() => { assistantsStore = assistants }, [assistants]); // Removed
   useEffect(() => { transportCompaniesStore = transportCompanies }, [transportCompanies]);
   useEffect(() => { internalDestinationsStore = internalDestinations }, [internalDestinations]);
   
@@ -207,14 +201,12 @@ export default function CadastrosGeraisPage() {
   const renderTransportCompanyFormFields = (form: any) => (
     <>
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome da Transportadora</FormLabel><FormControl><Input placeholder="Ex: Transportes Rápidos S.A." {...field} /></FormControl><FormMessage /></FormItem>)} />
-      <FormField control={form.control} name="cnpj" render={({ field }) => ( <FormItem><FormLabel>CNPJ (Opcional)</FormLabel><FormControl><Input placeholder="00.000.000/0000-00" {...field} /></FormControl><FormMessage /></FormItem>)} />
     </>
   );
 
   const renderTransportCompanyTableRow = (company: TransportCompany, index: number, onDelete: (id: string) => void, onEdit: (item: TransportCompany) => void) => (
     <TableRow key={company.id}>
       <TableCell>{company.name}</TableCell>
-      <TableCell>{company.cnpj || 'N/A'}</TableCell>
       <TableCell className="text-right space-x-2">
         <Button variant="ghost" size="icon" onClick={() => onEdit(company)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
         <AlertDialog>
@@ -231,14 +223,12 @@ export default function CadastrosGeraisPage() {
    const renderInternalDestinationFormFields = (form: any) => (
     <>
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome do Destino</FormLabel><FormControl><Input placeholder="Ex: Almoxarifado Principal" {...field} /></FormControl><FormMessage /></FormItem>)} />
-      <FormField control={form.control} name="sector" render={({ field }) => ( <FormItem><FormLabel>Setor (Opcional)</FormLabel><FormControl><Input placeholder="Ex: Setor A-01" {...field} /></FormControl><FormMessage /></FormItem>)} />
     </>
   );
 
   const renderInternalDestinationTableRow = (destination: InternalDestination, index: number, onDelete: (id: string) => void, onEdit: (item: InternalDestination) => void) => (
     <TableRow key={destination.id}>
       <TableCell>{destination.name}</TableCell>
-      <TableCell>{destination.sector || 'N/A'}</TableCell>
       <TableCell className="text-right space-x-2">
         <Button variant="ghost" size="icon" onClick={() => onEdit(destination)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
         <AlertDialog>
@@ -260,18 +250,17 @@ export default function CadastrosGeraisPage() {
         <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras e destinos internos.</p>
       </div>
       <Tabs defaultValue="drivers" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 mb-6"> {/* Changed grid-cols */}
-          <TabsTrigger value="drivers" className="flex items-center gap-2"><Users className="h-4 w-4" /> Motoristas e Ajudantes</TabsTrigger> {/* Changed label and icon */}
-          {/* <TabsTrigger value="assistants" className="flex items-center gap-2"><Users className="h-4 w-4" /> Ajudantes</TabsTrigger> Removed */}
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 mb-6"> 
+          <TabsTrigger value="drivers" className="flex items-center gap-2"><Users className="h-4 w-4" /> Motoristas e Ajudantes</TabsTrigger> 
           <TabsTrigger value="transportCompanies" className="flex items-center gap-2"><Truck className="h-4 w-4" />Transportadoras</TabsTrigger>
           <TabsTrigger value="internalDestinations" className="flex items-center gap-2"><MapPin className="h-4 w-4" />Destinos Internos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="drivers">
           <CadastroSection
-            title="Pessoa" // Changed title to be generic
-            icon={Users} // Changed icon
-            data={drivers} // This state now manages both drivers and assistants conceptually
+            title="Pessoa" 
+            icon={Users} 
+            data={drivers} 
             setData={setDrivers}
             formSchema={driverSchema}
             formFields={renderDriverFormFields}
@@ -280,19 +269,6 @@ export default function CadastrosGeraisPage() {
             defaultValues={{ name: '', cpf: '', cnh: '', phone: '' }}
           />
         </TabsContent>
-        {/* <TabsContent value="assistants"> Removed
-          <CadastroSection
-            title="Ajudante"
-            icon={Users}
-            data={assistants}
-            setData={setAssistants}
-            formSchema={driverSchema} 
-            formFields={renderDriverFormFields} 
-            tableHeaders={['Nome', 'CPF', 'CNH', 'Telefone']}
-            renderTableRow={renderDriverTableRow as any} 
-            defaultValues={{ name: '', cpf: '', cnh: '', phone: '' }}
-          />
-        </TabsContent> */}
         <TabsContent value="transportCompanies">
            <CadastroSection
             title="Transportadora"
@@ -301,9 +277,9 @@ export default function CadastrosGeraisPage() {
             setData={setTransportCompanies}
             formSchema={transportCompanySchema}
             formFields={renderTransportCompanyFormFields}
-            tableHeaders={['Nome', 'CNPJ']}
+            tableHeaders={['Nome']}
             renderTableRow={renderTransportCompanyTableRow}
-            defaultValues={{ name: '', cnpj: ''}}
+            defaultValues={{ name: ''}}
           />
         </TabsContent>
         <TabsContent value="internalDestinations">
@@ -314,9 +290,9 @@ export default function CadastrosGeraisPage() {
             setData={setInternalDestinations}
             formSchema={internalDestinationSchema}
             formFields={renderInternalDestinationFormFields}
-            tableHeaders={['Nome', 'Setor']}
+            tableHeaders={['Nome']}
             renderTableRow={renderInternalDestinationTableRow}
-            defaultValues={{ name: '', sector: '' }}
+            defaultValues={{ name: ''}}
           />
         </TabsContent>
       </Tabs>
@@ -328,14 +304,15 @@ export default function CadastrosGeraisPage() {
 if (process.env.NODE_ENV === 'development') {
     if (driversStore.length === 0) {
         driversStore.push({ id: 'd1', name: 'Carlos Pereira (Motorista)', cpf: '11122233344', cnh: '123456789', phone: '11999998888' });
-        driversStore.push({ id: 'a1', name: 'Joana Silva (Ajudante)', cpf: '44455566677', cnh: '987654321', phone: '11988887777' }); // Example assistant
+        driversStore.push({ id: 'a1', name: 'Joana Silva (Ajudante)', cpf: '44455566677', cnh: '987654321', phone: '11988887777' }); 
     }
-    // assistantsStore is no longer separately populated or managed by dedicated state.
     if (transportCompaniesStore.length === 0) {
-        transportCompaniesStore.push({ id: 'tc1', name: 'Logistica Veloz Ltda', cnpj: '12.345.678/0001-99' });
+        transportCompaniesStore.push({ id: 'tc1', name: 'Logistica Veloz Ltda' });
+        transportCompaniesStore.push({ id: 'tc2', name: 'Transportes Rápidos S.A.' });
     }
     if (internalDestinationsStore.length === 0) {
-        internalDestinationsStore.push({ id: 'id1', name: 'Galpão Central', sector: 'GC-01' });
+        internalDestinationsStore.push({ id: 'id1', name: 'Galpão Central' });
+        internalDestinationsStore.push({ id: 'id2', name: 'Almoxarifado Principal' });
     }
 }
     
