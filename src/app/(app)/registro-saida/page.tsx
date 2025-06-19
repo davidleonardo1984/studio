@@ -98,8 +98,19 @@ export default function RegistroSaidaPage() {
                         <Input
                           placeholder="Ex: 20230101120000"
                           {...field}
+                          onChange={(e) => {
+                            field.onChange(e); // Update form state
+                            const newValue = e.target.value;
+                            if (newValue.length === 14) {
+                              if (!isProcessing) {
+                                // handleSubmit will validate using Zod schema before calling onSubmit
+                                form.handleSubmit(onSubmit)(); 
+                              }
+                            }
+                          }}
                           className="rounded-r-none"
                           maxLength={14}
+                          noAutoUppercase={true}
                         />
                         <Button type="submit" className="rounded-l-none" disabled={isProcessing}>
                           {isProcessing ? (
