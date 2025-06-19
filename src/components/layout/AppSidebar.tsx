@@ -12,11 +12,9 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  // SidebarTrigger, // Removed import
 } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Home, LogIn, LogOut, Edit3, Users, History, Settings, ShieldCheck, ClipboardList } from 'lucide-react';
+import { Home, LogIn, LogOut, Edit3, Users, History, KeyRound, ShieldCheck } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface NavItem {
@@ -33,6 +31,7 @@ const navItems: NavItem[] = [
   { href: '/cadastros-gerais', label: 'Cadastros Gerais', icon: Edit3 },
   { href: '/historico-acesso', label: 'Histórico de Acesso', icon: History },
   { href: '/cadastro-acesso', label: 'Cadastro de Acesso', icon: Users, adminOnly: true },
+  { href: '/mudar-senha', label: 'Mudar Senha', icon: KeyRound },
 ];
 
 export function AppSidebar() {
@@ -50,7 +49,6 @@ export function AppSidebar() {
           <ShieldCheck className="h-7 w-7 text-sidebar-primary" />
           <span className="text-lg group-data-[collapsible=icon]:hidden font-headline">Portaria Única RES</span>
         </Link>
-        {/* <SidebarTrigger className="group-data-[collapsible=icon]:hidden text-sidebar-foreground hover:text-sidebar-primary" /> */} {/* Removed SidebarTrigger button */}
       </SidebarHeader>
       <SidebarContent asChild>
         <ScrollArea className="flex-1">
@@ -89,5 +87,3 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
-
-    

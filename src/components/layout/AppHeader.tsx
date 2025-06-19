@@ -12,12 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, UserCircle, Settings, ChevronDown, AlignLeft } from 'lucide-react';
-import { useSidebar } from '@/components/ui/sidebar'; // Import useSidebar
+import { LogOut, ChevronDown, AlignLeft, KeyRound } from 'lucide-react';
+import { useSidebar } from '@/components/ui/sidebar'; 
+import Link from 'next/link';
 
 export function AppHeader() {
   const { user, logout } = useAuth();
-  const { toggleSidebar, isMobile } = useSidebar(); // Get toggleSidebar and isMobile from context
+  const { toggleSidebar, isMobile } = useSidebar(); 
 
   const getInitials = (name?: string) => {
     if (!name) return 'U';
@@ -31,12 +32,11 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 shadow-sm backdrop-blur-md sm:px-6">
       <div className="flex items-center gap-4">
-        {isMobile && ( // Only show toggle on mobile if sidebar is present
+        {isMobile && ( 
           <Button variant="ghost" size="icon" onClick={toggleSidebar} aria-label="Toggle Menu">
             <AlignLeft className="h-5 w-5" />
           </Button>
         )}
-        {/* The H1 title "Portaria Única RES" has been removed from here */}
       </div>
       
       {user && (
@@ -64,14 +64,12 @@ export function AppHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <UserCircle className="mr-2 h-4 w-4" />
-              <span>Perfil</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Configurações</span>
-            </DropdownMenuItem>
+            <Link href="/mudar-senha" passHref>
+              <DropdownMenuItem>
+                <KeyRound className="mr-2 h-4 w-4" />
+                <span>Mudar Senha</span>
+              </DropdownMenuItem>
+            </Link>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
