@@ -11,6 +11,72 @@ import { CheckCircle, Clock, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
+
+const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<void> => {
+  const pdfContentHtml = `
+    <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
+      <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">COMPROVANTE DE ENTRADA</h2>
+      <div style="text-align: center; margin-bottom: 25px; padding: 15px; border: 2px dashed #333; background-color: #f9f9f9;">
+        <p style="font-size: 32px; font-weight: bold; letter-spacing: 3px; margin: 0; color: #000;">${entry.id}</p>
+        <p style="font-size: 10px; margin: 5px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+        <tbody>
+          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold; width: 150px;">Motorista:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.driverName}</td></tr>
+          ${entry.assistant1Name ? `<tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Ajudante 1:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.assistant1Name}</td></tr>` : ''}
+          ${entry.assistant2Name ? `<tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Ajudante 2:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.assistant2Name}</td></tr>` : ''}
+          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Transportadora:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.transportCompanyName}</td></tr>
+          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Placa 1:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.plate1}</td></tr>
+          ${entry.plate2 ? `<tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Placa 2:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.plate2}</td></tr>` : ''}
+          ${entry.plate3 ? `<tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Placa 3:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.plate3}</td></tr>` : ''}
+          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Destino Interno:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.internalDestinationName}</td></tr>
+          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Tipo Mov.:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.movementType}</td></tr>
+          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Observação:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.observation || '-'}</td></tr>
+          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Data/Hora Entrada:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(entry.entryTimestamp).toLocaleString('pt-BR')}</td></tr>
+          <tr><td style="padding: 6px; font-weight: bold;">Registrado Por:</td><td style="padding: 6px;">${entry.registeredBy}</td></tr>
+        </tbody>
+      </table>
+      <p style="text-align: center; font-size: 10px; margin-top: 25px; color: #777;">Portaria Única RES - Comprovante de Entrada</p>
+    </div>
+  `;
+
+  const hiddenDiv = document.createElement('div');
+  hiddenDiv.style.position = 'absolute';
+  hiddenDiv.style.left = '-9999px';
+  hiddenDiv.innerHTML = pdfContentHtml;
+  document.body.appendChild(hiddenDiv);
+
+  const contentElement = document.getElementById(`pdf-content-${entry.id}`);
+  if (!contentElement) {
+    console.error('PDF content element not found');
+    document.body.removeChild(hiddenDiv);
+    return;
+  }
+
+  try {
+    const canvas = await html2canvas(contentElement, { scale: 2 });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+    const imgX = (pdfWidth - imgWidth * ratio) / 2;
+    const imgY = 15; // Margin top
+
+    pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+    pdf.save(`comprovante-entrada-${entry.id}.pdf`);
+  } catch (error) {
+    console.error("Erro ao gerar PDF:", error);
+    // Potentially show a toast message to the user here
+  } finally {
+    document.body.removeChild(hiddenDiv);
+  }
+};
 
 
 export default function AguardandoLiberacaoPage() {
@@ -21,19 +87,17 @@ export default function AguardandoLiberacaoPage() {
 
   useEffect(() => {
     const syncWaitingVehicles = () => {
-      // Create a string representation of current and global waiting vehicle IDs to detect structural changes or actual content changes.
       const currentWaitingStr = JSON.stringify(waitingVehicles.map(v => v.id).sort());
       const globalWaitingStr = JSON.stringify(waitingYardStore.map(v => v.id).sort());
 
       if (currentWaitingStr !== globalWaitingStr || waitingVehicles.length !== waitingYardStore.length) {
-        // Deep clone and sort to ensure consistent order for comparison and rendering
         setWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()));
       }
     };
-    syncWaitingVehicles(); // Initial sync
-    const intervalId = setInterval(syncWaitingVehicles, 2000); // Periodically check for updates from global store
-    return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, [waitingVehicles]); // Re-run effect if local waitingVehicles change (e.g., after an approval)
+    syncWaitingVehicles(); 
+    const intervalId = setInterval(syncWaitingVehicles, 2000); 
+    return () => clearInterval(intervalId); 
+  }, [waitingVehicles]); 
 
 
   const filteredVehicles = useMemo(() => {
@@ -45,29 +109,33 @@ export default function AguardandoLiberacaoPage() {
     );
   }, [waitingVehicles, searchTerm]);
 
-  const handleApproveEntry = (vehicleId: string) => {
+  const handleApproveEntry = async (vehicleId: string) => {
     const vehicleToApproveIndex = waitingYardStore.findIndex(v => v.id === vehicleId);
 
     if (vehicleToApproveIndex > -1) {
         const vehicleToApprove = waitingYardStore[vehicleToApproveIndex];
         const updatedVehicle = { ...vehicleToApprove, status: 'entrada_liberada' as 'entrada_liberada' };
         
-        // Remove from waitingYardStore and add to entriesStore
         waitingYardStore.splice(vehicleToApproveIndex, 1);
         entriesStore.push(updatedVehicle);
 
-        // Force a re-sync of local state from the now-updated global store
         setWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()));
 
-
-        toast({
-            title: 'Entrada Liberada!',
-            description: `Veículo ${updatedVehicle.plate1} liberado para entrada. Código: ${updatedVehicle.id}`,
-            className: 'bg-green-600 text-white',
-            icon: <CheckCircle className="h-6 w-6 text-white" />
-        });
-        // Here you would trigger printing the document
-        console.log("Printing document for approved entry:", updatedVehicle);
+        try {
+            await generateVehicleEntryPdf(updatedVehicle);
+            toast({
+                title: 'Entrada Liberada e PDF Gerado!',
+                description: `Veículo ${updatedVehicle.plate1} liberado para entrada. Código: ${updatedVehicle.id}`,
+                className: 'bg-green-600 text-white',
+                icon: <CheckCircle className="h-6 w-6 text-white" />
+            });
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Erro ao Gerar PDF',
+                description: `A entrada foi liberada, mas houve um erro ao gerar o PDF. Código: ${updatedVehicle.id}`,
+            });
+        }
     }
   };
   
