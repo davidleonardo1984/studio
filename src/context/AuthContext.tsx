@@ -15,6 +15,7 @@ interface AuthContextType {
   addUser: (newUser: User) => boolean;
   updateUser: (updatedUser: User) => boolean;
   findUserByLogin: (login: string) => User | undefined;
+  changePassword: (userId: string, currentPasswordInput: string, newPasswordInput: string) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,46 +24,62 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const ADMIN_USER: User = {
   id: 'admin001',
   name: 'Administrador',
-  login: 'admin', // Changed to lowercase
-  password: 'Michelin', // Changed to uppercase M
+  login: 'admin',
+  password: 'Michelin', 
   role: 'admin',
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([ADMIN_USER]); // Initialize with admin
+  const [users, setUsers] = useState<User[]>([ADMIN_USER]); 
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // Check for persisted user (e.g., in localStorage)
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       const parsedUser: User = JSON.parse(storedUser);
-       // Re-validate user, e.g. if roles changed. For this demo, just set.
-      const foundUser = users.find(u => u.login === parsedUser.login); // Login comparison should be case-sensitive here for rehydration
-      if (foundUser) setUser(foundUser); else localStorage.removeItem('currentUser');
+      const foundUser = users.find(u => u.login.toLowerCase() === parsedUser.login.toLowerCase()); 
+      if (foundUser) {
+        const { password, ...userToSet } = foundUser; // Ensure password is not in the user state
+        setUser(userToSet);
+      } else {
+        localStorage.removeItem('currentUser');
+      }
     }
     setIsLoading(false);
-  }, [users]); // Re-run if users array changes, e.g. after addUser/updateUser
+  }, []); // Run only once on mount initially
+
+  useEffect(() => {
+    // This effect ensures if users array is updated (e.g. by admin), the current user's data is also updated if they are the one changed.
+    if(user){
+        const currentUserFromUsersArray = users.find(u => u.id === user.id);
+        if(currentUserFromUsersArray){
+            const {password, ...userToStore} = currentUserFromUsersArray;
+            if(JSON.stringify(user) !== JSON.stringify(userToStore)){ // Prevents unnecessary updates
+                setUser(userToStore);
+                localStorage.setItem('currentUser', JSON.stringify(userToStore));
+            }
+        } else { // Current user was deleted by admin
+            logout();
+        }
+    }
+  }, [users, user]);
 
 
   const login = async (loginInput: string, pass: string): Promise<boolean> => {
     setIsLoading(true);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
     
     const foundUser = users.find(u => {
-      // Admin login is case-sensitive 'admin', password 'Michelin'
-      if (u.login === 'admin' && loginInput === 'admin') {
-        return u.password === pass;
+      if (u.login === 'admin' && loginInput.toLowerCase() === 'admin') { // Admin login check: input 'admin' (case-insensitive) matches stored 'admin'
+        return u.password === pass; // Password is case-sensitive: 'Michelin'
       }
-      // Other users are case-sensitive for login and password
-      return u.login === loginInput && u.password === pass;
+      return u.login === loginInput && u.password === pass; // Other users: case-sensitive login and password
     });
 
     if (foundUser) {
-      const { password, ...userToStore } = foundUser; // Don't store plain password
+      const { password, ...userToStore } = foundUser;
       setUser(userToStore);
       localStorage.setItem('currentUser', JSON.stringify(userToStore));
       setIsLoading(false);
@@ -80,41 +97,63 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addUser = (newUser: User): boolean => {
-    // Ensure login is unique, case-sensitive.
-    if (users.some(u => u.login === newUser.login)) {
-      return false; // User with this login already exists
+    if (users.some(u => u.login.toLowerCase() === newUser.login.toLowerCase())) {
+      return false; 
     }
     setUsers(prevUsers => [...prevUsers, newUser]);
     return true;
   };
 
   const updateUser = (updatedUser: User): boolean => {
-     // Check if new login conflicts with an existing user (excluding self), case-sensitive.
-    if (users.some(u => u.id !== updatedUser.id && u.login === updatedUser.login)) {
-      console.error("Login conflict during update");
+    if (users.some(u => u.id !== updatedUser.id && u.login.toLowerCase() === updatedUser.login.toLowerCase())) {
       return false; 
     }
-
     setUsers(prevUsers => 
       prevUsers.map(u => u.id === updatedUser.id ? updatedUser : u)
     );
-    // If current user is updated, update the user state and localStorage
-    if (user && user.id === updatedUser.id) {
-      const { password, ...userToStore } = updatedUser;
-      setUser(userToStore);
-      localStorage.setItem('currentUser', JSON.stringify(userToStore));
-    }
+    // User state and localStorage are updated via the useEffect hook observing 'users'
     return true;
   }
 
   const findUserByLogin = (loginInput: string): User | undefined => {
-    // Case-sensitive find for login
-    return users.find(u => u.login === loginInput);
+    return users.find(u => u.login.toLowerCase() === loginInput.toLowerCase());
   }
+
+  const changePassword = async (userId: string, currentPasswordInput: string, newPasswordInput: string): Promise<{ success: boolean; message: string }> => {
+    await new Promise(resolve => setTimeout(resolve, 200)); // Simulate API delay
+    
+    let userIndex = -1;
+    const userToUpdate = users.find((u, index) => {
+        if(u.id === userId) {
+            userIndex = index;
+            return true;
+        }
+        return false;
+    });
+
+    if (!userToUpdate || userIndex === -1) {
+      return { success: false, message: 'Usuário não encontrado.' };
+    }
+
+    // Check current password (case-sensitive)
+    if (userToUpdate.password !== currentPasswordInput) {
+      return { success: false, message: 'Senha atual incorreta. Verifique e tente novamente.' };
+    }
+
+    if (userToUpdate.password === newPasswordInput) {
+        return { success: false, message: 'Nova senha não pode ser igual à senha atual.' };
+    }
+
+    const updatedUsers = [...users];
+    updatedUsers[userIndex] = { ...updatedUsers[userIndex], password: newPasswordInput };
+    setUsers(updatedUsers);
+
+    return { success: true, message: 'Senha alterada com sucesso!' };
+  };
 
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, users, addUser, updateUser, findUserByLogin }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, users, addUser, updateUser, findUserByLogin, changePassword }}>
       {children}
     </AuthContext.Provider>
   );
