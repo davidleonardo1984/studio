@@ -82,7 +82,7 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
       <hr style="margin-top: 15px; margin-bottom: 10px; border: 0; border-top: 1px solid #eee;" />
       
       <div style="font-size: 11px; line-height: 1.5;">
-        <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 140px; display: inline-block;">Registrado Por:</span> ${entry.registeredBy}</p>
+         <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 50px; display: inline-block;">Data:</span> _________________________________________</p>
       </div>
 
       <div style="margin-top: 20px; font-size: 11px; page-break-inside: avoid; border: 1px solid #ddd; padding: 15px 10px; border-radius: 4px;">
