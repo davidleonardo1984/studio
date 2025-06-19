@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,9 +16,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry } from '@/lib/types';
 import { Save, SendToBack, Clock, CheckCircle, Search } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { personsStore, transportCompaniesStore, internalDestinationsStore } from '@/lib/store';
-import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; // Using centralized vehicle entry stores
+import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -47,22 +47,16 @@ export default function RegistroEntradaPage() {
   const [currentWaitingVehicles, setCurrentWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Sync with global waitingYardStore
    useEffect(() => {
-    // Function to update local state from global store
     const syncWaitingVehicles = () => {
-      // Basic check to see if an update is needed. For more complex scenarios, consider deep comparison or versioning.
       if (JSON.stringify(currentWaitingVehicles) !== JSON.stringify(waitingYardStore)) {
         setCurrentWaitingVehicles([...waitingYardStore]);
       }
     };
-    syncWaitingVehicles(); // Initial sync
-
-    // Optionally, set up an interval for periodic checks if changes can happen from outside this component
-    const intervalId = setInterval(syncWaitingVehicles, 2000); // Check every 2 seconds
-
-    return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, [currentWaitingVehicles]); // Rerun effect if local state changes (e.g., after an approval)
+    syncWaitingVehicles();
+    const intervalId = setInterval(syncWaitingVehicles, 2000); 
+    return () => clearInterval(intervalId);
+  }, [currentWaitingVehicles]);
 
 
   const form = useForm<VehicleEntryFormData>({
@@ -107,7 +101,7 @@ export default function RegistroEntradaPage() {
       registeredBy: user.login,
     };
 
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500)); 
 
     if (status === 'aguardando_patio') {
       waitingYardStore.push(newEntry);
@@ -139,7 +133,7 @@ export default function RegistroEntradaPage() {
       v.plate1.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.transportCompanyName.toLowerCase().includes(searchTerm.toLowerCase())
-    ).sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()); // Sort oldest first
+    ).sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime());
   }, [currentWaitingVehicles, searchTerm]);
 
   const handleApproveEntry = (vehicleId: string) => {
@@ -181,16 +175,16 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nome do Motorista</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Selecione o motorista" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {personsStore.map(person => (
-                            <SelectItem key={person.id} value={person.name}>{person.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <>
+                          <Input placeholder="Digite ou selecione o motorista" {...field} list="driver-list" />
+                          <datalist id="driver-list">
+                            {personsStore.map(person => (
+                              <option key={person.id} value={person.name} />
+                            ))}
+                          </datalist>
+                        </>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -201,16 +195,16 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Transportadora</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Selecione a transportadora" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {transportCompaniesStore.map(company => (
-                            <SelectItem key={company.id} value={company.name}>{company.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                       <FormControl>
+                        <>
+                          <Input placeholder="Digite ou selecione a transportadora" {...field} list="transport-company-list" />
+                          <datalist id="transport-company-list">
+                            {transportCompaniesStore.map(company => (
+                              <option key={company.id} value={company.name} />
+                            ))}
+                          </datalist>
+                        </>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -229,16 +223,16 @@ export default function RegistroEntradaPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ajudante 1 (Opcional)</FormLabel>
-                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Selecione o ajudante 1" /></SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            {personsStore.map(person => (
-                                <SelectItem key={person.id} value={person.name}>{person.name}</SelectItem>
-                            ))}
-                            </SelectContent>
-                        </Select>
+                         <FormControl>
+                          <>
+                            <Input placeholder="Digite ou selecione o ajudante 1" {...field} list="assistant-list" />
+                            <datalist id="assistant-list">
+                              {personsStore.map(person => (
+                                  <option key={person.id} value={person.name} />
+                              ))}
+                            </datalist>
+                          </>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -249,16 +243,12 @@ export default function RegistroEntradaPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ajudante 2 (Opcional)</FormLabel>
-                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Selecione o ajudante 2" /></SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            {personsStore.map(person => (
-                                <SelectItem key={person.id} value={person.name}>{person.name}</SelectItem>
-                            ))}
-                            </SelectContent>
-                        </Select>
+                         <FormControl>
+                          <>
+                            <Input placeholder="Digite ou selecione o ajudante 2" {...field} list="assistant-list" />
+                            {/* Re-uses assistant-list datalist defined above or can have its own */}
+                          </>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -309,16 +299,16 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Destino Interno</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Selecione o destino" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {internalDestinationsStore.map(dest => (
-                            <SelectItem key={dest.id} value={dest.name}>{dest.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <>
+                          <Input placeholder="Digite ou selecione o destino" {...field} list="internal-destination-list" />
+                          <datalist id="internal-destination-list">
+                            {internalDestinationsStore.map(dest => (
+                              <option key={dest.id} value={dest.name} />
+                            ))}
+                          </datalist>
+                        </>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -375,7 +365,7 @@ export default function RegistroEntradaPage() {
                 className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
             >
                 {isSubmitting ? <Clock className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" /> }
-                Entrada Liberada e Imprimir
+                Liberar Entrada e Imprimir
             </Button>
         </CardFooter>
       </Card>
@@ -459,3 +449,4 @@ export default function RegistroEntradaPage() {
     </div>
   );
 }
+
