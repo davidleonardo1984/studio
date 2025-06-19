@@ -114,7 +114,7 @@ export default function HistoricoAcessoPage() {
   }, [allEntries, filters, searchTerm]);
 
   const vehiclesInsideFactory = useMemo(() => {
-    return allEntries.filter(e => e.status === 'entrada_liberada' || e.status === 'aguardando_patio');
+    return allEntries.filter(e => e.status === 'entrada_liberada');
   }, [allEntries]);
 
   const handleExportToCSV = () => {
@@ -333,10 +333,8 @@ export default function HistoricoAcessoPage() {
                     <TableCell>{entry.transportCompanyName}</TableCell>
                     <TableCell>{new Date(entry.entryTimestamp).toLocaleString('pt-BR')}</TableCell>
                      <TableCell>
-                        <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
-                            entry.status === 'entrada_liberada' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                            {entry.status === 'entrada_liberada' ? 'LIBERADO' : 'AGUARDANDO'}
+                        <span className="px-2 py-1 text-xs rounded-full whitespace-nowrap bg-green-100 text-green-700">
+                            LIBERADO
                         </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -357,3 +355,4 @@ export default function HistoricoAcessoPage() {
     </div>
   );
 }
+
