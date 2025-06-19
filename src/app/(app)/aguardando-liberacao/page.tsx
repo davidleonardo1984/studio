@@ -21,28 +21,30 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">COMPROVANTE DE ENTRADA</h2>
       <div style="text-align: center; margin-bottom: 25px; padding: 15px; border: 2px dashed #333; background-color: #f9f9f9;">
-        <p style="font-family: 'Libre Barcode 39 Text', 'Courier New', monospace; font-size: 48px; text-align: center; margin: 0; color: #000; line-height: 1;">*${entry.id}*</p>
+        <p style="font-family: 'Libre Barcode 39 Text', 'Courier New', monospace; font-size: 48px; text-align: center; margin: 0; color: #000; line-height: 0.9;">*${entry.id}*</p>
         <p style="font-size: 9px; text-align: center; margin: 2px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
       </div>
 
-      <div style="display: flex; justify-content: space-between; font-size: 11px; line-height: 1.5;">
-        <div style="width: 55%;">
-          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Motorista:</span> ${entry.driverName}</p>
-          ${entry.assistant1Name ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Ajudante 1:</span> ${entry.assistant1Name}</p>` : ''}
-          ${entry.assistant2Name ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Ajudante 2:</span> ${entry.assistant2Name}</p>` : ''}
-          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 1:</span> ${entry.plate1}</p>
-          ${entry.plate2 ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 2:</span> ${entry.plate2}</p>` : ''}
-          ${entry.plate3 ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 3:</span> ${entry.plate3}</p>` : ''}
+      <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; line-height: 1.5;">
+          <div style="width: 55%;">
+            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Motorista:</span> ${entry.driverName}</p>
+            ${entry.assistant1Name ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Ajudante 1:</span> ${entry.assistant1Name}</p>` : ''}
+            ${entry.assistant2Name ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Ajudante 2:</span> ${entry.assistant2Name}</p>` : ''}
+            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 1:</span> ${entry.plate1}</p>
+            ${entry.plate2 ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 2:</span> ${entry.plate2}</p>` : ''}
+            ${entry.plate3 ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 3:</span> ${entry.plate3}</p>` : ''}
+          </div>
+          <div style="width: 40%; text-align: left;">
+            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora:</span>${entry.transportCompanyName}</p>
+            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Destino Interno:</span>${entry.internalDestinationName}</p>
+            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Tipo Mov.:</span>${entry.movementType}</p>
+          </div>
         </div>
-        <div style="width: 40%; text-align: left;">
-          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora:</span>${entry.transportCompanyName}</p>
-          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Destino Interno:</span>${entry.internalDestinationName}</p>
-          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Tipo Mov.:</span>${entry.movementType}</p>
+        
+        <div style="font-size: 11px; line-height: 1.5; margin-top: 5px;">
+          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Observação:</span> ${entry.observation || '-'}</p>
         </div>
-      </div>
-      
-      <div style="font-size: 11px; line-height: 1.5; margin-top: 5px;">
-        <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Observação:</span> ${entry.observation || '-'}</p>
       </div>
       
       <hr style="margin-top: 15px; margin-bottom: 10px; border: 0; border-top: 1px solid #eee;" />
@@ -53,7 +55,7 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
         <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 140px; display: inline-block;">Registrado Por:</span> ${entry.registeredBy}</p>
       </div>
 
-      <div style="margin-top: 40px; font-size: 11px; page-break-inside: avoid;">
+      <div style="margin-top: 20px; font-size: 11px; page-break-inside: avoid; border: 1px solid #ddd; padding: 15px 10px; border-radius: 4px;">
         <div style="display: inline-block; width: 45%; margin-right: 5%;">
           <hr style="border: 0; border-top: 1px solid #333; margin-bottom: 5px;" />
           <p style="text-align: center; margin: 0;">Assinatura Responsável</p>
