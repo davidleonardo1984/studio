@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry } from '@/lib/types';
-import { Save, SendToBack, Clock, CheckCircle, Search, Printer } from 'lucide-react';
+import { Save, SendToBack, Clock, CheckCircle, Search, Printer, ClipboardCopy } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { personsStore, transportCompaniesStore, internalDestinationsStore } from '@/lib/store';
@@ -141,7 +141,19 @@ export default function RegistroEntradaPage() {
       console.log("Simulando impressão do documento para entrada liberada:", newEntry);
     }
 
-    form.reset();
+    form.reset({
+        driverName: '',
+        assistant1Name: '',
+        assistant2Name: '',
+        transportCompanyName: '',
+        plate1: '',
+        plate2: '',
+        plate3: '',
+        internalDestinationName: '',
+        movementType: '', 
+        observation: '',
+    });
+    setShowAssistants(false);
     setIsSubmitting(false);
   };
 
@@ -170,6 +182,32 @@ export default function RegistroEntradaPage() {
         icon: <CheckCircle className="h-6 w-6 text-white" />
       });
       console.log("Simulando impressão do documento para entrada aprovada do pátio:", updatedVehicle);
+    }
+  };
+
+  const handleCopyWaitingData = async () => {
+    if (filteredWaitingVehicles.length === 0) {
+      toast({ variant: 'destructive', title: 'Nenhum dado', description: 'Não há veículos aguardando para copiar.' });
+      return;
+    }
+
+    const dataToCopy = filteredWaitingVehicles.map((vehicle, index) => {
+      return [
+        `Ordem: ${index + 1}`,
+        `Motorista: ${vehicle.driverName}`,
+        `Transportadora: ${vehicle.transportCompanyName}`,
+        `Placa 1: ${vehicle.plate1}`,
+        `Observação: ${vehicle.observation || '-'}`,
+        `Data/Hora Registro: ${new Date(vehicle.entryTimestamp).toLocaleString('pt-BR')}`
+      ].join('\n');
+    }).join('\n\n---\n\n');
+
+    try {
+      await navigator.clipboard.writeText(dataToCopy);
+      toast({ title: 'Dados Copiados!', description: 'Os dados dos veículos aguardando foram copiados.' });
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      toast({ variant: 'destructive', title: 'Erro ao Copiar', description: 'Não foi possível copiar os dados.' });
     }
   };
 
@@ -206,7 +244,7 @@ export default function RegistroEntradaPage() {
                               } else if (value && personsStore.some(p => p.name.toUpperCase() === value.toUpperCase())) {
                                 form.clearErrors('driverName');
                               }
-                              field.onBlur(e);
+                              field.onBlur(e); // Important to call the original blur handler
                             }}
                           />
                         </FormControl>
@@ -241,7 +279,7 @@ export default function RegistroEntradaPage() {
                                 } else if (value && transportCompaniesStore.some(tc => tc.name.toUpperCase() === value.toUpperCase())){
                                    form.clearErrors('transportCompanyName');
                                 }
-                                field.onBlur(e);
+                                field.onBlur(e); // Important
                               }}
                             />
                         </FormControl>
@@ -282,7 +320,7 @@ export default function RegistroEntradaPage() {
                                 } else {
                                   form.clearErrors('assistant1Name');
                                 }
-                                field.onBlur(e);
+                                field.onBlur(e); // Important
                               }}
                             />
                             </FormControl>
@@ -315,7 +353,7 @@ export default function RegistroEntradaPage() {
                                 } else {
                                   form.clearErrors('assistant2Name');
                                 }
-                                field.onBlur(e);
+                                field.onBlur(e); // Important
                               }}
                             />
                             </FormControl>
@@ -385,7 +423,7 @@ export default function RegistroEntradaPage() {
                                 } else if (value && internalDestinationsStore.some(id => id.name.toUpperCase() === value.toUpperCase())) {
                                    form.clearErrors('internalDestinationName');
                                 }
-                                field.onBlur(e);
+                                field.onBlur(e); // Important
                               }}
                             />
                         </FormControl>
@@ -405,7 +443,7 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Movimentação</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value ?? ''}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
                         </FormControl>
@@ -458,25 +496,34 @@ export default function RegistroEntradaPage() {
 
       <Card className="max-w-4xl mx-auto shadow-xl">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-            <div>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex-grow">
                 <CardTitle className="text-xl font-semibold text-primary font-headline flex items-center">
                     <Clock className="mr-3 h-7 w-7 text-accent" />
                     Veículos Aguardando Liberação ({filteredWaitingVehicles.length})
                 </CardTitle>
                 <CardDescription>Lista de veículos no pátio que necessitam de aprovação para entrada.</CardDescription>
             </div>
-             <div className="mt-4 sm:mt-0 w-full sm:w-auto max-w-xs">
-                <Label htmlFor="searchWaiting" className="sr-only">Buscar</Label>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
                 <Input
                     id="searchWaiting"
                     type="text"
                     placeholder="Buscar por placa, motorista..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full"
+                    className="w-full sm:max-w-xs"
                     prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                 />
+                <Button 
+                    onClick={handleCopyWaitingData} 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full sm:w-auto"
+                    disabled={filteredWaitingVehicles.length === 0}
+                >
+                    <ClipboardCopy className="mr-2 h-4 w-4" />
+                    Copiar Dados
+                </Button>
             </div>
           </div>
         </CardHeader>
