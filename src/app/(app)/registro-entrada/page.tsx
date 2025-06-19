@@ -54,7 +54,7 @@ const entrySchema = z.object({
 });
 
 
-const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<void> => {
+const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; action: 'opened' | 'downloaded_fallback' | 'error'; error?: any }> => {
   const pdfContentHtml = `
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">COMPROVANTE DE ENTRADA</h2>
@@ -92,7 +92,7 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<void> => {
   if (!contentElement) {
     console.error('PDF content element not found');
     document.body.removeChild(hiddenDiv);
-    return;
+    return { success: false, action: 'error', error: 'PDF content element not found' };
   }
 
   try {
@@ -108,10 +108,24 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<void> => {
     const imgY = 15; // Margin top
 
     pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-    pdf.save(`comprovante-entrada-${entry.id}.pdf`);
+    
+    const pdfBlob = pdf.output('blob');
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    const newWindow = window.open(blobUrl, '_blank');
+
+    if (newWindow) {
+      newWindow.onload = () => {
+        URL.revokeObjectURL(blobUrl); // Clean up
+      };
+      return { success: true, action: 'opened' };
+    } else {
+      console.warn("Could not open PDF in a new tab due to pop-up blocker or browser settings. Attempting to download instead.");
+      pdf.save(`comprovante-entrada-${entry.id}.pdf`);
+      return { success: true, action: 'downloaded_fallback' };
+    }
   } catch (error) {
     console.error("Erro ao gerar PDF:", error);
-    // Potentially show a toast message to the user here
+    return { success: false, action: 'error', error };
   } finally {
     document.body.removeChild(hiddenDiv);
   }
@@ -198,19 +212,26 @@ export default function RegistroEntradaPage() {
       });
     } else {
       entriesStore.push(newEntry);
-      try {
-        await generateVehicleEntryPdf(newEntry);
+      const pdfResult = await generateVehicleEntryPdf(newEntry);
+      if (pdfResult.success) {
         toast({
-          title: 'Entrada Liberada e PDF Gerado!',
+          title: pdfResult.action === 'opened' ? 'Entrada Liberada e PDF Aberto!' : 'Entrada Liberada e PDF Baixado!',
           description: `Entrada do veículo ${newEntry.plate1} registrada. Código: ${newEntry.id}`,
           className: 'bg-green-600 text-white',
           icon: <CheckCircle className="h-6 w-6 text-white" />,
         });
-      } catch (error) {
+        if (pdfResult.action === 'downloaded_fallback') {
+          toast({
+            variant: 'default',
+            title: 'Aviso de Pop-up',
+            description: 'O PDF não pôde ser aberto em nova aba e foi baixado. Verifique o bloqueador de pop-ups.',
+          });
+        }
+      } else {
         toast({
           variant: 'destructive',
-          title: 'Erro ao Gerar PDF',
-          description: `A entrada foi registrada, mas houve um erro ao gerar o PDF. Código: ${newEntry.id}`,
+          title: 'Erro ao Gerar/Abrir PDF',
+          description: `A entrada foi registrada, mas houve um erro com o PDF. Código: ${newEntry.id}`,
         });
       }
     }
@@ -249,19 +270,26 @@ export default function RegistroEntradaPage() {
       waitingYardStore.splice(vehicleToApproveIndex, 1); 
       entriesStore.push(updatedVehicle); 
 
-      try {
-        await generateVehicleEntryPdf(updatedVehicle);
+      const pdfResult = await generateVehicleEntryPdf(updatedVehicle);
+      if (pdfResult.success) {
         toast({
-          title: 'Entrada Liberada e PDF Gerado!',
+          title: pdfResult.action === 'opened' ? 'Entrada Liberada e PDF Aberto!' : 'Entrada Liberada e PDF Baixado!',
           description: `Veículo ${updatedVehicle.plate1} liberado para entrada. Código: ${updatedVehicle.id}`,
           className: 'bg-green-600 text-white',
           icon: <CheckCircle className="h-6 w-6 text-white" />
         });
-      } catch (error) {
+        if (pdfResult.action === 'downloaded_fallback') {
+          toast({
+            variant: 'default',
+            title: 'Aviso de Pop-up',
+            description: 'O PDF não pôde ser aberto em nova aba e foi baixado. Verifique o bloqueador de pop-ups.',
+          });
+        }
+      } else {
          toast({
           variant: 'destructive',
-          title: 'Erro ao Gerar PDF',
-          description: `A entrada foi liberada, mas houve um erro ao gerar o PDF. Código: ${updatedVehicle.id}`,
+          title: 'Erro ao Gerar/Abrir PDF',
+          description: `A entrada foi liberada, mas houve um erro com o PDF. Código: ${updatedVehicle.id}`,
         });
       }
     }

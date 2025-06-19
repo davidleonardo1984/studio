@@ -29,8 +29,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 
-const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<void> => {
-  const { toast } = useToast();
+const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; action: 'opened' | 'downloaded_fallback' | 'error'; error?: any }> => {
   const pdfContentHtml = `
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">COMPROVANTE DE ENTRADA</h2>
@@ -68,8 +67,7 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<void> => {
   if (!contentElement) {
     console.error('PDF content element not found');
     document.body.removeChild(hiddenDiv);
-    toast({ variant: 'destructive', title: 'Erro ao Gerar PDF', description: 'Elemento de conteúdo não encontrado.' });
-    return;
+    return { success: false, action: 'error', error: 'PDF content element not found' };
   }
 
   try {
@@ -85,11 +83,24 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<void> => {
     const imgY = 15; // Margin top
 
     pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-    pdf.save(`comprovante-entrada-${entry.id}.pdf`);
-    toast({ title: 'PDF Gerado!', description: `Comprovante para ${entry.plate1} foi gerado.` });
+    
+    const pdfBlob = pdf.output('blob');
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    const newWindow = window.open(blobUrl, '_blank');
+
+    if (newWindow) {
+      newWindow.onload = () => {
+        URL.revokeObjectURL(blobUrl); // Clean up
+      };
+      return { success: true, action: 'opened' };
+    } else {
+      console.warn("Could not open PDF in a new tab due to pop-up blocker or browser settings. Attempting to download instead.");
+      pdf.save(`comprovante-entrada-${entry.id}.pdf`);
+      return { success: true, action: 'downloaded_fallback' };
+    }
   } catch (error) {
     console.error("Erro ao gerar PDF:", error);
-    toast({ variant: 'destructive', title: 'Erro ao Gerar PDF', description: 'Não foi possível gerar o documento.' });
+    return { success: false, action: 'error', error };
   } finally {
     document.body.removeChild(hiddenDiv);
   }
@@ -264,8 +275,28 @@ export default function HistoricoAcessoPage() {
   };
 
 
-  const handlePrintEntry = (entry: VehicleEntry) => {
-    generateVehicleEntryPdf(entry);
+  const handlePrintEntry = async (entry: VehicleEntry) => {
+    const pdfResult = await generateVehicleEntryPdf(entry);
+    
+    if (pdfResult.success) {
+        toast({
+            title: pdfResult.action === 'opened' ? 'PDF Aberto!' : 'PDF Baixado!',
+            description: `Comprovante para ${entry.plate1} foi ${pdfResult.action === 'opened' ? 'aberto' : 'baixado'}.`
+        });
+        if (pdfResult.action === 'downloaded_fallback') {
+            toast({
+                variant: 'default',
+                title: 'Aviso de Pop-up',
+                description: 'O PDF não pôde ser aberto em nova aba e foi baixado. Verifique o bloqueador de pop-ups.',
+            });
+        }
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Erro ao Gerar PDF',
+            description: 'Não foi possível gerar o documento.'
+        });
+    }
   };
 
   const transportCompanyOptions = useMemo(() => {
