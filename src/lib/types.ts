@@ -43,7 +43,8 @@ export interface VehicleEntry {
   internalDestinationName: string;
   movementType: string; 
   observation?: string;
-  entryTimestamp: string; // ISO string or formatted
+  arrivalTimestamp: string; // Renamed from entryTimestamp
+  liberationTimestamp?: string; // New field for liberation time
   exitTimestamp?: string; // ISO string or formatted
   status: EntryStatus;
   registeredBy: string; // User login

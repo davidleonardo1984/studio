@@ -74,7 +74,8 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
           <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Destino Interno:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.internalDestinationName}</td></tr>
           <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Tipo Mov.:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.movementType}</td></tr>
           <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Observação:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.observation || '-'}</td></tr>
-          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Data/Hora Entrada:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(entry.entryTimestamp).toLocaleString('pt-BR')}</td></tr>
+          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Data/Hora Chegada:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</td></tr>
+          ${entry.liberationTimestamp ? `<tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Data/Hora Liberação:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(entry.liberationTimestamp).toLocaleString('pt-BR')}</td></tr>` : ''}
           <tr><td style="padding: 6px; font-weight: bold;">Registrado Por:</td><td style="padding: 6px;">${entry.registeredBy}</td></tr>
         </tbody>
       </table>
@@ -222,7 +223,7 @@ export default function RegistroEntradaPage() {
       const globalWaitingStr = JSON.stringify(waitingYardStore.map(v => v.id).sort());
 
       if (currentWaitingStr !== globalWaitingStr || currentWaitingVehicles.length !== waitingYardStore.length) {
-        setCurrentWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()));
+        setCurrentWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime()));
       }
     };
     syncWaitingVehicles(); 
@@ -265,11 +266,13 @@ export default function RegistroEntradaPage() {
       return;
     }
     setIsSubmitting(true);
+    const currentTime = new Date().toISOString();
 
     const newEntry: VehicleEntry = {
       ...data,
       id: generateBarcode(),
-      entryTimestamp: new Date().toISOString(),
+      arrivalTimestamp: currentTime,
+      liberationTimestamp: status === 'entrada_liberada' ? currentTime : undefined,
       status: status,
       registeredBy: user.login,
     };
@@ -352,11 +355,15 @@ export default function RegistroEntradaPage() {
     const vehicleToApproveIndex = waitingYardStore.findIndex(v => v.id === vehicleId);
     if (vehicleToApproveIndex > -1) {
       const vehicleToApprove = waitingYardStore[vehicleToApproveIndex];
-      const updatedVehicle = { ...vehicleToApprove, status: 'entrada_liberada' as 'entrada_liberada' };
+      const updatedVehicle: VehicleEntry = { 
+        ...vehicleToApprove, 
+        status: 'entrada_liberada' as 'entrada_liberada',
+        liberationTimestamp: new Date().toISOString() 
+      };
       
       waitingYardStore.splice(vehicleToApproveIndex, 1); 
       entriesStore.push(updatedVehicle); 
-      setCurrentWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()));
+      setCurrentWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime()));
 
       toast({
           title: `Veículo ${updatedVehicle.plate1} Liberado!`,
@@ -409,7 +416,7 @@ export default function RegistroEntradaPage() {
         `Transportadora: ${vehicle.transportCompanyName}`,
         `Placa 1: ${vehicle.plate1}`,
         `Observação: ${vehicle.observation || '-'}`,
-        `Data/Hora Registro: ${new Date(vehicle.entryTimestamp).toLocaleString('pt-BR')}`
+        `Data/Hora Registro: ${new Date(vehicle.arrivalTimestamp).toLocaleString('pt-BR')}`
       ].join('\n');
     }).join('\n\n---\n\n');
 
@@ -428,7 +435,7 @@ export default function RegistroEntradaPage() {
       <Card className="max-w-4xl mx-auto shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Nova Entrada</CardTitle>
-          <CardDescription>Preencha os dados abaixo para registrar a entrada de um veículo.</CardDescription>
+          <CardDescription>Preencha os dados abaixo para registrar la entrada de um veículo.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -761,7 +768,7 @@ export default function RegistroEntradaPage() {
                     <TableCell>{vehicle.transportCompanyName}</TableCell>
                     <TableCell>{vehicle.plate1}</TableCell>
                     <TableCell className="max-w-xs truncate">{vehicle.observation || '-'}</TableCell>
-                    <TableCell>{new Date(vehicle.entryTimestamp).toLocaleString('pt-BR')}</TableCell>
+                    <TableCell>{new Date(vehicle.arrivalTimestamp).toLocaleString('pt-BR')}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button
                         variant="default"
@@ -793,5 +800,3 @@ export default function RegistroEntradaPage() {
     </div>
   );
 }
-
-    

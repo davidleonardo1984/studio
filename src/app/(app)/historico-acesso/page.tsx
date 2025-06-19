@@ -49,7 +49,8 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
           <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Destino Interno:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.internalDestinationName}</td></tr>
           <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Tipo Mov.:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.movementType}</td></tr>
           <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Observação:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.observation || '-'}</td></tr>
-          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Data/Hora Entrada:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(entry.entryTimestamp).toLocaleString('pt-BR')}</td></tr>
+          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Data/Hora Chegada:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</td></tr>
+          ${entry.liberationTimestamp ? `<tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Data/Hora Liberação:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(entry.liberationTimestamp).toLocaleString('pt-BR')}</td></tr>` : ''}
           <tr><td style="padding: 6px; font-weight: bold;">Registrado Por:</td><td style="padding: 6px;">${entry.registeredBy}</td></tr>
         </tbody>
       </table>
@@ -232,7 +233,7 @@ export default function HistoricoAcessoPage() {
             .filter(e =>
                 Object.values(e).some(val => String(val).toLowerCase().includes(lowerSearchTerm))
             )
-            .sort((a,b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
+            .sort((a,b) => new Date(b.arrivalTimestamp).getTime() - new Date(a.arrivalTimestamp).getTime());
     }
 
     let tempEntries = [...allEntries];
@@ -251,12 +252,12 @@ export default function HistoricoAcessoPage() {
     if (filters.dateRange?.from) {
         const fromDate = new Date(filters.dateRange.from);
         fromDate.setHours(0, 0, 0, 0);
-        tempEntries = tempEntries.filter(e => new Date(e.entryTimestamp) >= fromDate);
+        tempEntries = tempEntries.filter(e => new Date(e.arrivalTimestamp) >= fromDate);
     }
     if (filters.dateRange?.to) {
         const toDate = new Date(filters.dateRange.to);
         toDate.setHours(23, 59, 59, 999);
-        tempEntries = tempEntries.filter(e => new Date(e.entryTimestamp) <= toDate);
+        tempEntries = tempEntries.filter(e => new Date(e.arrivalTimestamp) <= toDate);
     }
     
     if (!filters.transportCompany.trim() && !filters.plate.trim() && !filters.dateRange?.from && !searchTerm.trim()){
@@ -264,13 +265,13 @@ export default function HistoricoAcessoPage() {
     }
 
 
-    return tempEntries.sort((a, b) => new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime());
+    return tempEntries.sort((a, b) => new Date(b.arrivalTimestamp).getTime() - new Date(a.arrivalTimestamp).getTime());
   }, [allEntries, filters, searchTerm]);
 
 
   const vehiclesInsideFactory = useMemo(() => {
     return allEntries.filter(e => e.status === 'entrada_liberada')
-                     .sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime());
+                     .sort((a,b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime());
   }, [allEntries]);
 
 
@@ -279,7 +280,7 @@ export default function HistoricoAcessoPage() {
         toast({variant: 'destructive', title: "Nenhum dado", description: "Não há dados para exportar com os filtros atuais."});
         return;
     }
-    const headers = ["ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA", "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", "DATA/HORA ENTRADA", "DATA/HORA SAÍDA", "STATUS", "REGISTRADO POR"];
+    const headers = ["ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA", "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "DATA/HORA SAÍDA", "STATUS", "REGISTRADO POR"];
     const csvRows = [
         headers.map(escapeCsvField).join(','),
         ...filteredEntries.map(e => [
@@ -294,12 +295,13 @@ export default function HistoricoAcessoPage() {
             escapeCsvField(e.internalDestinationName),
             escapeCsvField(e.movementType),
             escapeCsvField(e.observation || ''),
-            escapeCsvField(new Date(e.entryTimestamp).toLocaleString('pt-BR')),
+            escapeCsvField(new Date(e.arrivalTimestamp).toLocaleString('pt-BR')),
+            escapeCsvField(e.liberationTimestamp ? new Date(e.liberationTimestamp).toLocaleString('pt-BR') : ''),
             escapeCsvField(e.exitTimestamp ? new Date(e.exitTimestamp).toLocaleString('pt-BR') : ''),
             escapeCsvField(
                 e.status === 'saiu' ? 'Saiu' :
                 e.status === 'entrada_liberada' ? 'Na fábrica' :
-                'No pátio' // Updated label
+                'No pátio' 
             ),
             escapeCsvField(e.registeredBy)
         ].join(','))
@@ -429,7 +431,7 @@ export default function HistoricoAcessoPage() {
               <Input id="plateFilter" placeholder="FILTRAR POR PLACA..." value={filters.plate} onChange={(e) => setFilters(prev => ({...prev, plate: e.target.value}))} disabled={!!searchTerm.trim()} />
             </div>
             <div className="space-y-1">
-              <Label>Período de Entrada</Label>
+              <Label>Período de Chegada</Label>
               <DatePickerWithRange
                 date={filters.dateRange}
                 onDateChange={(range) => setFilters(prev => ({...prev, dateRange: range}))}
@@ -471,7 +473,8 @@ export default function HistoricoAcessoPage() {
                     <TableHead>MOTORISTA</TableHead>
                     <TableHead>TRANSPORTADORA</TableHead>
                     <TableHead>PLACA 1</TableHead>
-                    <TableHead>ENTRADA</TableHead>
+                    <TableHead>CHEGADA</TableHead>
+                    <TableHead>LIBERAÇÃO</TableHead>
                     <TableHead>SAÍDA</TableHead>
                     <TableHead>STATUS</TableHead>
                     <TableHead className="text-right">AÇÕES</TableHead>
@@ -484,7 +487,8 @@ export default function HistoricoAcessoPage() {
                       <TableCell>{entry.driverName}</TableCell>
                       <TableCell>{entry.transportCompanyName}</TableCell>
                       <TableCell>{entry.plate1}</TableCell>
-                      <TableCell>{new Date(entry.entryTimestamp).toLocaleString('pt-BR')}</TableCell>
+                      <TableCell>{new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</TableCell>
+                      <TableCell>{entry.liberationTimestamp ? new Date(entry.liberationTimestamp).toLocaleString('pt-BR') : 'N/A'}</TableCell>
                       <TableCell>{entry.exitTimestamp ? new Date(entry.exitTimestamp).toLocaleString('pt-BR') : 'N/A'}</TableCell>
                       <TableCell>
                           <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
@@ -545,7 +549,8 @@ export default function HistoricoAcessoPage() {
                   <TableHead>PLACA 1</TableHead>
                   <TableHead>MOTORISTA</TableHead>
                   <TableHead>TRANSPORTADORA</TableHead>
-                  <TableHead>ENTRADA</TableHead>
+                  <TableHead>CHEGADA</TableHead>
+                  <TableHead>LIBERAÇÃO</TableHead>
                   <TableHead>STATUS</TableHead>
                    <TableHead className="text-right">AÇÕES</TableHead>
                 </TableRow>
@@ -557,7 +562,8 @@ export default function HistoricoAcessoPage() {
                     <TableCell>{entry.plate1}</TableCell>
                     <TableCell>{entry.driverName}</TableCell>
                     <TableCell>{entry.transportCompanyName}</TableCell>
-                    <TableCell>{new Date(entry.entryTimestamp).toLocaleString('pt-BR')}</TableCell>
+                    <TableCell>{new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</TableCell>
+                    <TableCell>{entry.liberationTimestamp ? new Date(entry.liberationTimestamp).toLocaleString('pt-BR') : 'N/A'}</TableCell>
                      <TableCell>
                         <span className="px-2 py-1 text-xs rounded-full whitespace-nowrap bg-green-100 text-green-700">
                             Na fábrica
@@ -581,5 +587,3 @@ export default function HistoricoAcessoPage() {
     </div>
   );
 }
-
-    

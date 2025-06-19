@@ -35,7 +35,8 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
           <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Destino Interno:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.internalDestinationName}</td></tr>
           <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Tipo Mov.:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.movementType}</td></tr>
           <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Observação:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.observation || '-'}</td></tr>
-          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Data/Hora Entrada:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(entry.entryTimestamp).toLocaleString('pt-BR')}</td></tr>
+          <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Data/Hora Chegada:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</td></tr>
+          ${entry.liberationTimestamp ? `<tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Data/Hora Liberação:</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(entry.liberationTimestamp).toLocaleString('pt-BR')}</td></tr>` : ''}
           <tr><td style="padding: 6px; font-weight: bold;">Registrado Por:</td><td style="padding: 6px;">${entry.registeredBy}</td></tr>
         </tbody>
       </table>
@@ -181,7 +182,7 @@ export default function AguardandoLiberacaoPage() {
       const globalWaitingStr = JSON.stringify(waitingYardStore.map(v => v.id).sort());
 
       if (currentWaitingStr !== globalWaitingStr || waitingVehicles.length !== waitingYardStore.length) {
-        setWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()));
+        setWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime()));
       }
     };
     syncWaitingVehicles(); 
@@ -204,12 +205,16 @@ export default function AguardandoLiberacaoPage() {
 
     if (vehicleToApproveIndex > -1) {
         const vehicleToApprove = waitingYardStore[vehicleToApproveIndex];
-        const updatedVehicle = { ...vehicleToApprove, status: 'entrada_liberada' as 'entrada_liberada' };
+        const updatedVehicle: VehicleEntry = { 
+            ...vehicleToApprove, 
+            status: 'entrada_liberada' as 'entrada_liberada',
+            liberationTimestamp: new Date().toISOString()
+        };
         
         waitingYardStore.splice(vehicleToApproveIndex, 1);
         entriesStore.push(updatedVehicle);
 
-        setWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()));
+        setWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime()));
         
         toast({
             title: `Veículo ${updatedVehicle.plate1} Liberado!`,
@@ -297,7 +302,7 @@ export default function AguardandoLiberacaoPage() {
                     <TableCell>{vehicle.driverName}</TableCell>
                     <TableCell>{vehicle.transportCompanyName}</TableCell>
                     <TableCell>{vehicle.plate1}</TableCell>
-                    <TableCell>{new Date(vehicle.entryTimestamp).toLocaleString('pt-BR')}</TableCell>
+                    <TableCell>{new Date(vehicle.arrivalTimestamp).toLocaleString('pt-BR')}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button 
                         variant="default" 
@@ -329,5 +334,3 @@ export default function AguardandoLiberacaoPage() {
     </div>
   );
 }
-
-    
