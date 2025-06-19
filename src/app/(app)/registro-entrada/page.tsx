@@ -59,9 +59,9 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
   const pdfContentHtml = `
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">COMPROVANTE DE ENTRADA</h2>
-      <div style="text-align: center; margin-bottom: 25px; padding: 15px; border: 2px dashed #333; background-color: #f9f9f9;">
-        <p style="font-size: 32px; font-weight: bold; letter-spacing: 3px; margin: 0; color: #000;">${entry.id}</p>
-        <p style="font-size: 9px; margin: 5px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
+      <div style="text-align: center; margin-bottom: 25px; padding: 15px 15px 5px 15px; border: 2px dashed #333; background-color: #f9f9f9;">
+        <p style="font-family: 'Libre Barcode 39 Text', 'Courier New', monospace; font-size: 48px; text-align: center; margin: 0; color: #000; line-height: 1;">*${entry.id}*</p>
+        <p style="font-size: 9px; text-align: center; margin: 0px 0 10px 0; color: #555;">(CÓDIGO DE BARRAS)</p>
       </div>
 
       <div style="display: flex; justify-content: space-between; font-size: 11px; line-height: 1.5;">
@@ -92,6 +92,17 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
         <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 140px; display: inline-block;">Registrado Por:</span> ${entry.registeredBy}</p>
       </div>
 
+      <div style="margin-top: 40px; font-size: 11px; page-break-inside: avoid;">
+        <div style="display: inline-block; width: 45%; margin-right: 5%;">
+          <hr style="border: 0; border-top: 1px solid #333; margin-bottom: 5px;" />
+          <p style="text-align: center; margin: 0;">Assinatura Responsável</p>
+        </div>
+        <div style="display: inline-block; width: 45%;">
+          <hr style="border: 0; border-top: 1px solid #333; margin-bottom: 5px;" />
+          <p style="text-align: center; margin: 0;">Registro</p>
+        </div>
+      </div>
+
       <p style="text-align: center; font-size: 9px; margin-top: 25px; color: #777;">Portaria Única RES - Comprovante de Entrada</p>
     </div>
   `;
@@ -110,7 +121,10 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
       return { success: false, error: 'PDF content element not found' };
     }
   
-    const canvas = await html2canvas(contentElement, { scale: 2 });
+    // Ensure fonts are loaded before capturing
+    await new Promise(resolve => setTimeout(resolve, 500)); // Delay for font loading
+
+    const canvas = await html2canvas(contentElement, { scale: 2, useCORS: true, allowTaint: true });
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -232,8 +246,8 @@ export default function RegistroEntradaPage() {
       if (pdfResult.success && pdfResult.blobUrl) {
           setPdfPreviewUrl(pdfResult.blobUrl);
           setIsPdfPreviewOpen(true);
-          toast({ // Update toast or show new one
-              title: 'Documento Pronto',
+          toast({ 
+              title: 'Documento Pronto para Visualização',
               description: `Documento para ${newEntry.plate1} gerado. Visualize e imprima.`,
           });
       } else {
@@ -296,8 +310,8 @@ export default function RegistroEntradaPage() {
       if (pdfResult.success && pdfResult.blobUrl) {
           setPdfPreviewUrl(pdfResult.blobUrl);
           setIsPdfPreviewOpen(true);
-           toast({ // Update toast or show new one
-              title: 'Documento Pronto',
+           toast({
+              title: 'Documento Pronto para Visualização',
               description: `Documento para ${updatedVehicle.plate1} gerado. Visualize e imprima.`,
           });
       } else {
