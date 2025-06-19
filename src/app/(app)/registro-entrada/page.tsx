@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry } from '@/lib/types';
-import { Save, SendToBack, Clock, CheckCircle, Search } from 'lucide-react';
+import { Save, SendToBack, Clock, CheckCircle, Search, Printer } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { personsStore, transportCompaniesStore, internalDestinationsStore } from '@/lib/store';
@@ -49,14 +49,18 @@ export default function RegistroEntradaPage() {
 
    useEffect(() => {
     const syncWaitingVehicles = () => {
-      if (JSON.stringify(currentWaitingVehicles) !== JSON.stringify(waitingYardStore)) {
-        setCurrentWaitingVehicles([...waitingYardStore]);
+      // Create string representations for comparison to avoid deep comparison issues.
+      const currentWaitingStr = JSON.stringify(currentWaitingVehicles.map(v => v.id).sort());
+      const globalWaitingStr = JSON.stringify(waitingYardStore.map(v => v.id).sort());
+
+      if (currentWaitingStr !== globalWaitingStr || currentWaitingVehicles.length !== waitingYardStore.length) {
+        setCurrentWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime()));
       }
     };
-    syncWaitingVehicles();
-    const intervalId = setInterval(syncWaitingVehicles, 2000); 
-    return () => clearInterval(intervalId);
-  }, [currentWaitingVehicles]);
+    syncWaitingVehicles(); // Initial sync
+    const intervalId = setInterval(syncWaitingVehicles, 2000); // Check every 2 seconds
+    return () => clearInterval(intervalId); // Cleanup interval
+  }, [currentWaitingVehicles]); // Rerun if local currentWaitingVehicles changes, or to ensure consistency
 
 
   const form = useForm<VehicleEntryFormData>({
@@ -105,7 +109,7 @@ export default function RegistroEntradaPage() {
 
     if (status === 'aguardando_patio') {
       waitingYardStore.push(newEntry);
-      setCurrentWaitingVehicles([...waitingYardStore]);
+      // setCurrentWaitingVehicles will be updated by the useEffect polling/syncing logic
       toast({
         title: 'Registro Enviado para o Pátio',
         description: `Veículo ${newEntry.plate1} aguardando liberação. Código: ${newEntry.id}`,
@@ -120,6 +124,7 @@ export default function RegistroEntradaPage() {
         className: 'bg-green-600 text-white',
         icon: <CheckCircle className="h-6 w-6 text-white" />,
       });
+      // Simulate printing document
       console.log("Simulando impressão do documento para entrada liberada:", newEntry);
     }
 
@@ -133,19 +138,19 @@ export default function RegistroEntradaPage() {
       v.plate1.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.transportCompanyName.toLowerCase().includes(searchTerm.toLowerCase())
-    ).sort((a,b) => new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime());
+    ); // Sorting is now handled in useEffect for currentWaitingVehicles
   }, [currentWaitingVehicles, searchTerm]);
 
-  const handleApproveEntry = (vehicleId: string) => {
+  const handleApproveEntryAndPrint = (vehicleId: string) => {
     const vehicleToApproveIndex = waitingYardStore.findIndex(v => v.id === vehicleId);
     if (vehicleToApproveIndex > -1) {
       const vehicleToApprove = waitingYardStore[vehicleToApproveIndex];
       const updatedVehicle = { ...vehicleToApprove, status: 'entrada_liberada' as 'entrada_liberada' };
+      
+      waitingYardStore.splice(vehicleToApproveIndex, 1); // Remove from waiting
+      entriesStore.push(updatedVehicle); // Add to main entries
 
-      waitingYardStore.splice(vehicleToApproveIndex, 1);
-      entriesStore.push(updatedVehicle);
-
-      setCurrentWaitingVehicles([...waitingYardStore]);
+      // setCurrentWaitingVehicles will be updated by the useEffect polling/syncing logic
 
       toast({
         title: 'Entrada Liberada!',
@@ -153,6 +158,7 @@ export default function RegistroEntradaPage() {
         className: 'bg-green-600 text-white',
         icon: <CheckCircle className="h-6 w-6 text-white" />
       });
+      // Simulate printing document
       console.log("Simulando impressão do documento para entrada aprovada do pátio:", updatedVehicle);
     }
   };
@@ -176,15 +182,13 @@ export default function RegistroEntradaPage() {
                     <FormItem>
                       <FormLabel>Nome do Motorista</FormLabel>
                       <FormControl>
-                        <>
-                          <Input placeholder="Digite ou selecione o motorista" {...field} list="driver-list" />
-                          <datalist id="driver-list">
-                            {personsStore.map(person => (
-                              <option key={person.id} value={person.name} />
-                            ))}
-                          </datalist>
-                        </>
+                        <Input placeholder="Digite ou selecione o motorista" {...field} list="driver-list" />
                       </FormControl>
+                      <datalist id="driver-list">
+                        {personsStore.map(person => (
+                          <option key={person.id} value={person.name} />
+                        ))}
+                      </datalist>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -196,15 +200,13 @@ export default function RegistroEntradaPage() {
                     <FormItem>
                       <FormLabel>Transportadora</FormLabel>
                        <FormControl>
-                        <>
-                          <Input placeholder="Digite ou selecione a transportadora" {...field} list="transport-company-list" />
-                          <datalist id="transport-company-list">
-                            {transportCompaniesStore.map(company => (
-                              <option key={company.id} value={company.name} />
-                            ))}
-                          </datalist>
-                        </>
+                        <Input placeholder="Digite ou selecione a transportadora" {...field} list="transport-company-list" />
                       </FormControl>
+                      <datalist id="transport-company-list">
+                        {transportCompaniesStore.map(company => (
+                          <option key={company.id} value={company.name} />
+                        ))}
+                      </datalist>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -224,15 +226,13 @@ export default function RegistroEntradaPage() {
                       <FormItem>
                         <FormLabel>Ajudante 1 (Opcional)</FormLabel>
                          <FormControl>
-                          <>
-                            <Input placeholder="Digite ou selecione o ajudante 1" {...field} list="assistant-list" />
-                            <datalist id="assistant-list">
-                              {personsStore.map(person => (
-                                  <option key={person.id} value={person.name} />
-                              ))}
-                            </datalist>
-                          </>
+                          <Input placeholder="Digite ou selecione o ajudante 1" {...field} list="assistant-list" />
                         </FormControl>
+                        <datalist id="assistant-list">
+                          {personsStore.map(person => (
+                              <option key={person.id} value={person.name} />
+                          ))}
+                        </datalist>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -244,11 +244,9 @@ export default function RegistroEntradaPage() {
                       <FormItem>
                         <FormLabel>Ajudante 2 (Opcional)</FormLabel>
                          <FormControl>
-                          <>
-                            <Input placeholder="Digite ou selecione o ajudante 2" {...field} list="assistant-list" />
-                            {/* Re-uses assistant-list datalist defined above or can have its own */}
-                          </>
+                           <Input placeholder="Digite ou selecione o ajudante 2" {...field} list="assistant-list" />
                         </FormControl>
+                        {/* Re-uses assistant-list datalist defined above or can have its own if source is different */}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -300,15 +298,13 @@ export default function RegistroEntradaPage() {
                     <FormItem>
                       <FormLabel>Destino Interno</FormLabel>
                       <FormControl>
-                        <>
-                          <Input placeholder="Digite ou selecione o destino" {...field} list="internal-destination-list" />
-                          <datalist id="internal-destination-list">
-                            {internalDestinationsStore.map(dest => (
-                              <option key={dest.id} value={dest.name} />
-                            ))}
-                          </datalist>
-                        </>
+                        <Input placeholder="Digite ou selecione o destino" {...field} list="internal-destination-list" />
                       </FormControl>
+                      <datalist id="internal-destination-list">
+                        {internalDestinationsStore.map(dest => (
+                          <option key={dest.id} value={dest.name} />
+                        ))}
+                      </datalist>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -422,7 +418,7 @@ export default function RegistroEntradaPage() {
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => handleApproveEntry(vehicle.id)}
+                        onClick={() => handleApproveEntryAndPrint(vehicle.id)}
                         className="bg-green-600 hover:bg-green-700 text-white"
                       >
                         <CheckCircle className="mr-2 h-4 w-4" /> Liberar Entrada
@@ -449,4 +445,3 @@ export default function RegistroEntradaPage() {
     </div>
   );
 }
-
