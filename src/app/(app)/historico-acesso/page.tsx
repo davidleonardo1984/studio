@@ -27,9 +27,10 @@ import {
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { PdfPreviewModal } from '@/components/layout/PdfPreviewModal';
 
 
-const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; action: 'print_dialog_opened' | 'opened_in_new_tab' | 'downloaded_fallback' | 'error'; error?: any }> => {
+const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; blobUrl?: string; error?: any }> => {
   const pdfContentHtml = `
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">COMPROVANTE DE ENTRADA</h2>
@@ -64,121 +65,36 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
   hiddenDiv.innerHTML = pdfContentHtml;
   document.body.appendChild(hiddenDiv);
 
-  const contentElement = document.getElementById(`pdf-content-${entry.id}`);
-  if (!contentElement) {
-    console.error('PDF content element not found');
-     if (document.body.contains(hiddenDiv)) document.body.removeChild(hiddenDiv);
-    return { success: false, action: 'error', error: 'PDF content element not found' };
-  }
-
-  let canvas: HTMLCanvasElement;
   try {
-    canvas = await html2canvas(contentElement, { scale: 2 });
-  } catch (canvasError) {
-    console.error("Error generating canvas:", canvasError);
-    if (document.body.contains(hiddenDiv)) document.body.removeChild(hiddenDiv);
-    return { success: false, action: 'error', error: 'Canvas generation failed' };
+    const contentElement = document.getElementById(`pdf-content-${entry.id}`);
+    if (!contentElement) {
+      console.error('PDF content element not found');
+      return { success: false, error: 'PDF content element not found' };
+    }
+  
+    const canvas = await html2canvas(contentElement, { scale: 2 });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidthCanvas = canvas.width;
+    const imgHeightCanvas = canvas.height;
+    const ratio = Math.min(pdfWidth / imgWidthCanvas, pdfHeight / imgHeightCanvas);
+    const imgX = (pdfWidth - imgWidthCanvas * ratio) / 2;
+    const imgY = 15; 
+    pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidthCanvas * ratio, imgHeightCanvas * ratio);
+      
+    const blobUrl = pdf.output('bloburl');
+    return { success: true, blobUrl: blobUrl as string };
+
+  } catch (err) {
+    console.error("Error generating PDF:", err);
+    return { success: false, error: err };
+  } finally {
+    if (document.body.contains(hiddenDiv)) {
+      document.body.removeChild(hiddenDiv);
+    }
   }
-
-  const imgData = canvas.toDataURL('image/png');
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  const pdfWidth = pdf.internal.pageSize.getWidth();
-  const pdfHeight = pdf.internal.pageSize.getHeight();
-  const imgWidthCanvas = canvas.width;
-  const imgHeightCanvas = canvas.height;
-  const ratio = Math.min(pdfWidth / imgWidthCanvas, pdfHeight / imgHeightCanvas);
-  const imgX = (pdfWidth - imgWidthCanvas * ratio) / 2;
-  const imgY = 15; 
-  pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidthCanvas * ratio, imgHeightCanvas * ratio);
-    
-  return new Promise((resolve) => {
-    const pdfBlob = pdf.output('blob');
-    let blobUrl = URL.createObjectURL(pdfBlob);
-    let iframe: HTMLIFrameElement | null = null;
-    let cleanupTimeoutId: NodeJS.Timeout | null = null;
-
-    const cleanup = () => {
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-        blobUrl = ''; 
-      }
-      if (iframe && document.body.contains(iframe)) {
-        document.body.removeChild(iframe);
-        iframe = null;
-      }
-      if (document.body.contains(hiddenDiv)) {
-        document.body.removeChild(hiddenDiv);
-      }
-      if (cleanupTimeoutId) {
-        clearTimeout(cleanupTimeoutId);
-      }
-    };
-
-    iframe = document.createElement('iframe');
-    iframe.id = `print-iframe-${entry.id}`;
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-
-    const loadTimeout = setTimeout(() => {
-      if (!iframe) return;
-      console.warn(`Iframe for ${entry.id} timed out. Falling back to new tab.`);
-      const newWindow = window.open(blobUrl, '_blank');
-      if (newWindow) {
-        resolve({ success: true, action: 'opened_in_new_tab' });
-      } else {
-        console.warn(`New tab for ${entry.id} blocked. Falling back to download.`);
-        pdf.save(`comprovante-entrada-${entry.id}.pdf`);
-        resolve({ success: true, action: 'downloaded_fallback' });
-      }
-      cleanup();
-    }, 7000);
-
-    iframe.onload = () => {
-      if (!iframe) return;
-      clearTimeout(loadTimeout);
-      try {
-        if (iframe.contentWindow) {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-          resolve({ success: true, action: 'print_dialog_opened' });
-          cleanupTimeoutId = setTimeout(cleanup, 3000); 
-        } else {
-          throw new Error("Iframe contentWindow not available.");
-        }
-      } catch (printError) {
-        console.error(`Error triggering print dialog for ${entry.id}:`, printError);
-        const newWindow = window.open(blobUrl, '_blank');
-        if (newWindow) {
-          resolve({ success: true, action: 'opened_in_new_tab' });
-        } else {
-          console.warn(`New tab for ${entry.id} blocked after print error. Falling back to download.`);
-          pdf.save(`comprovante-entrada-${entry.id}.pdf`);
-          resolve({ success: true, action: 'downloaded_fallback' });
-        }
-        cleanup();
-      }
-    };
-
-    iframe.onerror = (e) => {
-      if (!iframe) return;
-      clearTimeout(loadTimeout);
-      console.error(`Error loading PDF into iframe for ${entry.id}:`, e);
-      const newWindow = window.open(blobUrl, '_blank');
-      if (newWindow) {
-        resolve({ success: true, action: 'opened_in_new_tab' });
-      } else {
-        console.warn(`New tab for ${entry.id} blocked after iframe error. Falling back to download.`);
-        pdf.save(`comprovante-entrada-${entry.id}.pdf`);
-        resolve({ success: true, action: 'downloaded_fallback' });
-      }
-      cleanup();
-    };
-    iframe.src = blobUrl;
-  }).catch(error => {
-      console.error("Error in PDF generation promise:", error);
-      if (document.body.contains(hiddenDiv)) document.body.removeChild(hiddenDiv);
-      return { success: false, action: 'error', error: "PDF generation process failed" };
-  });
 };
 
 
@@ -196,6 +112,8 @@ const escapeCsvField = (field: any): string => {
 export default function HistoricoAcessoPage() {
   const { toast } = useToast();
   const [allEntries, setAllEntries] = useState<VehicleEntry[]>([]);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
 
   useEffect(() => {
     const syncAllEntries = () => {
@@ -317,6 +235,7 @@ export default function HistoricoAcessoPage() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
         toast({title: "Exportado!", description: "Dados exportados para CSV."});
     } else {
          toast({variant: 'destructive', title: "Erro", description: "Seu navegador não suporta a exportação direta."});
@@ -359,26 +278,14 @@ export default function HistoricoAcessoPage() {
 
     const pdfResult = await generateVehicleEntryPdf(entry);
     
-    if (pdfResult.success) {
-        let pdfToastDescription = '';
-        switch (pdfResult.action) {
-            case 'print_dialog_opened':
-                pdfToastDescription = `Documento para ${entry.plate1} enviado para impressão.`;
-                break;
-            case 'opened_in_new_tab':
-                pdfToastDescription = `Impressão direta falhou. PDF para ${entry.plate1} aberto em nova aba.`;
-                break;
-            case 'downloaded_fallback':
-                pdfToastDescription = `Impressão e abertura em nova aba falharam. PDF para ${entry.plate1} baixado.`;
-                break;
-        }
-        if (pdfToastDescription) {
-            toast({
-                title: 'Documento de Entrada',
-                description: pdfToastDescription,
-                icon: <CheckCircle className="h-6 w-6 text-green-700" />
-            });
-        }
+    if (pdfResult.success && pdfResult.blobUrl) {
+      setPdfPreviewUrl(pdfResult.blobUrl);
+      setIsPdfPreviewOpen(true);
+      toast({
+          title: 'Documento Gerado',
+          description: `Documento para ${entry.plate1} pronto para visualização e impressão.`,
+          icon: <CheckCircle className="h-6 w-6 text-green-700" />
+      });
     } else {
         toast({
             variant: 'destructive',
@@ -398,8 +305,16 @@ export default function HistoricoAcessoPage() {
     setSearchTerm('');
   };
 
+  const closePreviewModal = () => {
+    setIsPdfPreviewOpen(false);
+    if (pdfPreviewUrl) {
+      URL.revokeObjectURL(pdfPreviewUrl);
+    }
+    setPdfPreviewUrl(null);
+  };
 
   return (
+    <>
     <div className="container mx-auto py-8 space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-primary font-headline">Histórico de Acesso</h1>
@@ -585,5 +500,14 @@ export default function HistoricoAcessoPage() {
         </CardContent>
       </Card>
     </div>
+    {isPdfPreviewOpen && pdfPreviewUrl && (
+        <PdfPreviewModal
+            isOpen={isPdfPreviewOpen}
+            onClose={closePreviewModal}
+            pdfUrl={pdfPreviewUrl}
+        />
+    )}
+    </>
   );
 }
+
