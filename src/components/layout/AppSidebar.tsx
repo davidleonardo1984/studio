@@ -31,7 +31,6 @@ const navItems: NavItem[] = [
   { href: '/cadastros-gerais', label: 'Cadastros Gerais', icon: Edit3 },
   { href: '/historico-acesso', label: 'Histórico de Acesso', icon: History },
   { href: '/cadastro-acesso', label: 'Cadastro de Acesso', icon: Users, adminOnly: true },
-  { href: '/mudar-senha', label: 'Mudar Senha', icon: KeyRound },
 ];
 
 export function AppSidebar() {
