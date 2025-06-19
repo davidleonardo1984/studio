@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useAuth } from '@/context/AuthContext';
@@ -35,7 +36,7 @@ export function AppHeader() {
             <AlignLeft className="h-5 w-5" />
           </Button>
         )}
-        <h1 className="text-xl font-semibold text-primary font-headline">Portaria Única RES</h1>
+        {/* The H1 title "Portaria Única RES" has been removed from here */}
       </div>
       
       {user && (
