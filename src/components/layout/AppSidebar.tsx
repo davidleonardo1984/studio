@@ -69,7 +69,12 @@ export function AppSidebar() {
           </SidebarMenu>
         </ScrollArea>
       </SidebarContent>
-      {/* The SidebarFooter containing the Logout button has been removed */}
+      <SidebarFooter className="p-2 border-t border-sidebar-border">
+        <div className="text-center text-xs text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
+          <p>Desenvolvido por David Leonardo</p>
+          <p>Versão 1.0</p>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }

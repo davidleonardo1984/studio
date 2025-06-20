@@ -112,6 +112,7 @@ export default function LoginPage() {
         </CardContent>
       </Card>
       <footer className="mt-8 text-center text-sm text-muted-foreground">
+        <p>Desenvolvido por David Leonardo Versão 1.0</p>
         <p>&copy; {new Date().getFullYear()} Portaria Única RES. Todos os direitos reservados.</p>
       </footer>
     </div>
