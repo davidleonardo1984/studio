@@ -69,20 +69,7 @@ export function AppSidebar() {
           </SidebarMenu>
         </ScrollArea>
       </SidebarContent>
-      {user && (
-        <SidebarFooter className="p-2 border-t border-sidebar-border">
-          <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton onClick={logout} className="justify-start w-full text-sidebar-foreground hover:bg-destructive/20 hover:text-destructive"
-                 tooltip={{children: "Sair", side: "right", className: "bg-destructive text-destructive-foreground"}}
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span className="group-data-[collapsible=icon]:hidden">Sair</span>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      )}
+      {/* The SidebarFooter containing the Logout button has been removed */}
     </Sidebar>
   );
 }
