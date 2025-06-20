@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -34,6 +34,16 @@ export default function RegistroSaidaPage() {
       barcode: '',
     },
   });
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (foundEntry) {
+      timer = setTimeout(() => {
+        setFoundEntry(null);
+      }, 5000); // 5 seconds
+    }
+    return () => clearTimeout(timer); // Cleanup timeout on component unmount or if foundEntry changes
+  }, [foundEntry]);
 
   const processExit = async (barcode: string): Promise<VehicleEntry | null> => {
     const entryIndex = entriesStore.findIndex(e => e.id === barcode && e.status !== 'saiu');
