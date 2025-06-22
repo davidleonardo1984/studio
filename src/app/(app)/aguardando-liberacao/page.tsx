@@ -328,7 +328,6 @@ export default function AguardandoLiberacaoPage() {
               }
             }}
             className="mt-2"
-            noAutoUppercase={true}
           />
         </div>
         <AlertDialogFooter>
