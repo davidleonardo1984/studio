@@ -5,7 +5,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
@@ -327,11 +326,6 @@ export default function HistoricoAcessoPage() {
     }
   };
 
-  const transportCompanyOptions = useMemo(() => {
-    const companies = new Set(allEntries.map(e => e.transportCompanyName));
-    return Array.from(companies);
-  }, [allEntries]);
-
   const resetFilters = () => {
     setFilters({ transportCompany: '', plate: '', dateRange: undefined });
     setSearchTerm('');
@@ -362,13 +356,13 @@ export default function HistoricoAcessoPage() {
             </div>
              <div className="space-y-1">
                 <Label htmlFor="transportCompanyFilter">Transportadora</Label>
-                <Select value={filters.transportCompany} onValueChange={(value) => setFilters(prev => ({...prev, transportCompany: value === 'all' ? '' : value}))} disabled={!!searchTerm.trim()}>
-                    <SelectTrigger id="transportCompanyFilter"><SelectValue placeholder="TODAS TRANSPORTADORAS" /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">TODAS TRANSPORTADORAS</SelectItem>
-                        {transportCompanyOptions.map(tc => <SelectItem key={tc} value={tc}>{tc}</SelectItem>)}
-                    </SelectContent>
-                </Select>
+                <Input
+                  id="transportCompanyFilter"
+                  placeholder="FILTRAR POR TRANSPORTADORA..."
+                  value={filters.transportCompany}
+                  onChange={(e) => setFilters(prev => ({ ...prev, transportCompany: e.target.value }))}
+                  disabled={!!searchTerm.trim()}
+                />
             </div>
             <div className="space-y-1">
               <Label htmlFor="plateFilter">Placa</Label>
@@ -538,3 +532,5 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
+
+    
