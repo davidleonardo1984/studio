@@ -32,7 +32,7 @@ import html2canvas from 'html2canvas';
 const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; blobUrl?: string; error?: any }> => {
   const pdfContentHtml = `
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
-      <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">COMPROVANTE DE ENTRADA</h2>
+      <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">ROMANEIO DE ENTRADA</h2>
       <div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: center; height: 100px; margin-bottom: 15px; border: 2px dashed #333; background-color: #f9f9f9; padding: 0 15px 0 15px;">
         <p style="font-family: 'Libre Barcode 39 Text', 'Code 39', 'Courier New', monospace; font-size: 48px; text-align: center; margin: 0; color: #000; line-height: 0.9;">*${entry.id}*</p>
         <p style="font-size: 9px; text-align: center; margin: 2px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
@@ -97,7 +97,7 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
         </div>
       </div>
 
-      <p style="text-align: center; font-size: 9px; margin-top: 25px; color: #777;">Portaria Única RES - Comprovante de Entrada</p>
+      <p style="text-align: center; font-size: 9px; margin-top: 25px; color: #777;">Portaria Única RES - Romaneio de Entrada</p>
     </div>
   `;
 
