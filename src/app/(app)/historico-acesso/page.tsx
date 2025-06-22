@@ -27,7 +27,6 @@ import {
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { PdfPreviewModal } from '@/components/layout/PdfPreviewModal';
 
 
 const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; blobUrl?: string; error?: any }> => {
@@ -152,9 +151,7 @@ const escapeCsvField = (field: any): string => {
 export default function HistoricoAcessoPage() {
   const { toast } = useToast();
   const [allEntries, setAllEntries] = useState<VehicleEntry[]>([]);
-  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
-  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
-
+  
   useEffect(() => {
     const syncAllEntries = () => {
       const combined = [...entriesStore, ...waitingYardStore];
@@ -308,6 +305,40 @@ export default function HistoricoAcessoPage() {
 
     toast({ title: 'Registros Antigos Excluídos', description: 'Registros com mais de 365 dias e status "saiu" foram removidos.' });
   };
+  
+  const printPdf = (blobUrl: string, plate: string) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.src = blobUrl;
+
+    iframe.onload = () => {
+      setTimeout(() => { // Add a small delay for reliability
+        try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+        } catch (error) {
+            console.error("Failed to print.", error);
+            toast({
+                variant: "destructive",
+                title: "Erro de Impressão",
+                description: `Não foi possível abrir a caixa de diálogo de impressão para o veículo ${plate}. Verifique se o navegador está bloqueando pop-ups.`
+            });
+        } finally {
+            // Cleanup after a short delay
+            setTimeout(() => {
+                if (document.body.contains(iframe)) {
+                    document.body.removeChild(iframe);
+                }
+                URL.revokeObjectURL(blobUrl);
+            }, 2000); 
+        }
+      }, 100);
+    };
+    document.body.appendChild(iframe);
+  };
 
 
   const handlePrintEntry = async (entry: VehicleEntry) => {
@@ -319,13 +350,12 @@ export default function HistoricoAcessoPage() {
     const pdfResult = await generateVehicleEntryPdf(entry);
     
     if (pdfResult.success && pdfResult.blobUrl) {
-      setPdfPreviewUrl(pdfResult.blobUrl);
-      setIsPdfPreviewOpen(true);
       toast({ 
-          title: 'Documento Pronto para Visualização',
-          description: `Documento para ${entry.plate1} gerado. Visualize e imprima.`,
+          title: 'Documento Pronto',
+          description: `Seu documento para ${entry.plate1} será impresso.`,
           icon: <CheckCircle className="h-6 w-6 text-green-700" />
       });
+      printPdf(pdfResult.blobUrl, entry.plate1);
     } else {
         toast({
             variant: 'destructive',
@@ -343,14 +373,6 @@ export default function HistoricoAcessoPage() {
   const resetFilters = () => {
     setFilters({ transportCompany: '', plate: '', dateRange: undefined });
     setSearchTerm('');
-  };
-
-  const closePreviewModal = () => {
-    setIsPdfPreviewOpen(false);
-    if (pdfPreviewUrl) {
-      URL.revokeObjectURL(pdfPreviewUrl);
-    }
-    setPdfPreviewUrl(null);
   };
 
   return (
@@ -540,14 +562,6 @@ export default function HistoricoAcessoPage() {
         </CardContent>
       </Card>
     </div>
-    {isPdfPreviewOpen && pdfPreviewUrl && (
-        <PdfPreviewModal
-            isOpen={isPdfPreviewOpen}
-            onClose={closePreviewModal}
-            pdfUrl={pdfPreviewUrl}
-        />
-    )}
     </>
   );
 }
-

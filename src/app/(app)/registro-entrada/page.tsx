@@ -224,6 +224,7 @@ export default function RegistroEntradaPage() {
     iframe.src = blobUrl;
 
     iframe.onload = () => {
+      setTimeout(() => { // Add a small delay for reliability
         try {
             iframe.contentWindow?.focus();
             iframe.contentWindow?.print();
@@ -232,16 +233,18 @@ export default function RegistroEntradaPage() {
             toast({
                 variant: "destructive",
                 title: "Erro de Impressão",
-                description: `Não foi possível abrir a caixa de diálogo de impressão para o veículo ${plate}.`
+                description: `Não foi possível abrir a caixa de diálogo de impressão para o veículo ${plate}. Verifique se o navegador está bloqueando pop-ups.`
             });
         } finally {
+            // Cleanup after a short delay
             setTimeout(() => {
                 if (document.body.contains(iframe)) {
                     document.body.removeChild(iframe);
                 }
                 URL.revokeObjectURL(blobUrl);
-            }, 1000); 
+            }, 2000); 
         }
+      }, 100);
     };
     document.body.appendChild(iframe);
   };
