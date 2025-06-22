@@ -13,6 +13,18 @@ import { useRouter } from 'next/navigation';
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Label } from '@/components/ui/label';
 
 
 const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; blobUrl?: string; error?: any }> => {
@@ -64,6 +76,12 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
         </div>
       </div>
       
+      ${entry.liberatedBy ? `
+      <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; margin-top: 15px;">
+        <p style="margin: 0;"><span style="font-weight: bold;">LIBERADO POR:</span> ${entry.liberatedBy.toUpperCase()}</p>
+      </div>
+      ` : ''}
+
       <hr style="margin-top: 15px; margin-bottom: 10px; border: 0; border-top: 1px solid #eee;" />
       
       <div style="margin-top: 20px; font-size: 11px; page-break-inside: avoid; border: 1px solid #ddd; padding: 15px 10px; border-radius: 4px;">
@@ -128,6 +146,10 @@ export default function AguardandoLiberacaoPage() {
   const router = useRouter();
   const [waitingVehicles, setWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [liberatedByName, setLiberatedByName] = useState('');
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleEntry | null>(null);
+
 
   useEffect(() => {
     const syncWaitingVehicles = () => {
@@ -142,6 +164,14 @@ export default function AguardandoLiberacaoPage() {
     const intervalId = setInterval(syncWaitingVehicles, 2000); 
     return () => clearInterval(intervalId); 
   }, [waitingVehicles]); 
+
+  // Reset local state when dialog closes
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setSelectedVehicle(null);
+      setLiberatedByName('');
+    }
+  }, [isDialogOpen]);
 
 
   const filteredVehicles = useMemo(() => {
@@ -187,7 +217,7 @@ export default function AguardandoLiberacaoPage() {
     document.body.appendChild(iframe);
   };
 
-  const handleApproveEntry = async (vehicleId: string) => {
+  const handleApproveEntry = async (vehicleId: string, liberatedBy?: string) => {
     const vehicleToApproveIndex = waitingYardStore.findIndex(v => v.id === vehicleId);
 
     if (vehicleToApproveIndex > -1) {
@@ -195,7 +225,8 @@ export default function AguardandoLiberacaoPage() {
         const updatedVehicle: VehicleEntry = { 
             ...vehicleToApprove, 
             status: 'entrada_liberada' as 'entrada_liberada',
-            liberationTimestamp: new Date().toISOString()
+            liberationTimestamp: new Date().toISOString(),
+            liberatedBy: liberatedBy?.trim(),
         };
         
         waitingYardStore.splice(vehicleToApproveIndex, 1);
@@ -274,10 +305,13 @@ export default function AguardandoLiberacaoPage() {
                     <TableCell>{vehicle.plate1}</TableCell>
                     <TableCell>{new Date(vehicle.arrivalTimestamp).toLocaleString('pt-BR')}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button 
+                       <Button 
                         variant="default" 
                         size="sm" 
-                        onClick={() => handleApproveEntry(vehicle.id)}
+                        onClick={() => {
+                          setSelectedVehicle(vehicle);
+                          setIsDialogOpen(true);
+                        }}
                         className="bg-green-600 hover:bg-green-700 text-white"
                       >
                         <CheckCircle className="mr-2 h-4 w-4" /> Liberar Entrada
@@ -302,6 +336,49 @@ export default function AguardandoLiberacaoPage() {
         </CardContent>
       </Card>
     </div>
+    <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirmar Liberação de {selectedVehicle?.plate1}</AlertDialogTitle>
+          <AlertDialogDescription>
+            Este campo é opcional. Pressione Enter ou clique em confirmar para prosseguir.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="py-2">
+          <Label htmlFor="liberado-por" className="text-right">Liberado por:</Label>
+          <Input
+            id="liberado-por"
+            placeholder="Nome do liberador"
+            value={liberatedByName}
+            onChange={(e) => setLiberatedByName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if(selectedVehicle) {
+                  handleApproveEntry(selectedVehicle.id, liberatedByName);
+                  setIsDialogOpen(false);
+                }
+              }
+            }}
+            className="mt-2"
+            noAutoUppercase={true}
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              if (selectedVehicle) {
+                handleApproveEntry(selectedVehicle.id, liberatedByName);
+                setIsDialogOpen(false);
+              }
+            }}
+          >
+            Confirmar e Imprimir
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

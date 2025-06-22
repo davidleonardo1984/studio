@@ -77,6 +77,12 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
           <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Observação:</span> ${entry.observation || '-'}</p>
         </div>
       </div>
+
+      ${entry.liberatedBy ? `
+      <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; margin-top: 15px;">
+        <p style="margin: 0;"><span style="font-weight: bold;">LIBERADO POR:</span> ${entry.liberatedBy.toUpperCase()}</p>
+      </div>
+      ` : ''}
       
       <hr style="margin-top: 15px; margin-bottom: 10px; border: 0; border-top: 1px solid #eee;" />
             
@@ -235,7 +241,7 @@ export default function HistoricoAcessoPage() {
         toast({variant: 'destructive', title: "Nenhum dado", description: "Não há dados para exportar com os filtros atuais."});
         return;
     }
-    const headers = ["ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA", "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "DATA/HORA SAÍDA", "STATUS", "REGISTRADO POR"];
+    const headers = ["ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA", "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "LIBERADO POR", "DATA/HORA SAÍDA", "STATUS", "REGISTRADO POR"];
     const csvRows = [
         headers.map(escapeCsvField).join(','),
         ...filteredEntries.map(e => [
@@ -252,6 +258,7 @@ export default function HistoricoAcessoPage() {
             escapeCsvField(e.observation || ''),
             escapeCsvField(new Date(e.arrivalTimestamp).toLocaleString('pt-BR')),
             escapeCsvField(e.liberationTimestamp ? new Date(e.liberationTimestamp).toLocaleString('pt-BR') : ''),
+            escapeCsvField(e.liberatedBy || ''),
             escapeCsvField(e.exitTimestamp ? new Date(e.exitTimestamp).toLocaleString('pt-BR') : ''),
             escapeCsvField(
                 e.status === 'saiu' ? 'Saiu' :

@@ -22,6 +22,16 @@ import { personsStore, transportCompaniesStore, internalDestinationsStore } from
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -103,6 +113,12 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
         </div>
       </div>
       
+      ${entry.liberatedBy ? `
+      <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; margin-top: 15px;">
+        <p style="margin: 0;"><span style="font-weight: bold;">LIBERADO POR:</span> ${entry.liberatedBy.toUpperCase()}</p>
+      </div>
+      ` : ''}
+
       <hr style="margin-top: 15px; margin-bottom: 10px; border: 0; border-top: 1px solid #eee;" />
       
       <div style="margin-top: 20px; font-size: 11px; page-break-inside: avoid; border: 1px solid #ddd; padding: 15px 10px; border-radius: 4px;">
@@ -168,11 +184,17 @@ export default function RegistroEntradaPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAssistants, setShowAssistants] = useState(false);
-
+  
   const [currentWaitingVehicles, setCurrentWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-   useEffect(() => {
+  // State for approval dialog
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [liberatedByName, setLiberatedByName] = useState('');
+  const [approvalContext, setApprovalContext] = useState<{ type: 'new_entry' | 'waiting_list'; vehicle?: VehicleEntry } | null>(null);
+
+
+  useEffect(() => {
     const syncWaitingVehicles = () => {
       const currentWaitingStr = JSON.stringify(currentWaitingVehicles.map(v => v.id).sort());
       const globalWaitingStr = JSON.stringify(waitingYardStore.map(v => v.id).sort());
@@ -185,6 +207,14 @@ export default function RegistroEntradaPage() {
     const intervalId = setInterval(syncWaitingVehicles, 2000); 
     return () => clearInterval(intervalId); 
   }, [currentWaitingVehicles]); 
+
+  // Reset dialog state when it closes
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setApprovalContext(null);
+      setLiberatedByName('');
+    }
+  }, [isDialogOpen]);
 
 
   const form = useForm<VehicleEntryFormData>({
@@ -199,7 +229,7 @@ export default function RegistroEntradaPage() {
       plate2: '',
       plate3: '',
       internalDestinationName: '',
-      movementType: '',
+      movementType: '', 
       observation: '',
     },
   });
@@ -249,7 +279,7 @@ export default function RegistroEntradaPage() {
     document.body.appendChild(iframe);
   };
 
-  const handleFormSubmit = async (data: VehicleEntryFormData, status: 'aguardando_patio' | 'entrada_liberada') => {
+  const handleFormSubmit = async (data: VehicleEntryFormData, status: 'aguardando_patio' | 'entrada_liberada', liberatedBy?: string) => {
     if (!user) {
       toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
       return;
@@ -262,6 +292,7 @@ export default function RegistroEntradaPage() {
       id: generateBarcode(),
       arrivalTimestamp: currentTime,
       liberationTimestamp: status === 'entrada_liberada' ? currentTime : undefined,
+      liberatedBy: liberatedBy?.trim(),
       status: status,
       registeredBy: user.login,
     };
@@ -323,14 +354,15 @@ export default function RegistroEntradaPage() {
     ); 
   }, [currentWaitingVehicles, searchTerm]);
 
-  const handleApproveEntryAndPrint = async (vehicleId: string) => {
+  const handleApproveEntryAndPrint = async (vehicleId: string, liberatedBy?: string) => {
     const vehicleToApproveIndex = waitingYardStore.findIndex(v => v.id === vehicleId);
     if (vehicleToApproveIndex > -1) {
       const vehicleToApprove = waitingYardStore[vehicleToApproveIndex];
       const updatedVehicle: VehicleEntry = { 
         ...vehicleToApprove, 
         status: 'entrada_liberada' as 'entrada_liberada',
-        liberationTimestamp: new Date().toISOString() 
+        liberationTimestamp: new Date().toISOString(),
+        liberatedBy: liberatedBy?.trim(),
       };
       
       waitingYardStore.splice(vehicleToApproveIndex, 1); 
@@ -383,6 +415,29 @@ export default function RegistroEntradaPage() {
       toast({ variant: 'destructive', title: 'Erro ao Copiar', description: 'Não foi possível copiar os dados.' });
     }
   };
+
+  const initiateNewEntryApproval = async () => {
+    const isValid = await form.trigger();
+    if (isValid) {
+      setApprovalContext({ type: 'new_entry' });
+      setIsDialogOpen(true);
+    } else {
+      toast({ variant: 'destructive', title: 'Formulário Inválido', description: 'Por favor, corrija os erros para prosseguir.' });
+    }
+  };
+
+  const handleConfirmApproval = () => {
+    if (!approvalContext) return;
+
+    if (approvalContext.type === 'new_entry') {
+      handleFormSubmit(form.getValues(), 'entrada_liberada', liberatedByName);
+    } else if (approvalContext.type === 'waiting_list' && approvalContext.vehicle) {
+      handleApproveEntryAndPrint(approvalContext.vehicle.id, liberatedByName);
+    }
+    
+    setIsDialogOpen(false);
+  };
+
 
   return (
     <>
@@ -657,7 +712,7 @@ export default function RegistroEntradaPage() {
                 Aguardar no Pátio
             </Button>
             <Button
-                onClick={form.handleSubmit(data => handleFormSubmit(data, 'entrada_liberada'))}
+                onClick={initiateNewEntryApproval}
                 disabled={isSubmitting}
                 className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
             >
@@ -728,7 +783,10 @@ export default function RegistroEntradaPage() {
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => handleApproveEntryAndPrint(vehicle.id)}
+                        onClick={() => {
+                          setApprovalContext({ type: 'waiting_list', vehicle });
+                          setIsDialogOpen(true);
+                        }}
                         className="bg-green-600 hover:bg-green-700 text-white"
                       >
                         <Printer className="mr-2 h-4 w-4" /> Liberar Entrada
@@ -753,6 +811,45 @@ export default function RegistroEntradaPage() {
         </CardContent>
       </Card>
     </div>
+
+    <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {approvalContext?.type === 'new_entry' 
+              ? `Confirmar Liberação de ${form.getValues().plate1}`
+              : `Confirmar Liberação de ${approvalContext?.vehicle?.plate1}`
+            }
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Este campo é opcional. Pressione Enter ou clique em confirmar para prosseguir.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="py-2">
+          <Label htmlFor="liberado-por-dialog" className="text-right">Liberado por:</Label>
+          <Input
+            id="liberado-por-dialog"
+            placeholder="Nome do liberador"
+            value={liberatedByName}
+            onChange={(e) => setLiberatedByName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleConfirmApproval();
+              }
+            }}
+            className="mt-2"
+            noAutoUppercase={true}
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirmApproval}>
+            Confirmar e Imprimir
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

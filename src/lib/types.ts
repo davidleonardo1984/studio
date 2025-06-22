@@ -20,7 +20,7 @@ export interface Driver {
 export interface Assistant extends Driver {}
 
 export interface TransportCompany {
-  id: string;
+  id:string;
   name: string;
 }
 
@@ -48,6 +48,7 @@ export interface VehicleEntry {
   exitTimestamp?: string; // ISO string or formatted
   status: EntryStatus;
   registeredBy: string; // User login
+  liberatedBy?: string;
 }
 
 // For forms that might reference IDs from registered entities
