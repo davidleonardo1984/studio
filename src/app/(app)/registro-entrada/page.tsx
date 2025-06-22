@@ -64,7 +64,7 @@ const entrySchema = z.object({
 });
 
 
-const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; pdfDataUri?: string; error?: any }> => {
+const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; pdfBlob?: Blob; error?: any }> => {
   const pdfContentHtml = `
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">ROMANEIO DE ENTRADA</h2>
@@ -164,8 +164,8 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
     const imgY = 15;
     pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidthCanvas * ratio, imgHeightCanvas * ratio);
 
-    const pdfDataUri = pdf.output('dataurlstring');
-    return { success: true, pdfDataUri };
+    const pdfBlob = pdf.output('blob');
+    return { success: true, pdfBlob: pdfBlob };
 
   } catch (err) {
     console.error("Error generating PDF:", err);
@@ -245,13 +245,14 @@ export default function RegistroEntradaPage() {
     return `${year}${month}${day}${hours}${minutes}${seconds}`;
   };
 
-  const printPdf = (pdfDataUri: string, plate: string) => {
+  const printPdf = (pdfBlob: Blob, plate: string) => {
+    const url = URL.createObjectURL(pdfBlob);
     const iframe = document.createElement('iframe');
     iframe.style.position = 'absolute';
     iframe.style.width = '0';
     iframe.style.height = '0';
     iframe.style.border = '0';
-    iframe.src = pdfDataUri;
+    iframe.src = url;
 
     iframe.onload = () => {
       setTimeout(() => { // Add a small delay for reliability
@@ -267,6 +268,7 @@ export default function RegistroEntradaPage() {
             });
         } finally {
             // Cleanup after a short delay
+            URL.revokeObjectURL(url);
             setTimeout(() => {
                 if (document.body.contains(iframe)) {
                     document.body.removeChild(iframe);
@@ -317,8 +319,8 @@ export default function RegistroEntradaPage() {
 
       const pdfResult = await generateVehicleEntryPdf(newEntry);
       
-      if (pdfResult.success && pdfResult.pdfDataUri) {
-          printPdf(pdfResult.pdfDataUri, newEntry.plate1);
+      if (pdfResult.success && pdfResult.pdfBlob) {
+          printPdf(pdfResult.pdfBlob, newEntry.plate1);
       } else {
           toast({
               variant: 'destructive',
@@ -377,8 +379,8 @@ export default function RegistroEntradaPage() {
 
       const pdfResult = await generateVehicleEntryPdf(updatedVehicle);
       
-      if (pdfResult.success && pdfResult.pdfDataUri) {
-          printPdf(pdfResult.pdfDataUri, updatedVehicle.plate1);
+      if (pdfResult.success && pdfResult.pdfBlob) {
+          printPdf(pdfResult.pdfBlob, updatedVehicle.plate1);
       } else {
            toast({
               variant: 'destructive',
