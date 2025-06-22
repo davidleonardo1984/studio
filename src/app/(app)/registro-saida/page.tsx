@@ -42,8 +42,13 @@ export default function RegistroSaidaPage() {
         setFoundEntry(null);
       }, 5000); // 5 seconds
     }
-    return () => clearTimeout(timer); // Cleanup timeout on component unmount or if foundEntry changes
-  }, [foundEntry]);
+    if (entryNotFound) {
+        timer = setTimeout(() => {
+            setEntryNotFound(false);
+        }, 5000);
+    }
+    return () => clearTimeout(timer); // Cleanup timeout on component unmount or if foundEntry/entryNotFound changes
+  }, [foundEntry, entryNotFound]);
 
   const processExit = async (barcode: string): Promise<VehicleEntry | null> => {
     const entryIndex = entriesStore.findIndex(e => e.id === barcode && e.status !== 'saiu');
@@ -83,6 +88,7 @@ export default function RegistroSaidaPage() {
         title: 'Erro ao Registrar Saída',
         description: 'Código de barras não encontrado ou veículo já saiu.',
       });
+      form.reset();
     }
     setIsProcessing(false);
   };
@@ -171,4 +177,3 @@ export default function RegistroSaidaPage() {
     </div>
   );
 }
-
