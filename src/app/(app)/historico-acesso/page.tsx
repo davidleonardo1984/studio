@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
+import { transportCompaniesStore } from '@/lib/store';
 import html2canvas from 'html2canvas';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 
@@ -362,7 +363,13 @@ export default function HistoricoAcessoPage() {
                   value={filters.transportCompany}
                   onChange={(e) => setFilters(prev => ({ ...prev, transportCompany: e.target.value }))}
                   disabled={!!searchTerm.trim()}
+                  list="transport-company-filter-list"
                 />
+                <datalist id="transport-company-filter-list">
+                  {transportCompaniesStore.map((company) => (
+                    <option key={company.id} value={company.name} />
+                  ))}
+                </datalist>
             </div>
             <div className="space-y-1">
               <Label htmlFor="plateFilter">Placa</Label>
@@ -532,5 +539,3 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
-
-    
