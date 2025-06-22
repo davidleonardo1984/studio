@@ -68,7 +68,7 @@ export function PdfPreviewModal({ isOpen, onClose, pdfUrl }: PdfPreviewModalProp
         <div className="flex-grow p-4 overflow-hidden">
           <iframe
             ref={iframeRef}
-            src={pdfUrl}
+            src={`${pdfUrl}#toolbar=0`}
             title="Pré-visualização do PDF"
             className="w-full h-full border-0"
           />
