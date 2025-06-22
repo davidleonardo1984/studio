@@ -32,6 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { PdfPreviewModal } from '@/components/layout/PdfPreviewModal';
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -188,10 +189,14 @@ export default function RegistroEntradaPage() {
   const [currentWaitingVehicles, setCurrentWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // State for approval dialog
+  // State for "Liberado por" dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [liberatedByName, setLiberatedByName] = useState('');
   const [approvalContext, setApprovalContext] = useState<{ type: 'new_entry' | 'waiting_list'; vehicle?: VehicleEntry } | null>(null);
+
+  // State for PDF Preview Modal
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -245,41 +250,6 @@ export default function RegistroEntradaPage() {
     return `${year}${month}${day}${hours}${minutes}${seconds}`;
   };
 
-  const printPdf = (pdfBlob: Blob, plate: string) => {
-    const url = URL.createObjectURL(pdfBlob);
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    iframe.src = url;
-
-    iframe.onload = () => {
-      setTimeout(() => { // Add a small delay for reliability
-        try {
-            iframe.contentWindow?.focus();
-            iframe.contentWindow?.print();
-        } catch (error) {
-            console.error("Failed to print.", error);
-            toast({
-                variant: "destructive",
-                title: "Erro de Impressão",
-                description: `Não foi possível abrir a caixa de diálogo de impressão para o veículo ${plate}. Verifique se o navegador está bloqueando pop-ups.`
-            });
-        } finally {
-            // Cleanup after a short delay
-            URL.revokeObjectURL(url);
-            setTimeout(() => {
-                if (document.body.contains(iframe)) {
-                    document.body.removeChild(iframe);
-                }
-            }, 2000); 
-        }
-      }, 100);
-    };
-    document.body.appendChild(iframe);
-  };
-
   const handleFormSubmit = async (data: VehicleEntryFormData, status: 'aguardando_patio' | 'entrada_liberada', liberatedBy?: string) => {
     if (!user) {
       toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
@@ -310,9 +280,9 @@ export default function RegistroEntradaPage() {
       });
     } else { 
       entriesStore.push(newEntry);
-       toast({
+      toast({
           title: `Entrada de ${newEntry.plate1} Registrada!`,
-          description: `Preparando documento para impressão... Código: ${newEntry.id}.`,
+          description: `Preparando documento para visualização... Código: ${newEntry.id}.`,
           className: 'bg-green-600 text-white',
           icon: <CheckCircle className="h-6 w-6 text-white" />
       });
@@ -320,7 +290,9 @@ export default function RegistroEntradaPage() {
       const pdfResult = await generateVehicleEntryPdf(newEntry);
       
       if (pdfResult.success && pdfResult.pdfBlob) {
-          printPdf(pdfResult.pdfBlob, newEntry.plate1);
+          const url = URL.createObjectURL(pdfResult.pdfBlob);
+          setPreviewPdfUrl(url);
+          setIsPreviewModalOpen(true);
       } else {
           toast({
               variant: 'destructive',
@@ -355,7 +327,7 @@ export default function RegistroEntradaPage() {
     ); 
   }, [currentWaitingVehicles, searchTerm]);
 
-  const handleApproveEntryAndPrint = async (vehicleId: string, liberatedBy?: string) => {
+  const handleApproveEntry = async (vehicleId: string, liberatedBy?: string) => {
     const vehicleToApproveIndex = waitingYardStore.findIndex(v => v.id === vehicleId);
     if (vehicleToApproveIndex > -1) {
       const vehicleToApprove = waitingYardStore[vehicleToApproveIndex];
@@ -372,7 +344,7 @@ export default function RegistroEntradaPage() {
 
       toast({
           title: `Veículo ${updatedVehicle.plate1} Liberado!`,
-          description: `Preparando documento para impressão... Código: ${updatedVehicle.id}.`,
+          description: `Preparando documento para visualização... Código: ${updatedVehicle.id}.`,
           className: 'bg-green-600 text-white',
           icon: <CheckCircle className="h-6 w-6 text-white" />
       });
@@ -380,7 +352,9 @@ export default function RegistroEntradaPage() {
       const pdfResult = await generateVehicleEntryPdf(updatedVehicle);
       
       if (pdfResult.success && pdfResult.pdfBlob) {
-          printPdf(pdfResult.pdfBlob, updatedVehicle.plate1);
+          const url = URL.createObjectURL(pdfResult.pdfBlob);
+          setPreviewPdfUrl(url);
+          setIsPreviewModalOpen(true);
       } else {
            toast({
               variant: 'destructive',
@@ -433,10 +407,18 @@ export default function RegistroEntradaPage() {
     if (approvalContext.type === 'new_entry') {
       handleFormSubmit(form.getValues(), 'entrada_liberada', liberatedByName);
     } else if (approvalContext.type === 'waiting_list' && approvalContext.vehicle) {
-      handleApproveEntryAndPrint(approvalContext.vehicle.id, liberatedByName);
+      handleApproveEntry(approvalContext.vehicle.id, liberatedByName);
     }
     
     setIsDialogOpen(false);
+  };
+  
+  const handleClosePreview = () => {
+    if (previewPdfUrl) {
+        URL.revokeObjectURL(previewPdfUrl);
+    }
+    setIsPreviewModalOpen(false);
+    setPreviewPdfUrl(null);
   };
 
 
@@ -846,11 +828,17 @@ export default function RegistroEntradaPage() {
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction onClick={handleConfirmApproval}>
-            Confirmar e Imprimir
+            Confirmar e Gerar Documento
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    <PdfPreviewModal 
+        isOpen={isPreviewModalOpen}
+        onClose={handleClosePreview}
+        pdfUrl={previewPdfUrl}
+    />
     </>
   );
 }
