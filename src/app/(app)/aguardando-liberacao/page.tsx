@@ -13,7 +13,6 @@ import { useRouter } from 'next/navigation';
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { PdfPreviewModal } from '@/components/layout/PdfPreviewModal';
 
 
 const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; blobUrl?: string; error?: any }> => {
@@ -129,8 +128,6 @@ export default function AguardandoLiberacaoPage() {
   const router = useRouter();
   const [waitingVehicles, setWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
-  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
 
   useEffect(() => {
     const syncWaitingVehicles = () => {
@@ -156,6 +153,37 @@ export default function AguardandoLiberacaoPage() {
     );
   }, [waitingVehicles, searchTerm]);
 
+  const printPdf = (blobUrl: string, plate: string) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.src = blobUrl;
+
+    iframe.onload = () => {
+        try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+        } catch (error) {
+            console.error("Failed to print.", error);
+            toast({
+                variant: "destructive",
+                title: "Erro de Impressão",
+                description: `Não foi possível abrir a caixa de diálogo de impressão para o veículo ${plate}.`
+            });
+        } finally {
+            setTimeout(() => {
+                if (document.body.contains(iframe)) {
+                    document.body.removeChild(iframe);
+                }
+                URL.revokeObjectURL(blobUrl);
+            }, 1000); 
+        }
+    };
+    document.body.appendChild(iframe);
+  };
+
   const handleApproveEntry = async (vehicleId: string) => {
     const vehicleToApproveIndex = waitingYardStore.findIndex(v => v.id === vehicleId);
 
@@ -174,7 +202,7 @@ export default function AguardandoLiberacaoPage() {
         
         toast({
             title: `Veículo ${updatedVehicle.plate1} Liberado!`,
-            description: `Aguarde, gerando documento...`,
+            description: `Preparando documento para impressão...`,
             className: 'bg-green-600 text-white',
             icon: <CheckCircle className="h-6 w-6 text-white" />
         });
@@ -182,12 +210,7 @@ export default function AguardandoLiberacaoPage() {
         const pdfResult = await generateVehicleEntryPdf(updatedVehicle);
 
         if (pdfResult.success && pdfResult.blobUrl) {
-            setPdfPreviewUrl(pdfResult.blobUrl);
-            setIsPdfPreviewOpen(true);
-             toast({ 
-                title: 'Documento Pronto para Visualização',
-                description: `Documento para ${updatedVehicle.plate1} gerado. Visualize e imprima.`,
-            });
+            printPdf(pdfResult.blobUrl, updatedVehicle.plate1);
         } else {
             toast({
                 variant: 'destructive',
@@ -196,14 +219,6 @@ export default function AguardandoLiberacaoPage() {
             });
         }
     }
-  };
-  
-  const closePreviewModal = () => {
-    setIsPdfPreviewOpen(false);
-    if (pdfPreviewUrl) {
-      URL.revokeObjectURL(pdfPreviewUrl);
-    }
-    setPdfPreviewUrl(null);
   };
 
   return (
@@ -284,14 +299,6 @@ export default function AguardandoLiberacaoPage() {
         </CardContent>
       </Card>
     </div>
-    {isPdfPreviewOpen && pdfPreviewUrl && (
-      <PdfPreviewModal
-        isOpen={isPdfPreviewOpen}
-        onClose={closePreviewModal}
-        pdfUrl={pdfPreviewUrl}
-      />
-    )}
     </>
   );
 }
-

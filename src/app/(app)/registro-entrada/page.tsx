@@ -22,7 +22,6 @@ import { personsStore, transportCompaniesStore, internalDestinationsStore } from
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { PdfPreviewModal } from '@/components/layout/PdfPreviewModal';
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -172,8 +171,6 @@ export default function RegistroEntradaPage() {
 
   const [currentWaitingVehicles, setCurrentWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
-  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
 
    useEffect(() => {
     const syncWaitingVehicles = () => {
@@ -218,6 +215,37 @@ export default function RegistroEntradaPage() {
     return `${year}${month}${day}${hours}${minutes}${seconds}`;
   };
 
+  const printPdf = (blobUrl: string, plate: string) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.src = blobUrl;
+
+    iframe.onload = () => {
+        try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+        } catch (error) {
+            console.error("Failed to print.", error);
+            toast({
+                variant: "destructive",
+                title: "Erro de Impressão",
+                description: `Não foi possível abrir a caixa de diálogo de impressão para o veículo ${plate}.`
+            });
+        } finally {
+            setTimeout(() => {
+                if (document.body.contains(iframe)) {
+                    document.body.removeChild(iframe);
+                }
+                URL.revokeObjectURL(blobUrl);
+            }, 1000); 
+        }
+    };
+    document.body.appendChild(iframe);
+  };
+
   const handleFormSubmit = async (data: VehicleEntryFormData, status: 'aguardando_patio' | 'entrada_liberada') => {
     if (!user) {
       toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
@@ -249,7 +277,7 @@ export default function RegistroEntradaPage() {
       entriesStore.push(newEntry);
        toast({
           title: `Entrada de ${newEntry.plate1} Registrada!`,
-          description: `Aguarde, gerando documento... Código: ${newEntry.id}.`,
+          description: `Preparando documento para impressão... Código: ${newEntry.id}.`,
           className: 'bg-green-600 text-white',
           icon: <CheckCircle className="h-6 w-6 text-white" />
       });
@@ -257,12 +285,7 @@ export default function RegistroEntradaPage() {
       const pdfResult = await generateVehicleEntryPdf(newEntry);
       
       if (pdfResult.success && pdfResult.blobUrl) {
-          setPdfPreviewUrl(pdfResult.blobUrl);
-          setIsPdfPreviewOpen(true);
-          toast({ 
-              title: 'Documento Pronto para Visualização',
-              description: `Documento para ${newEntry.plate1} gerado. Visualize e imprima.`,
-          });
+          printPdf(pdfResult.blobUrl, newEntry.plate1);
       } else {
           toast({
               variant: 'destructive',
@@ -313,7 +336,7 @@ export default function RegistroEntradaPage() {
 
       toast({
           title: `Veículo ${updatedVehicle.plate1} Liberado!`,
-          description: `Aguarde, gerando documento... Código: ${updatedVehicle.id}.`,
+          description: `Preparando documento para impressão... Código: ${updatedVehicle.id}.`,
           className: 'bg-green-600 text-white',
           icon: <CheckCircle className="h-6 w-6 text-white" />
       });
@@ -321,12 +344,7 @@ export default function RegistroEntradaPage() {
       const pdfResult = await generateVehicleEntryPdf(updatedVehicle);
       
       if (pdfResult.success && pdfResult.blobUrl) {
-          setPdfPreviewUrl(pdfResult.blobUrl);
-          setIsPdfPreviewOpen(true);
-           toast({
-              title: 'Documento Pronto para Visualização',
-              description: `Documento para ${updatedVehicle.plate1} gerado. Visualize e imprima.`,
-          });
+          printPdf(pdfResult.blobUrl, updatedVehicle.plate1);
       } else {
            toast({
               variant: 'destructive',
@@ -361,14 +379,6 @@ export default function RegistroEntradaPage() {
       console.error('Failed to copy: ', err);
       toast({ variant: 'destructive', title: 'Erro ao Copiar', description: 'Não foi possível copiar os dados.' });
     }
-  };
-
-  const closePreviewModal = () => {
-    setIsPdfPreviewOpen(false);
-    if (pdfPreviewUrl) {
-      URL.revokeObjectURL(pdfPreviewUrl);
-    }
-    setPdfPreviewUrl(null);
   };
 
   return (
@@ -740,14 +750,6 @@ export default function RegistroEntradaPage() {
         </CardContent>
       </Card>
     </div>
-    {isPdfPreviewOpen && pdfPreviewUrl && (
-      <PdfPreviewModal
-        isOpen={isPdfPreviewOpen}
-        onClose={closePreviewModal}
-        pdfUrl={pdfPreviewUrl}
-      />
-    )}
     </>
   );
 }
-
