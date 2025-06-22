@@ -25,12 +25,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
-import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { PdfPreviewModal } from '@/components/layout/PdfPreviewModal';
+import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 
 
-const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: boolean; pdfBlob?: Blob; error?: any }> => {
+const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success: boolean; imageUrl?: string; error?: any }> => {
   const pdfContentHtml = `
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">ROMANEIO DE ENTRADA</h2>
@@ -111,30 +110,20 @@ const generateVehicleEntryPdf = async (entry: VehicleEntry): Promise<{ success: 
   try {
     const contentElement = document.getElementById(`pdf-content-${entry.id}`);
     if (!contentElement) {
-      console.error('PDF content element not found');
+      console.error('Image content element not found');
       document.body.removeChild(hiddenDiv);
-      return { success: false, error: 'PDF content element not found' };
+      return { success: false, error: 'Image content element not found' };
     }
   
     await new Promise(resolve => setTimeout(resolve, 500)); 
 
     const canvas = await html2canvas(contentElement, { scale: 2, useCORS: true, allowTaint: true });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidthCanvas = canvas.width;
-    const imgHeightCanvas = canvas.height;
-    const ratio = Math.min(pdfWidth / imgWidthCanvas, pdfHeight / imgHeightCanvas);
-    const imgX = (pdfWidth - imgWidthCanvas * ratio) / 2;
-    const imgY = 15; 
-    pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidthCanvas * ratio, imgHeightCanvas * ratio);
+    const imageUrl = canvas.toDataURL('image/png');
       
-    const pdfBlob = pdf.output('blob');
-    return { success: true, pdfBlob: pdfBlob };
+    return { success: true, imageUrl };
 
   } catch (err) {
-    console.error("Error generating PDF:", err);
+    console.error("Error generating image:", err);
     return { success: false, error: err };
   } finally {
     if (document.body.contains(hiddenDiv)) {
@@ -159,9 +148,9 @@ export default function HistoricoAcessoPage() {
   const { toast } = useToast();
   const [allEntries, setAllEntries] = useState<VehicleEntry[]>([]);
   
-  // State for PDF Preview Modal
+  // State for Preview Modal
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const syncAllEntries = () => {
@@ -324,17 +313,16 @@ export default function HistoricoAcessoPage() {
         description: `Preparando documento para ${entry.plate1}...`,
     });
 
-    const pdfResult = await generateVehicleEntryPdf(entry);
+    const imageResult = await generateVehicleEntryImage(entry);
     
-    if (pdfResult.success && pdfResult.pdfBlob) {
-      const url = URL.createObjectURL(pdfResult.pdfBlob);
-      setPreviewPdfUrl(url);
+    if (imageResult.success && imageResult.imageUrl) {
+      setPreviewImageUrl(imageResult.imageUrl);
       setIsPreviewModalOpen(true);
     } else {
         toast({
             variant: 'destructive',
-            title: 'Erro no Documento PDF',
-            description: `Falha ao gerar o PDF para ${entry.plate1}. Detalhe: ${pdfResult.error || 'N/A'}`,
+            title: 'Erro no Documento',
+            description: `Falha ao gerar o documento para ${entry.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
         });
     }
   };
@@ -350,11 +338,8 @@ export default function HistoricoAcessoPage() {
   };
   
   const handleClosePreview = () => {
-    if (previewPdfUrl) {
-        URL.revokeObjectURL(previewPdfUrl);
-    }
     setIsPreviewModalOpen(false);
-    setPreviewPdfUrl(null);
+    setPreviewImageUrl(null);
   };
 
   return (
@@ -545,10 +530,10 @@ export default function HistoricoAcessoPage() {
       </Card>
     </div>
 
-    <PdfPreviewModal 
+    <DocumentPreviewModal 
         isOpen={isPreviewModalOpen}
         onClose={handleClosePreview}
-        pdfUrl={previewPdfUrl}
+        imageUrl={previewImageUrl}
     />
     </>
   );

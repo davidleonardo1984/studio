@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,26 +13,41 @@ import {
 import { Button } from "@/components/ui/button";
 import { PrinterIcon, XIcon } from 'lucide-react';
 
-interface PdfPreviewModalProps {
+interface DocumentPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  pdfUrl: string | null;
+  imageUrl: string | null;
 }
 
-export function PdfPreviewModal({ isOpen, onClose, pdfUrl }: PdfPreviewModalProps) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+export function DocumentPreviewModal({ isOpen, onClose, imageUrl }: DocumentPreviewModalProps) {
 
   const handlePrint = () => {
-    if (iframeRef.current && iframeRef.current.contentWindow) {
-      iframeRef.current.contentWindow.focus(); // Focus on the iframe
-      iframeRef.current.contentWindow.print(); // Trigger print dialog
-    } else {
-      console.error("Iframe content window not available for printing.");
-      // Potentially show a toast error here
+    if (!imageUrl) return;
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Imprimir Documento</title>
+            <style>
+              @media print {
+                @page { size: portrait; margin: 0; }
+                body { margin: 0; }
+                img { width: 100%; object-fit: contain; }
+              }
+              body { margin: 0; }
+              img { max-width: 100%; }
+            </style>
+          </head>
+          <body>
+            <img src="${imageUrl}" onload="window.print(); setTimeout(function(){window.close();}, 100);" />
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
     }
   };
 
-  // Effect to handle Escape key for closing, consistent with Dialog behavior
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -47,7 +62,7 @@ export function PdfPreviewModal({ isOpen, onClose, pdfUrl }: PdfPreviewModalProp
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen || !pdfUrl) {
+  if (!isOpen || !imageUrl) {
     return null;
   }
 
@@ -65,12 +80,11 @@ export function PdfPreviewModal({ isOpen, onClose, pdfUrl }: PdfPreviewModalProp
             </DialogClose>
           </DialogTitle>
         </DialogHeader>
-        <div className="flex-grow p-4 overflow-hidden">
-          <iframe
-            ref={iframeRef}
-            src={`${pdfUrl}#toolbar=0`}
-            title="Pré-visualização do PDF"
-            className="w-full h-full border-0"
+        <div className="flex-grow p-4 overflow-auto bg-gray-200 flex items-center justify-center">
+          <img
+            src={imageUrl}
+            alt="Pré-visualização do Romaneio"
+            className="max-w-full max-h-full object-contain"
           />
         </div>
         <DialogFooter className="p-4 border-t gap-2 sm:justify-end">
