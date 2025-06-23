@@ -112,7 +112,7 @@ export function AppHeader() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <Link href="/mudar-senha" passHref>
-                <DropdownMenuItem>
+                <DropdownMenuItem disabled>
                   <KeyRound className="mr-2 h-4 w-4" />
                   <span>Mudar Senha</span>
                 </DropdownMenuItem>

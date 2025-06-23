@@ -20,18 +20,32 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock admin user
-const ADMIN_USER: User = {
-  id: 'admin001',
-  name: 'Administrador',
-  login: 'admin',
-  password: 'Michelin', 
-  role: 'admin',
-};
+// Mock user data WITHOUT passwords.
+const MOCK_USERS: Omit<User, 'password'>[] = [
+    {
+      id: 'admin001',
+      name: 'Administrador',
+      login: 'admin',
+      role: 'admin',
+    }
+];
+
+// This function simulates checking passwords on a backend.
+// In a real app, this would be an API call.
+const checkCredentials = (login: string, pass: string): Omit<User, 'password'> | null => {
+    const lowerLogin = login.toLowerCase();
+    // Special case for the hardcoded admin user for demo purposes
+    if (lowerLogin === 'admin' && pass === 'Michelin') {
+        return MOCK_USERS.find(u => u.login === 'admin') || null;
+    }
+    // In a real app, you would have logic here to check other users against a database.
+    // For this demo, other users cannot log in as their passwords are not stored.
+    return null;
+}
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([ADMIN_USER]); 
+  const [users, setUsers] = useState<User[]>(MOCK_USERS.map(u => ({...u, password: ''}))); // For user management list
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -39,28 +53,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       const parsedUser: User = JSON.parse(storedUser);
-      const foundUser = users.find(u => u.login.toLowerCase() === parsedUser.login.toLowerCase()); 
+      // Ensure the stored user exists in our mock list
+      const foundUser = MOCK_USERS.find(u => u.login.toLowerCase() === parsedUser.login.toLowerCase()); 
       if (foundUser) {
-        const { password, ...userToSet } = foundUser; // Ensure password is not in the user state
-        setUser(userToSet);
+        setUser(foundUser);
       } else {
         localStorage.removeItem('currentUser');
       }
     }
     setIsLoading(false);
-  }, []); // Run only once on mount initially
+  }, []);
 
   useEffect(() => {
-    // This effect ensures if users array is updated (e.g. by admin), the current user's data is also updated if they are the one changed.
     if(user){
         const currentUserFromUsersArray = users.find(u => u.id === user.id);
         if(currentUserFromUsersArray){
             const {password, ...userToStore} = currentUserFromUsersArray;
-            if(JSON.stringify(user) !== JSON.stringify(userToStore)){ // Prevents unnecessary updates
+            if(JSON.stringify(user) !== JSON.stringify(userToStore)){
                 setUser(userToStore);
                 localStorage.setItem('currentUser', JSON.stringify(userToStore));
             }
-        } else { // Current user was deleted by admin
+        } else {
             logout();
         }
     }
@@ -71,17 +84,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    const foundUser = users.find(u => {
-      if (u.login === 'admin' && loginInput.toLowerCase() === 'admin') { // Admin login check: input 'admin' (case-insensitive) matches stored 'admin'
-        return u.password === pass; // Password is case-sensitive: 'Michelin'
-      }
-      return u.login === loginInput && u.password === pass; // Other users: case-sensitive login and password
-    });
+    const foundUser = checkCredentials(loginInput, pass);
 
     if (foundUser) {
-      const { password, ...userToStore } = foundUser;
-      setUser(userToStore);
-      localStorage.setItem('currentUser', JSON.stringify(userToStore));
+      setUser(foundUser);
+      localStorage.setItem('currentUser', JSON.stringify(foundUser));
       setIsLoading(false);
       return true;
     }
@@ -100,6 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (users.some(u => u.login.toLowerCase() === newUser.login.toLowerCase())) {
       return false; 
     }
+    // Note: The password for new users is not actually stored or used for login in this mock setup.
     setUsers(prevUsers => [...prevUsers, newUser]);
     return true;
   };
@@ -111,7 +119,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUsers(prevUsers => 
       prevUsers.map(u => u.id === updatedUser.id ? updatedUser : u)
     );
-    // User state and localStorage are updated via the useEffect hook observing 'users'
     return true;
   }
 
@@ -120,35 +127,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const changePassword = async (userId: string, currentPasswordInput: string, newPasswordInput: string): Promise<{ success: boolean; message: string }> => {
-    await new Promise(resolve => setTimeout(resolve, 200)); // Simulate API delay
-    
-    let userIndex = -1;
-    const userToUpdate = users.find((u, index) => {
-        if(u.id === userId) {
-            userIndex = index;
-            return true;
-        }
-        return false;
-    });
-
-    if (!userToUpdate || userIndex === -1) {
-      return { success: false, message: 'Usuário não encontrado.' };
-    }
-
-    // Check current password (case-sensitive)
-    if (userToUpdate.password !== currentPasswordInput) {
-      return { success: false, message: 'Senha atual incorreta. Verifique e tente novamente.' };
-    }
-
-    if (userToUpdate.password === newPasswordInput) {
-        return { success: false, message: 'Nova senha não pode ser igual à senha atual.' };
-    }
-
-    const updatedUsers = [...users];
-    updatedUsers[userIndex] = { ...updatedUsers[userIndex], password: newPasswordInput };
-    setUsers(updatedUsers);
-
-    return { success: true, message: 'Senha alterada com sucesso!' };
+    // This feature is disabled because client-side password management is insecure.
+    // In a real application, this would be a secure API call to a backend server.
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return { success: false, message: 'Função desabilitada. A alteração de senha requer um backend seguro.' };
   };
 
 
