@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import type { Driver, TransportCompany, InternalDestination, TransportCompanyFormData } from '@/lib/types';
+import type { Driver, TransportCompany, InternalDestination, NewTransportCompany } from '@/lib/types';
 import { personsStore, internalDestinationsStore } from '@/lib/store';
 import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin, Loader2 } from 'lucide-react';
 import {
@@ -26,7 +26,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useTransportCompanies } from '@/context/TransportCompanyContext';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 
 
 // Schemas for forms
@@ -39,7 +40,7 @@ const personSchema = z.object({
 type PersonFormData = z.infer<typeof personSchema>;
 
 const transportCompanySchema = z.object({
-  name: z.string().min(3, 'Nome da Transportadora / Empresa é obrigatório (mín. 3 caracteres).'),
+  name: z.string().min(3, 'Nome da transportadora é obrigatório (mín. 3 caracteres).'),
 });
 
 
@@ -171,16 +172,38 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
 // Specific component for Transport Companies using Firestore
 function TransportCompaniesSection() {
   const { toast } = useToast();
-  const { companies: data, isLoading, addCompany, updateCompany, deleteCompany } = useTransportCompanies();
-  
+  const [data, setData] = useState<TransportCompany[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<TransportCompany | null>(null);
 
-  const form = useForm<TransportCompanyFormData>({
+  const form = useForm<NewTransportCompany>({
     resolver: zodResolver(transportCompanySchema),
     defaultValues: { name: '' },
   });
+
+  const companiesCollection = collection(db, 'transportCompanies');
+
+  const fetchCompanies = async () => {
+    setIsLoading(true);
+    try {
+      const q = query(companiesCollection, orderBy("name"));
+      const snapshot = await getDocs(q);
+      const companiesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany));
+      setData(companiesList);
+    } catch (error) {
+      console.error("Failed to fetch transport companies:", error);
+      toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar as transportadoras." });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanies();
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (editingItem) {
@@ -191,22 +214,24 @@ function TransportCompaniesSection() {
     }
   }, [editingItem, form]);
 
-  const onSubmit = async (formData: TransportCompanyFormData) => {
+  const onSubmit = async (formData: NewTransportCompany) => {
     setIsSubmitting(true);
     try {
       if (editingItem) {
-        await updateCompany(editingItem.id, formData);
-        toast({ title: "Transportadora / Empresa atualizada!", description: `${formData.name} foi atualizada com sucesso.` });
+        const companyDoc = doc(db, 'transportCompanies', editingItem.id);
+        await updateDoc(companyDoc, formData);
+        toast({ title: "Transportadora atualizada!", description: `${formData.name} foi atualizada com sucesso.` });
       } else {
-        await addCompany(formData);
-        toast({ title: "Transportadora / Empresa cadastrada!", description: `${formData.name} foi cadastrada com sucesso.` });
+        await addDoc(companiesCollection, formData);
+        toast({ title: "Transportadora cadastrada!", description: `${formData.name} foi cadastrada com sucesso.` });
       }
       setEditingItem(null);
       setShowForm(false);
       form.reset({ name: '' });
+      fetchCompanies(); // Refetch after change
     } catch (error) {
       console.error("Error saving transport company: ", error);
-      // Error toast is handled in the context now
+      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a transportadora." });
     } finally {
       setIsSubmitting(false);
     }
@@ -214,11 +239,13 @@ function TransportCompaniesSection() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteCompany(id);
-      // Success toast handled in context
+        const companyDoc = doc(db, 'transportCompanies', id);
+        await deleteDoc(companyDoc);
+        toast({ title: 'Excluído!', description: 'A transportadora foi removida com sucesso.' });
+        fetchCompanies(); // Refetch after change
     } catch (error) {
       console.error("Error deleting transport company: ", error);
-      // Error toast handled in context
+      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a transportadora." });
     }
   };
 
@@ -229,7 +256,7 @@ function TransportCompaniesSection() {
   const formFields = (form: any) => (
     <FormField control={form.control} name="name" render={({ field }) => (
       <FormItem>
-        <FormLabel>Nome da Transportadora / Empresa</FormLabel>
+        <FormLabel>Nome da Transportadora</FormLabel>
         <FormControl><Input placeholder="Ex: Transportes Rápidos S.A." {...field} /></FormControl>
         <FormMessage />
       </FormItem>
@@ -241,10 +268,10 @@ function TransportCompaniesSection() {
       <CardHeader className="flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <Truck className="w-6 h-6 text-primary" />
-          <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras / Empresas</CardTitle>
+          <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras</CardTitle>
         </div>
         <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }}>
-          <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Transportadora / Empresa'}
+          <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Transportadora'}
         </Button>
       </CardHeader>
       <CardContent>
@@ -265,7 +292,7 @@ function TransportCompaniesSection() {
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-4 text-muted-foreground">Carregando empresas...</p>
+            <p className="ml-4 text-muted-foreground">Carregando transportadoras...</p>
           </div>
         ) : data.length > 0 ? (
           <Table>
@@ -296,8 +323,8 @@ function TransportCompaniesSection() {
         ) : (
           <div className="text-center py-12">
             <Truck className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">Nenhuma empresa encontrada.</p>
-            <p className="text-sm text-muted-foreground mt-1">Clique em "Nova Transportadora / Empresa" para começar.</p>
+            <p className="text-lg font-medium text-muted-foreground">Nenhuma transportadora encontrada.</p>
+            <p className="text-sm text-muted-foreground mt-1">Clique em "Nova Transportadora" para começar.</p>
           </div>
         )}
       </CardContent>
@@ -416,7 +443,7 @@ export default function CadastrosGeraisPage() {
       <Tabs defaultValue="persons" className="w-full">
         <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 mb-6">
           <TabsTrigger value="persons" className="flex items-center gap-2"><Users className="h-4 w-4" /> Motoristas e Ajudantes</TabsTrigger>
-          <TabsTrigger value="transportCompanies" className="flex items-center gap-2"><Truck className="h-4 w-4" />Transportadoras / Empresas</TabsTrigger>
+          <TabsTrigger value="transportCompanies" className="flex items-center gap-2"><Truck className="h-4 w-4" />Transportadoras</TabsTrigger>
           <TabsTrigger value="internalDestinations" className="flex items-center gap-2"><MapPin className="h-4 w-4" />Destinos Internos</TabsTrigger>
         </TabsList>
 

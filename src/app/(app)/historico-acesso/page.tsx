@@ -24,7 +24,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
-import { useTransportCompanies } from '@/context/TransportCompanyContext';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 
@@ -67,7 +68,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
             ${entry.plate3 ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 3:</span> ${entry.plate3}</p>` : ''}
           </div>
           <div style="width: 40%; text-align: left;">
-            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora / Empresa:</span>${entry.transportCompanyName}</p>
+            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora:</span>${entry.transportCompanyName}</p>
             <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Destino Interno:</span>${entry.internalDestinationName}</p>
             <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Tipo Mov.:</span>${entry.movementType}</p>
           </div>
@@ -152,7 +153,26 @@ export default function HistoricoAcessoPage() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
-  const { companies: transportCompanies, isLoading: companiesLoading } = useTransportCompanies();
+  const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      setCompaniesLoading(true);
+      try {
+        const companiesCollection = collection(db, 'transportCompanies');
+        const q = query(companiesCollection, orderBy("name"));
+        const snapshot = await getDocs(q);
+        setTransportCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany)));
+      } catch (error) {
+        console.error("Failed to fetch transport companies:", error);
+        toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar as transportadoras." });
+      } finally {
+        setCompaniesLoading(false);
+      }
+    };
+    fetchCompanies();
+  }, [toast]);
 
   useEffect(() => {
     const syncAllEntries = () => {
@@ -237,7 +257,7 @@ export default function HistoricoAcessoPage() {
         toast({variant: 'destructive', title: "Nenhum dado", description: "Não há dados para exportar com os filtros atuais."});
         return;
     }
-    const headers = ["ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA / EMPRESA", "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "LIBERADO POR", "DATA/HORA SAÍDA", "STATUS", "REGISTRADO POR"];
+    const headers = ["ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA", "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "LIBERADO POR", "DATA/HORA SAÍDA", "STATUS", "REGISTRADO POR"];
     const csvRows = [
         headers.map(escapeCsvField).join(','),
         ...filteredEntries.map(e => [
@@ -358,11 +378,11 @@ export default function HistoricoAcessoPage() {
               <Input id="searchTermGlobal" placeholder="BUSCAR EM TODOS OS CAMPOS..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
              <div className="space-y-1">
-                <Label htmlFor="transportCompanyFilter">Transportadora / Empresa</Label>
+                <Label htmlFor="transportCompanyFilter">Transportadora</Label>
                 <div className="relative">
                   <Input
                     id="transportCompanyFilter"
-                    placeholder={companiesLoading ? "CARREGANDO..." : "FILTRAR POR EMPRESA..."}
+                    placeholder={companiesLoading ? "CARREGANDO..." : "FILTRAR POR TRANSPORTADORA..."}
                     value={filters.transportCompany}
                     onChange={(e) => setFilters(prev => ({ ...prev, transportCompany: e.target.value }))}
                     disabled={!!searchTerm.trim() || companiesLoading}
@@ -421,7 +441,7 @@ export default function HistoricoAcessoPage() {
                   <TableRow>
                     <TableHead>ID/CÓDIGO</TableHead>
                     <TableHead>MOTORISTA</TableHead>
-                    <TableHead>TRANSPORTADORA / EMPRESA</TableHead>
+                    <TableHead>TRANSPORTADORA</TableHead>
                     <TableHead>PLACA 1</TableHead>
                     <TableHead>CHEGADA</TableHead>
                     <TableHead>LIBERAÇÃO</TableHead>
@@ -498,7 +518,7 @@ export default function HistoricoAcessoPage() {
                   <TableHead>ID/CÓDIGO</TableHead>
                   <TableHead>PLACA 1</TableHead>
                   <TableHead>MOTORISTA</TableHead>
-                  <TableHead>TRANSPORTADORA / EMPRESA</TableHead>
+                  <TableHead>TRANSPORTADORA</TableHead>
                   <TableHead>CHEGADA</TableHead>
                   <TableHead>LIBERAÇÃO</TableHead>
                   <TableHead>STATUS</TableHead>

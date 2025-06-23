@@ -67,4 +67,4 @@ export interface VehicleEntryFormData {
 
 
 // Firestore specific types - to be used when interacting with DB
-export type TransportCompanyFormData = Omit<TransportCompany, 'id'>;
+export type NewTransportCompany = Omit<TransportCompany, 'id'>;

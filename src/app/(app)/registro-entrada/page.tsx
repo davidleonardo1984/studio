@@ -14,12 +14,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import type { VehicleEntryFormData, VehicleEntry } from '@/lib/types';
+import type { VehicleEntryFormData, VehicleEntry, TransportCompany } from '@/lib/types';
 import { Save, SendToBack, Clock, CheckCircle, Search, Printer, ClipboardCopy, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { personsStore, internalDestinationsStore } from '@/lib/store';
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import {
   AlertDialog,
@@ -32,7 +34,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
-import { useTransportCompanies } from '@/context/TransportCompanyContext';
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -40,7 +41,7 @@ const entrySchema = z.object({
   driverName: z.string().min(1, { message: 'Nome do motorista é obrigatório.' }),
   assistant1Name: z.string().optional().transform(val => val === "" ? undefined : val),
   assistant2Name: z.string().optional().transform(val => val === "" ? undefined : val),
-  transportCompanyName: z.string().min(1, { message: 'Transportadora / Empresa é obrigatória.' }),
+  transportCompanyName: z.string().min(1, { message: 'Transportadora é obrigatória.' }),
   plate1: z.string().min(7, { message: 'Placa 1 é obrigatória (mín. 7 caracteres).' }).max(8),
   plate2: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 2 inválida (mín. 7 caracteres)."}),
   plate3: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 3 inválida (mín. 7 caracteres)."}),
@@ -88,7 +89,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
             ${entry.plate3 ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 3:</span> ${entry.plate3}</p>` : ''}
           </div>
           <div style="width: 40%; text-align: left;">
-            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora / Empresa:</span>${entry.transportCompanyName}</p>
+            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora:</span>${entry.transportCompanyName}</p>
             <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Destino Interno:</span>${entry.internalDestinationName}</p>
             <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Tipo Mov.:</span>${entry.movementType}</p>
           </div>
@@ -172,7 +173,26 @@ export default function RegistroEntradaPage() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
-  const { companies: transportCompanies, isLoading: companiesLoading } = useTransportCompanies();
+  const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      setCompaniesLoading(true);
+      try {
+        const companiesCollection = collection(db, 'transportCompanies');
+        const q = query(companiesCollection, orderBy("name"));
+        const snapshot = await getDocs(q);
+        setTransportCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany)));
+      } catch (error) {
+        console.error("Failed to fetch transport companies:", error);
+        toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar as transportadoras." });
+      } finally {
+        setCompaniesLoading(false);
+      }
+    };
+    fetchCompanies();
+  }, [toast]);
 
   useEffect(() => {
     const syncWaitingVehicles = () => {
@@ -363,7 +383,7 @@ export default function RegistroEntradaPage() {
         `Ordem: ${index + 1}`,
         `Motorista: ${vehicle.driverName}`,
         `Telefone: ${phone}`,
-        `Transportadora / Empresa: ${vehicle.transportCompanyName}`,
+        `Transportadora: ${vehicle.transportCompanyName}`,
         `Placa 1: ${vehicle.plate1}`,
         `Observação: ${vehicle.observation || '-'}`,
         `Data/Hora Chegada: ${new Date(vehicle.arrivalTimestamp).toLocaleString('pt-BR')}`
@@ -446,11 +466,11 @@ export default function RegistroEntradaPage() {
                   name="transportCompanyName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Transportadora / Empresa</FormLabel>
+                      <FormLabel>Transportadora</FormLabel>
                        <FormControl>
                         <div className="relative">
                           <Input
-                            placeholder={companiesLoading ? "CARREGANDO..." : "Digite ou selecione a empresa"}
+                            placeholder={companiesLoading ? "CARREGANDO..." : "Digite ou selecione a transportadora"}
                             {...field}
                             list="transport-company-list"
                             disabled={companiesLoading}
@@ -677,7 +697,7 @@ export default function RegistroEntradaPage() {
                   <TableHead>Ordem</TableHead>
                   <TableHead>Motorista</TableHead>
                   <TableHead>Telefone</TableHead>
-                  <TableHead>Transportadora / Empresa</TableHead>
+                  <TableHead>Transportadora</TableHead>
                   <TableHead>Placa 1</TableHead>
                   <TableHead>Observação</TableHead>
                   <TableHead>Data/Hora Chegada</TableHead>

@@ -8,7 +8,6 @@ import { AppSidebar } from '@/components/layout/AppSidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TransportCompanyProvider } from '@/context/TransportCompanyContext';
 
 export default function AuthenticatedLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -34,16 +33,14 @@ export default function AuthenticatedLayout({ children }: { children: ReactNode 
   }
 
   return (
-    <TransportCompanyProvider>
-      <SidebarProvider defaultOpen={true}>
-        <AppSidebar />
-        <SidebarInset className="flex flex-col">
-          <AppHeader />
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-background">
-            {children}
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
-    </TransportCompanyProvider>
+    <SidebarProvider defaultOpen={true}>
+      <AppSidebar />
+      <SidebarInset className="flex flex-col">
+        <AppHeader />
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-background">
+          {children}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
