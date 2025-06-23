@@ -40,7 +40,7 @@ const personSchema = z.object({
 type PersonFormData = z.infer<typeof personSchema>;
 
 const transportCompanySchema = z.object({
-  name: z.string().min(3, 'Nome da transportadora é obrigatório (mín. 3 caracteres).'),
+  name: z.string().min(3, 'Nome da Transportadora / Empresa é obrigatório (mín. 3 caracteres).'),
 });
 
 
@@ -194,7 +194,7 @@ function TransportCompaniesSection() {
       setData(companiesList);
     } catch (error) {
       console.error("Failed to fetch transport companies:", error);
-      toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar as transportadoras." });
+      toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar as Transportadoras / Empresas." });
     } finally {
       setIsLoading(false);
     }
@@ -220,10 +220,10 @@ function TransportCompaniesSection() {
       if (editingItem) {
         const companyDoc = doc(db, 'transportCompanies', editingItem.id);
         await updateDoc(companyDoc, formData);
-        toast({ title: "Transportadora atualizada!", description: `${formData.name} foi atualizada com sucesso.` });
+        toast({ title: "Transportadora / Empresa atualizada!", description: `${formData.name} foi atualizada com sucesso.` });
       } else {
         await addDoc(companiesCollection, formData);
-        toast({ title: "Transportadora cadastrada!", description: `${formData.name} foi cadastrada com sucesso.` });
+        toast({ title: "Transportadora / Empresa cadastrada!", description: `${formData.name} foi cadastrada com sucesso.` });
       }
       setEditingItem(null);
       setShowForm(false);
@@ -231,7 +231,7 @@ function TransportCompaniesSection() {
       fetchCompanies(); // Refetch after change
     } catch (error) {
       console.error("Error saving transport company: ", error);
-      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a transportadora." });
+      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a Transportadora / Empresa." });
     } finally {
       setIsSubmitting(false);
     }
@@ -241,11 +241,11 @@ function TransportCompaniesSection() {
     try {
         const companyDoc = doc(db, 'transportCompanies', id);
         await deleteDoc(companyDoc);
-        toast({ title: 'Excluído!', description: 'A transportadora foi removida com sucesso.' });
+        toast({ title: 'Excluído!', description: 'A Transportadora / Empresa foi removida com sucesso.' });
         fetchCompanies(); // Refetch after change
     } catch (error) {
       console.error("Error deleting transport company: ", error);
-      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a transportadora." });
+      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a Transportadora / Empresa." });
     }
   };
 
@@ -256,7 +256,7 @@ function TransportCompaniesSection() {
   const formFields = (form: any) => (
     <FormField control={form.control} name="name" render={({ field }) => (
       <FormItem>
-        <FormLabel>Nome da Transportadora</FormLabel>
+        <FormLabel>Nome da Transportadora / Empresa</FormLabel>
         <FormControl><Input placeholder="Ex: Transportes Rápidos S.A." {...field} /></FormControl>
         <FormMessage />
       </FormItem>
@@ -268,10 +268,10 @@ function TransportCompaniesSection() {
       <CardHeader className="flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <Truck className="w-6 h-6 text-primary" />
-          <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras</CardTitle>
+          <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras / Empresas</CardTitle>
         </div>
         <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }}>
-          <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Transportadora'}
+          <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Transportadora / Empresa'}
         </Button>
       </CardHeader>
       <CardContent>
@@ -292,7 +292,7 @@ function TransportCompaniesSection() {
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-4 text-muted-foreground">Carregando transportadoras...</p>
+            <p className="ml-4 text-muted-foreground">Carregando Transportadoras / Empresas...</p>
           </div>
         ) : data.length > 0 ? (
           <Table>
@@ -323,8 +323,8 @@ function TransportCompaniesSection() {
         ) : (
           <div className="text-center py-12">
             <Truck className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">Nenhuma transportadora encontrada.</p>
-            <p className="text-sm text-muted-foreground mt-1">Clique em "Nova Transportadora" para começar.</p>
+            <p className="text-lg font-medium text-muted-foreground">Nenhuma Transportadora / Empresa encontrada.</p>
+            <p className="text-sm text-muted-foreground mt-1">Clique em "Nova Transportadora / Empresa" para começar.</p>
           </div>
         )}
       </CardContent>
@@ -438,12 +438,12 @@ export default function CadastrosGeraisPage() {
     <div className="container mx-auto py-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-primary font-headline">Cadastros Gerais</h1>
-        <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras e destinos internos.</p>
+        <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras / empresas e destinos internos.</p>
       </div>
       <Tabs defaultValue="persons" className="w-full">
         <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 mb-6">
           <TabsTrigger value="persons" className="flex items-center gap-2"><Users className="h-4 w-4" /> Motoristas e Ajudantes</TabsTrigger>
-          <TabsTrigger value="transportCompanies" className="flex items-center gap-2"><Truck className="h-4 w-4" />Transportadoras</TabsTrigger>
+          <TabsTrigger value="transportCompanies" className="flex items-center gap-2"><Truck className="h-4 w-4" />Transportadoras / Empresas</TabsTrigger>
           <TabsTrigger value="internalDestinations" className="flex items-center gap-2"><MapPin className="h-4 w-4" />Destinos Internos</TabsTrigger>
         </TabsList>
 
