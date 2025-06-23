@@ -68,7 +68,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
             ${entry.plate3 ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 3:</span> ${entry.plate3}</p>` : ''}
           </div>
           <div style="width: 40%; text-align: left;">
-            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora:</span>${entry.transportCompanyName}</p>
+            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora / Empresa:</span>${entry.transportCompanyName}</p>
             <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Destino Interno:</span>${entry.internalDestinationName}</p>
             <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Tipo Mov.:</span>${entry.movementType}</p>
           </div>
@@ -165,7 +165,7 @@ export default function HistoricoAcessoPage() {
         setTransportCompanies(companies);
       } catch (error) {
         console.error("Failed to fetch transport companies:", error);
-        toast({ variant: "destructive", title: "Erro", description: "Falha ao carregar transportadoras do banco de dados." });
+        toast({ variant: "destructive", title: "Erro", description: "Falha ao carregar Transportadoras / Empresas do banco de dados." });
       }
     };
     fetchTransportCompanies();
@@ -255,7 +255,7 @@ export default function HistoricoAcessoPage() {
         toast({variant: 'destructive', title: "Nenhum dado", description: "Não há dados para exportar com os filtros atuais."});
         return;
     }
-    const headers = ["ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA", "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "LIBERADO POR", "DATA/HORA SAÍDA", "STATUS", "REGISTRADO POR"];
+    const headers = ["ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA / EMPRESA", "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "LIBERADO POR", "DATA/HORA SAÍDA", "STATUS", "REGISTRADO POR"];
     const csvRows = [
         headers.map(escapeCsvField).join(','),
         ...filteredEntries.map(e => [
@@ -376,10 +376,10 @@ export default function HistoricoAcessoPage() {
               <Input id="searchTermGlobal" placeholder="BUSCAR EM TODOS OS CAMPOS..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
              <div className="space-y-1">
-                <Label htmlFor="transportCompanyFilter">Transportadora</Label>
+                <Label htmlFor="transportCompanyFilter">Transportadora / Empresa</Label>
                 <Input
                   id="transportCompanyFilter"
-                  placeholder="FILTRAR POR TRANSPORTADORA..."
+                  placeholder="FILTRAR POR TRANSPORTADORA / EMPRESA..."
                   value={filters.transportCompany}
                   onChange={(e) => setFilters(prev => ({ ...prev, transportCompany: e.target.value }))}
                   disabled={!!searchTerm.trim()}
@@ -436,7 +436,7 @@ export default function HistoricoAcessoPage() {
                   <TableRow>
                     <TableHead>ID/CÓDIGO</TableHead>
                     <TableHead>MOTORISTA</TableHead>
-                    <TableHead>TRANSPORTADORA</TableHead>
+                    <TableHead>TRANSPORTADORA / EMPRESA</TableHead>
                     <TableHead>PLACA 1</TableHead>
                     <TableHead>CHEGADA</TableHead>
                     <TableHead>LIBERAÇÃO</TableHead>
@@ -513,7 +513,7 @@ export default function HistoricoAcessoPage() {
                   <TableHead>ID/CÓDIGO</TableHead>
                   <TableHead>PLACA 1</TableHead>
                   <TableHead>MOTORISTA</TableHead>
-                  <TableHead>TRANSPORTADORA</TableHead>
+                  <TableHead>TRANSPORTADORA / EMPRESA</TableHead>
                   <TableHead>CHEGADA</TableHead>
                   <TableHead>LIBERAÇÃO</TableHead>
                   <TableHead>STATUS</TableHead>

@@ -64,7 +64,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
             ${entry.plate3 ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 3:</span> ${entry.plate3}</p>` : ''}
           </div>
           <div style="width: 40%; text-align: left;">
-            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora:</span>${entry.transportCompanyName}</p>
+            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora / Empresa:</span>${entry.transportCompanyName}</p>
             <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Destino Interno:</span>${entry.internalDestinationName}</p>
             <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Tipo Mov.:</span>${entry.movementType}</p>
           </div>
@@ -257,7 +257,7 @@ export default function AguardandoLiberacaoPage() {
                 <TableRow>
                   <TableHead>ID/Código</TableHead>
                   <TableHead>Motorista</TableHead>
-                  <TableHead>Transportadora</TableHead>
+                  <TableHead>Transportadora / Empresa</TableHead>
                   <TableHead>Placa 1</TableHead>
                   <TableHead>Data/Hora Chegada</TableHead>
                   <TableHead className="text-right">Ações</TableHead>

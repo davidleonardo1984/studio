@@ -40,7 +40,7 @@ const personSchema = z.object({
 type PersonFormData = z.infer<typeof personSchema>;
 
 const transportCompanySchema = z.object({
-  name: z.string().min(3, 'Nome da transportadora é obrigatório (mín. 3 caracteres).'),
+  name: z.string().min(3, 'Nome da Transportadora / Empresa é obrigatório (mín. 3 caracteres).'),
 });
 type TransportCompanyFormData = z.infer<typeof transportCompanySchema>;
 
@@ -213,10 +213,10 @@ function TransportCompaniesTab() {
       if (editingItem) {
         const companyDoc = doc(db, 'transportCompanies', editingItem.id);
         await updateDoc(companyDoc, formData);
-        toast({ title: "Transportadora atualizada!", description: `${formData.name} foi atualizada com sucesso.` });
+        toast({ title: "Transportadora / Empresa atualizada!", description: `${formData.name} foi atualizada com sucesso.` });
       } else {
         await addDoc(companiesCollection, formData);
-        toast({ title: "Transportadora cadastrada!", description: `${formData.name} foi cadastrada com sucesso.` });
+        toast({ title: "Transportadora / Empresa cadastrada!", description: `${formData.name} foi cadastrada com sucesso.` });
       }
       setEditingItem(null);
       setShowForm(false);
@@ -224,7 +224,7 @@ function TransportCompaniesTab() {
       await fetchData();
     } catch (error) {
       console.error("Error saving transport company: ", error);
-      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a transportadora." });
+      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a Transportadora / Empresa." });
     } finally {
       setIsSubmitting(false);
     }
@@ -234,11 +234,11 @@ function TransportCompaniesTab() {
     try {
       const companyDoc = doc(db, 'transportCompanies', id);
       await deleteDoc(companyDoc);
-      toast({ title: "Transportadora excluída!", description: `Item foi excluído com sucesso.` });
+      toast({ title: "Transportadora / Empresa excluída!", description: `Item foi excluído com sucesso.` });
       await fetchData();
     } catch (error) {
       console.error("Error deleting transport company: ", error);
-      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a transportadora." });
+      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a Transportadora / Empresa." });
     }
   };
 
@@ -249,7 +249,7 @@ function TransportCompaniesTab() {
   const formFields = (form: any) => (
     <FormField control={form.control} name="name" render={({ field }) => (
       <FormItem>
-        <FormLabel>Nome da Transportadora</FormLabel>
+        <FormLabel>Nome da Transportadora / Empresa</FormLabel>
         <FormControl><Input placeholder="Ex: Transportes Rápidos S.A." {...field} /></FormControl>
         <FormMessage />
       </FormItem>
@@ -261,10 +261,10 @@ function TransportCompaniesTab() {
       <CardHeader className="flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <Truck className="w-6 h-6 text-primary" />
-          <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras</CardTitle>
+          <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras / Empresas</CardTitle>
         </div>
         <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }}>
-          <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Transportadora'}
+          <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Transportadora / Empresa'}
         </Button>
       </CardHeader>
       <CardContent>
@@ -313,7 +313,7 @@ function TransportCompaniesTab() {
             </TableBody>
           </Table>
         ) : (
-          <p className="text-muted-foreground text-center py-4">Nenhuma transportadora cadastrada no banco de dados.</p>
+          <p className="text-muted-foreground text-center py-4">Nenhuma Transportadora / Empresa cadastrada no banco de dados.</p>
         )}
       </CardContent>
     </Card>
@@ -431,7 +431,7 @@ export default function CadastrosGeraisPage() {
       <Tabs defaultValue="persons" className="w-full">
         <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 mb-6">
           <TabsTrigger value="persons" className="flex items-center gap-2"><Users className="h-4 w-4" /> Motoristas e Ajudantes</TabsTrigger>
-          <TabsTrigger value="transportCompanies" className="flex items-center gap-2"><Truck className="h-4 w-4" />Transportadoras</TabsTrigger>
+          <TabsTrigger value="transportCompanies" className="flex items-center gap-2"><Truck className="h-4 w-4" />Transportadoras / Empresas</TabsTrigger>
           <TabsTrigger value="internalDestinations" className="flex items-center gap-2"><MapPin className="h-4 w-4" />Destinos Internos</TabsTrigger>
         </TabsList>
 

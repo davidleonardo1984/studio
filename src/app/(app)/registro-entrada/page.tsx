@@ -41,7 +41,7 @@ const entrySchema = z.object({
   driverName: z.string().min(1, { message: 'Nome do motorista é obrigatório.' }),
   assistant1Name: z.string().optional().transform(val => val === "" ? undefined : val),
   assistant2Name: z.string().optional().transform(val => val === "" ? undefined : val),
-  transportCompanyName: z.string().min(1, { message: 'Transportadora é obrigatória.' }),
+  transportCompanyName: z.string().min(1, { message: 'Transportadora / Empresa é obrigatória.' }),
   plate1: z.string().min(7, { message: 'Placa 1 é obrigatória (mín. 7 caracteres).' }).max(8),
   plate2: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 2 inválida (mín. 7 caracteres)."}),
   plate3: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 3 inválida (mín. 7 caracteres)."}),
@@ -89,7 +89,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
             ${entry.plate3 ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 3:</span> ${entry.plate3}</p>` : ''}
           </div>
           <div style="width: 40%; text-align: left;">
-            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora:</span>${entry.transportCompanyName}</p>
+            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Transportadora / Empresa:</span>${entry.transportCompanyName}</p>
             <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Destino Interno:</span>${entry.internalDestinationName}</p>
             <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Tipo Mov.:</span>${entry.movementType}</p>
           </div>
@@ -185,7 +185,7 @@ export default function RegistroEntradaPage() {
         setTransportCompanies(companies);
       } catch (error) {
         console.error("Failed to fetch transport companies:", error);
-        toast({ variant: "destructive", title: "Erro", description: "Falha ao carregar transportadoras do banco de dados." });
+        toast({ variant: "destructive", title: "Erro", description: "Falha ao carregar Transportadoras / Empresas do banco de dados." });
       }
     };
     fetchTransportCompanies();
@@ -381,7 +381,7 @@ export default function RegistroEntradaPage() {
         `Ordem: ${index + 1}`,
         `Motorista: ${vehicle.driverName}`,
         `Telefone: ${phone}`,
-        `Transportadora: ${vehicle.transportCompanyName}`,
+        `Transportadora / Empresa: ${vehicle.transportCompanyName}`,
         `Placa 1: ${vehicle.plate1}`,
         `Observação: ${vehicle.observation || '-'}`,
         `Data/Hora Chegada: ${new Date(vehicle.arrivalTimestamp).toLocaleString('pt-BR')}`
@@ -464,10 +464,10 @@ export default function RegistroEntradaPage() {
                   name="transportCompanyName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Transportadora</FormLabel>
+                      <FormLabel>Transportadora / Empresa</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Digite ou selecione a transportadora"
+                          placeholder="Digite ou selecione a Transportadora / Empresa"
                           {...field}
                           list="transport-company-list"
                         />
@@ -691,7 +691,7 @@ export default function RegistroEntradaPage() {
                   <TableHead>Ordem</TableHead>
                   <TableHead>Motorista</TableHead>
                   <TableHead>Telefone</TableHead>
-                  <TableHead>Transportadora</TableHead>
+                  <TableHead>Transportadora / Empresa</TableHead>
                   <TableHead>Placa 1</TableHead>
                   <TableHead>Observação</TableHead>
                   <TableHead>Data/Hora Chegada</TableHead>

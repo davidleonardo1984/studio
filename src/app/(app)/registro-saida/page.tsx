@@ -152,7 +152,7 @@ export default function RegistroSaidaPage() {
               <AlertDescription className="text-green-600">
                 <p><strong>Veículo:</strong> {foundEntry.plate1}</p>
                 <p><strong>Motorista:</strong> {foundEntry.driverName}</p>
-                <p><strong>Transportadora:</strong> {foundEntry.transportCompanyName}</p>
+                <p><strong>Transportadora / Empresa:</strong> {foundEntry.transportCompanyName}</p>
                 <p><strong>Horário de Saída:</strong> {foundEntry.exitTimestamp ? new Date(foundEntry.exitTimestamp).toLocaleString('pt-BR') : 'N/A'}</p>
               </AlertDescription>
             </Alert>
