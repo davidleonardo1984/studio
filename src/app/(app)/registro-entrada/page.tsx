@@ -423,20 +423,18 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nome do Motorista</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o motorista" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {personsStore.map((person) => (
-                            <SelectItem key={person.id} value={person.name}>
-                              {person.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                       <FormControl>
+                        <Input
+                          placeholder="Digite ou selecione o motorista"
+                          {...field}
+                          list="driver-list"
+                        />
+                      </FormControl>
+                      <datalist id="driver-list">
+                        {personsStore.map((person) => (
+                          <option key={person.id} value={person.name} />
+                        ))}
+                      </datalist>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -447,20 +445,18 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Transportadora</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a transportadora" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {transportCompaniesStore.map((company) => (
-                            <SelectItem key={company.id} value={company.name}>
-                              {company.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Input
+                          placeholder="Digite ou selecione a transportadora"
+                          {...field}
+                          list="transport-company-list"
+                        />
+                      </FormControl>
+                      <datalist id="transport-company-list">
+                        {transportCompaniesStore.map((company) => (
+                          <option key={company.id} value={company.name} />
+                        ))}
+                      </datalist>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -479,21 +475,19 @@ export default function RegistroEntradaPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ajudante 1 (Opcional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o ajudante 1" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="">Nenhum</SelectItem>
-                            {personsStore.map((person) => (
-                              <SelectItem key={person.id} value={person.name}>
-                                {person.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <Input
+                            placeholder="Digite ou selecione o ajudante 1"
+                            {...field}
+                            value={field.value ?? ''}
+                            list="assistant-list"
+                          />
+                        </FormControl>
+                        <datalist id="assistant-list">
+                          {personsStore.map((person) => (
+                            <option key={person.id} value={person.name} />
+                          ))}
+                        </datalist>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -504,22 +498,15 @@ export default function RegistroEntradaPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ajudante 2 (Opcional)</FormLabel>
-                         <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o ajudante 2" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="">Nenhum</SelectItem>
-                            {personsStore.map((person) => (
-                              <SelectItem key={person.id} value={person.name}>
-                                {person.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
+                         <FormControl>
+                          <Input
+                            placeholder="Digite ou selecione o ajudante 2"
+                            {...field}
+                            value={field.value ?? ''}
+                            list="assistant-list"
+                          />
+                        </FormControl>
+                         <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -569,20 +556,18 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Destino Interno</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o destino" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {internalDestinationsStore.map((dest) => (
-                            <SelectItem key={dest.id} value={dest.name}>
-                              {dest.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Input
+                          placeholder="Digite ou selecione o destino"
+                          {...field}
+                          list="destination-list"
+                        />
+                      </FormControl>
+                      <datalist id="destination-list">
+                        {internalDestinationsStore.map((dest) => (
+                          <option key={dest.id} value={dest.name} />
+                        ))}
+                      </datalist>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -786,5 +771,3 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
-
-    
