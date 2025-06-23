@@ -64,3 +64,7 @@ export interface VehicleEntryFormData {
   movementType: string;
   observation?: string;
 }
+
+
+// Firestore specific types - to be used when interacting with DB
+export type TransportCompanyFormData = Omit<TransportCompany, 'id'>;

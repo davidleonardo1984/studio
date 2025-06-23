@@ -13,8 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { Driver, TransportCompany, InternalDestination } from '@/lib/types';
-import { personsStore, transportCompaniesStore, internalDestinationsStore } from '@/lib/store';
-import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin } from 'lucide-react';
+import { personsStore, internalDestinationsStore } from '@/lib/store';
+import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +26,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+
 
 // Schemas for forms
 const personSchema = z.object({
@@ -47,12 +50,12 @@ const internalDestinationSchema = z.object({
 type InternalDestinationFormData = z.infer<typeof internalDestinationSchema>;
 
 
-// Generic form and table component
+// Generic form and table component for in-memory stores
 interface CadastroSectionProps<TData, TFormData> {
   title: string;
   icon: React.ElementType;
   data: TData[];
-  setDataStore: (data: TData[]) => void; // Function to update the global store
+  setDataStore: (data: TData[]) => void;
   formSchema: z.ZodSchema<TFormData>;
   formFields: (form: any) => React.ReactNode;
   tableHeaders: string[];
@@ -140,7 +143,7 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
               {formFields(form)}
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); form.reset(defaultValues); }}>Cancelar</Button>
+                <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
                 <Button type="submit">{editingItem ? 'Salvar Alterações' : 'Cadastrar'}</Button>
               </div>
             </form>
@@ -166,21 +169,166 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
   );
 }
 
+// Specific component for Transport Companies using Firestore
+function TransportCompaniesTab() {
+  const { toast } = useToast();
+  const [data, setData] = useState<TransportCompany[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<TransportCompany | null>(null);
+
+  const companiesCollection = collection(db, 'transportCompanies');
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    const q = query(companiesCollection, orderBy("name"));
+    const snapshot = await getDocs(q);
+    const companies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany));
+    setData(companies);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const form = useForm<TransportCompanyFormData>({
+    resolver: zodResolver(transportCompanySchema),
+    defaultValues: { name: '' },
+  });
+
+  useEffect(() => {
+    if (editingItem) {
+      form.reset({ name: editingItem.name });
+      setShowForm(true);
+    } else {
+      form.reset({ name: '' });
+    }
+  }, [editingItem, form]);
+
+  const onSubmit = async (formData: TransportCompanyFormData) => {
+    setIsSubmitting(true);
+    try {
+      if (editingItem) {
+        const companyDoc = doc(db, 'transportCompanies', editingItem.id);
+        await updateDoc(companyDoc, formData);
+        toast({ title: "Transportadora atualizada!", description: `${formData.name} foi atualizada com sucesso.` });
+      } else {
+        await addDoc(companiesCollection, formData);
+        toast({ title: "Transportadora cadastrada!", description: `${formData.name} foi cadastrada com sucesso.` });
+      }
+      setEditingItem(null);
+      setShowForm(false);
+      form.reset({ name: '' });
+      await fetchData();
+    } catch (error) {
+      console.error("Error saving transport company: ", error);
+      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a transportadora." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const companyDoc = doc(db, 'transportCompanies', id);
+      await deleteDoc(companyDoc);
+      toast({ title: "Transportadora excluída!", description: `Item foi excluído com sucesso.` });
+      await fetchData();
+    } catch (error) {
+      console.error("Error deleting transport company: ", error);
+      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a transportadora." });
+    }
+  };
+
+  const handleEdit = (item: TransportCompany) => {
+    setEditingItem(item);
+  };
+  
+  const formFields = (form: any) => (
+    <FormField control={form.control} name="name" render={({ field }) => (
+      <FormItem>
+        <FormLabel>Nome da Transportadora</FormLabel>
+        <FormControl><Input placeholder="Ex: Transportes Rápidos S.A." {...field} /></FormControl>
+        <FormMessage />
+      </FormItem>
+    )} />
+  );
+
+  return (
+    <Card className="shadow-lg">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Truck className="w-6 h-6 text-primary" />
+          <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras</CardTitle>
+        </div>
+        <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }}>
+          <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Transportadora'}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {showForm && (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
+              {formFields(form)}
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        )}
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : data.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>{item.name}</TableCell>
+                  <TableCell className="text-right space-x-2">
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-muted-foreground text-center py-4">Nenhuma transportadora cadastrada no banco de dados.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 
 export default function CadastrosGeraisPage() {
-  // Use local state for rendering, but sync with global stores
   const [persons, setPersonsState] = useState<Driver[]>(personsStore);
-  const [transportCompanies, setTransportCompaniesState] = useState<TransportCompany[]>(transportCompaniesStore);
   const [internalDestinations, setInternalDestinationsState] = useState<InternalDestination[]>(internalDestinationsStore);
 
-  // Update global stores when local state changes
   const updatePersonsStore = (data: Driver[]) => { personsStore.length = 0; personsStore.push(...data); };
-  const updateTransportCompaniesStore = (data: TransportCompany[]) => { transportCompaniesStore.length = 0; transportCompaniesStore.push(...data); };
   const updateInternalDestinationsStore = (data: InternalDestination[]) => { internalDestinationsStore.length = 0; internalDestinationsStore.push(...data); };
   
-  // Sync local state if global stores change (e.g. on initial load or from other components if stores were reactive)
   useEffect(() => setPersonsState([...personsStore]), []);
-  useEffect(() => setTransportCompaniesState([...transportCompaniesStore]), []);
   useEffect(() => setInternalDestinationsState([...internalDestinationsStore]), []);
 
 
@@ -251,28 +399,6 @@ export default function CadastrosGeraisPage() {
     </TableRow>
   );
 
-  const renderTransportCompanyFormFields = (form: any) => (
-    <>
-      <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome da Transportadora</FormLabel><FormControl><Input placeholder="Ex: Transportes Rápidos S.A." {...field} /></FormControl><FormMessage /></FormItem>)} />
-    </>
-  );
-
-  const renderTransportCompanyTableRow = (company: TransportCompany, index: number, onDelete: (id: string) => void, onEdit: (item: TransportCompany) => void) => (
-    <TableRow key={company.id}>
-      <TableCell>{company.name}</TableCell>
-      <TableCell className="text-right space-x-2">
-        <Button variant="ghost" size="icon" onClick={() => onEdit(company)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
-        <AlertDialog>
-            <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {company.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(company.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-      </TableCell>
-    </TableRow>
-  );
-
    const renderInternalDestinationFormFields = (form: any) => (
     <>
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome do Destino</FormLabel><FormControl><Input placeholder="Ex: Almoxarifado Principal" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -323,17 +449,7 @@ export default function CadastrosGeraisPage() {
           />
         </TabsContent>
         <TabsContent value="transportCompanies">
-           <CadastroSection
-            title="Transportadora"
-            icon={Truck}
-            data={transportCompanies}
-            setDataStore={updateTransportCompaniesStore}
-            formSchema={transportCompanySchema}
-            formFields={renderTransportCompanyFormFields}
-            tableHeaders={['Nome']}
-            renderTableRow={renderTransportCompanyTableRow}
-            defaultValues={{ name: ''}}
-          />
+           <TransportCompaniesTab />
         </TabsContent>
         <TabsContent value="internalDestinations">
           <CadastroSection

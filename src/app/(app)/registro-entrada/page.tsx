@@ -14,11 +14,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import type { VehicleEntryFormData, VehicleEntry } from '@/lib/types';
+import type { VehicleEntryFormData, VehicleEntry, TransportCompany } from '@/lib/types';
 import { Save, SendToBack, Clock, CheckCircle, Search, Printer, ClipboardCopy } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
-import { personsStore, transportCompaniesStore, internalDestinationsStore } from '@/lib/store';
+import { personsStore, internalDestinationsStore } from '@/lib/store';
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
 import html2canvas from 'html2canvas';
 import {
@@ -32,6 +32,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -170,6 +172,24 @@ export default function RegistroEntradaPage() {
   // State for PDF Preview Modal
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+  const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>([]);
+
+  useEffect(() => {
+    const fetchTransportCompanies = async () => {
+      try {
+        const companiesCollection = collection(db, 'transportCompanies');
+        const q = query(companiesCollection, orderBy("name"));
+        const snapshot = await getDocs(q);
+        const companies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany));
+        setTransportCompanies(companies);
+      } catch (error) {
+        console.error("Failed to fetch transport companies:", error);
+        toast({ variant: "destructive", title: "Erro", description: "Falha ao carregar transportadoras do banco de dados." });
+      }
+    };
+    fetchTransportCompanies();
+  }, [toast]);
 
 
   useEffect(() => {
@@ -453,7 +473,7 @@ export default function RegistroEntradaPage() {
                         />
                       </FormControl>
                       <datalist id="transport-company-list">
-                        {transportCompaniesStore.map((company) => (
+                        {transportCompanies.map((company) => (
                           <option key={company.id} value={company.name} />
                         ))}
                       </datalist>

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useToast } from '@/hooks/use-toast';
-import type { VehicleEntry } from '@/lib/types';
+import type { VehicleEntry, TransportCompany } from '@/lib/types';
 import { Download, Printer, Trash2, Search, Truck, RotateCcw, CheckCircle } from 'lucide-react';
 import type { DateRange } from "react-day-picker";
 import {
@@ -24,7 +24,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
-import { transportCompaniesStore } from '@/lib/store';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 
@@ -151,6 +152,25 @@ export default function HistoricoAcessoPage() {
   // State for Preview Modal
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+  const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>([]);
+
+  useEffect(() => {
+    const fetchTransportCompanies = async () => {
+      try {
+        const companiesCollection = collection(db, 'transportCompanies');
+        const q = query(companiesCollection, orderBy("name"));
+        const snapshot = await getDocs(q);
+        const companies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany));
+        setTransportCompanies(companies);
+      } catch (error) {
+        console.error("Failed to fetch transport companies:", error);
+        toast({ variant: "destructive", title: "Erro", description: "Falha ao carregar transportadoras do banco de dados." });
+      }
+    };
+    fetchTransportCompanies();
+  }, [toast]);
+
 
   useEffect(() => {
     const syncAllEntries = () => {
@@ -366,7 +386,7 @@ export default function HistoricoAcessoPage() {
                   list="transport-company-filter-list"
                 />
                 <datalist id="transport-company-filter-list">
-                  {transportCompaniesStore.map((company) => (
+                  {transportCompanies.map((company) => (
                     <option key={company.id} value={company.name} />
                   ))}
                 </datalist>
