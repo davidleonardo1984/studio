@@ -185,22 +185,21 @@ function TransportCompaniesSection() {
 
   const companiesCollection = collection(db, 'transportCompanies');
 
-  const fetchCompanies = async () => {
-    setIsLoading(true);
-    try {
-      const q = query(companiesCollection, orderBy("name"));
-      const snapshot = await getDocs(q);
-      const companiesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany));
-      setData(companiesList);
-    } catch (error) {
-      console.error("Failed to fetch transport companies:", error);
-      toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar as Transportadoras / Empresas." });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchCompanies = async () => {
+      setIsLoading(true);
+      try {
+        const q = query(companiesCollection, orderBy("name"));
+        const snapshot = await getDocs(q);
+        const companiesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany));
+        setData(companiesList);
+      } catch (error) {
+        console.error("Failed to fetch transport companies:", error);
+        toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar as Transportadoras / Empresas." });
+      } finally {
+        setIsLoading(false);
+      }
+    };
     fetchCompanies();
      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -220,15 +219,21 @@ function TransportCompaniesSection() {
       if (editingItem) {
         const companyDoc = doc(db, 'transportCompanies', editingItem.id);
         await updateDoc(companyDoc, formData);
+        
+        setData(prevData => prevData.map(item => item.id === editingItem.id ? { ...item, ...formData } : item).sort((a, b) => a.name.localeCompare(b.name)));
+
         toast({ title: "Transportadora / Empresa atualizada!", description: `${formData.name} foi atualizada com sucesso.` });
       } else {
-        await addDoc(companiesCollection, formData);
+        const docRef = await addDoc(companiesCollection, formData);
+        const newCompany = { id: docRef.id, ...formData } as TransportCompany;
+        
+        setData(prevData => [...prevData, newCompany].sort((a, b) => a.name.localeCompare(b.name)));
+        
         toast({ title: "Transportadora / Empresa cadastrada!", description: `${formData.name} foi cadastrada com sucesso.` });
       }
       setEditingItem(null);
       setShowForm(false);
       form.reset({ name: '' });
-      fetchCompanies(); // Refetch after change
     } catch (error) {
       console.error("Error saving transport company: ", error);
       toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a Transportadora / Empresa." });
@@ -238,14 +243,21 @@ function TransportCompaniesSection() {
   };
 
   const handleDelete = async (id: string) => {
+    const originalData = [...data];
+    const companyToDelete = data.find(c => c.id === id);
+    
+    // Optimistic delete from UI
+    setData(prevData => prevData.filter(item => item.id !== id));
+    
     try {
         const companyDoc = doc(db, 'transportCompanies', id);
         await deleteDoc(companyDoc);
         toast({ title: 'Excluído!', description: 'A Transportadora / Empresa foi removida com sucesso.' });
-        fetchCompanies(); // Refetch after change
     } catch (error) {
+      // Revert on error
+      setData(originalData);
       console.error("Error deleting transport company: ", error);
-      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a Transportadora / Empresa." });
+      toast({ variant: 'destructive', title: "Erro ao Excluir", description: `A exclusão falhou. A empresa ${companyToDelete?.name || ''} foi restaurada.` });
     }
   };
 
