@@ -417,54 +417,54 @@ export default function RegistroEntradaPage() {
           <Form {...form}>
             <form className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormItem>
-                  <FormField
-                    control={form.control}
-                    name="driverName"
-                    render={({ field }) => (
-                      <>
-                        <FormLabel>Nome do Motorista</FormLabel>
+                <FormField
+                  control={form.control}
+                  name="driverName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Motorista</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ''}>
                         <FormControl>
-                          <Input 
-                            placeholder="Digite ou selecione o motorista" 
-                            {...field} 
-                            list="driver-list"
-                          />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o motorista" />
+                          </SelectTrigger>
                         </FormControl>
-                        <FormMessage />
-                      </>
-                    )}
-                  />
-                  <datalist id="driver-list">
-                    {personsStore.map(person => (
-                      <option key={person.id} value={person.name} />
-                    ))}
-                  </datalist>
-                </FormItem>
-                <FormItem>
-                    <FormField
-                    control={form.control}
-                    name="transportCompanyName"
-                    render={({ field }) => (
-                        <>
-                        <FormLabel>Transportadora</FormLabel>
+                        <SelectContent>
+                          {personsStore.map((person) => (
+                            <SelectItem key={person.id} value={person.name}>
+                              {person.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="transportCompanyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Transportadora</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ''}>
                         <FormControl>
-                            <Input 
-                              placeholder="Digite ou selecione a transportadora" 
-                              {...field} 
-                              list="transport-company-list"
-                            />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a transportadora" />
+                          </SelectTrigger>
                         </FormControl>
-                        <FormMessage />
-                        </>
-                    )}
-                    />
-                    <datalist id="transport-company-list">
-                    {transportCompaniesStore.map(company => (
-                        <option key={company.id} value={company.name} />
-                    ))}
-                    </datalist>
-                </FormItem>
+                        <SelectContent>
+                          {transportCompaniesStore.map((company) => (
+                            <SelectItem key={company.id} value={company.name}>
+                              {company.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <Button type="button" variant="outline" size="sm" onClick={() => setShowAssistants(!showAssistants)}>
@@ -473,49 +473,56 @@ export default function RegistroEntradaPage() {
 
               {showAssistants && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-md">
-                    <FormItem>
-                        <FormField
-                        control={form.control}
-                        name="assistant1Name"
-                        render={({ field }) => (
-                            <>
-                            <FormLabel>Ajudante 1 (Opcional)</FormLabel>
-                            <FormControl>
-                            <Input 
-                              placeholder="Digite ou selecione o ajudante 1" 
-                              {...field} 
-                              list="assistant-list" 
-                            />
-                            </FormControl>
-                            <FormMessage />
-                            </>
-                        )}
-                        />
-                        <datalist id="assistant-list">
-                        {personsStore.map(person => (
-                            <option key={person.id} value={person.name} />
-                        ))}
-                        </datalist>
-                    </FormItem>
-                    <FormItem>
-                        <FormField
-                        control={form.control}
-                        name="assistant2Name"
-                        render={({ field }) => (
-                            <>
-                            <FormLabel>Ajudante 2 (Opcional)</FormLabel>
-                            <FormControl>
-                            <Input 
-                              placeholder="Digite ou selecione o ajudante 2" 
-                              {...field} 
-                              list="assistant-list" 
-                            />
-                            </FormControl>
-                            <FormMessage />
-                            </>
-                        )}
-                        />
-                    </FormItem>
+                   <FormField
+                    control={form.control}
+                    name="assistant1Name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ajudante 1 (Opcional)</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o ajudante 1" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Nenhum</SelectItem>
+                            {personsStore.map((person) => (
+                              <SelectItem key={person.id} value={person.name}>
+                                {person.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="assistant2Name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ajudante 2 (Opcional)</FormLabel>
+                         <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o ajudante 2" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Nenhum</SelectItem>
+                            {personsStore.map((person) => (
+                              <SelectItem key={person.id} value={person.name}>
+                                {person.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               )}
 
@@ -556,30 +563,30 @@ export default function RegistroEntradaPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormItem>
-                    <FormField
-                    control={form.control}
-                    name="internalDestinationName"
-                    render={({ field }) => (
-                        <>
-                        <FormLabel>Destino Interno</FormLabel>
+                <FormField
+                  control={form.control}
+                  name="internalDestinationName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Destino Interno</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ''}>
                         <FormControl>
-                            <Input 
-                              placeholder="Digite ou selecione o destino" 
-                              {...field} 
-                              list="internal-destination-list" 
-                            />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o destino" />
+                          </SelectTrigger>
                         </FormControl>
-                        <FormMessage />
-                        </>
-                    )}
-                    />
-                    <datalist id="internal-destination-list">
-                    {internalDestinationsStore.map(dest => (
-                        <option key={dest.id} value={dest.name} />
-                    ))}
-                    </datalist>
-                </FormItem>
+                        <SelectContent>
+                          {internalDestinationsStore.map((dest) => (
+                            <SelectItem key={dest.id} value={dest.name}>
+                              {dest.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="movementType"
@@ -779,3 +786,5 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
+
+    
