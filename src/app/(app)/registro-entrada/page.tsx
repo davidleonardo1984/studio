@@ -36,10 +36,7 @@ import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
 const entrySchema = z.object({
-  driverName: z.string().min(1, { message: 'Nome do motorista é obrigatório.' })
-    .refine(value => personsStore.some(p => p.name.toUpperCase() === value.toUpperCase()), {
-      message: "Motorista não encontrado. Selecione um motorista da lista ou cadastre-o em Cadastros Gerais."
-    }),
+  driverName: z.string().min(1, { message: 'Nome do motorista é obrigatório.' }),
   assistant1Name: z.string().optional().transform(val => val === "" ? undefined : val) 
     .refine(value => !value || personsStore.some(p => p.name.toUpperCase() === value.toUpperCase()), {
       message: "Ajudante 1 não encontrado. Selecione um ajudante da lista ou cadastre-o em Cadastros Gerais."
@@ -48,17 +45,11 @@ const entrySchema = z.object({
     .refine(value => !value || personsStore.some(p => p.name.toUpperCase() === value.toUpperCase()), {
       message: "Ajudante 2 não encontrado. Selecione um ajudante da lista ou cadastre-o em Cadastros Gerais."
     }),
-  transportCompanyName: z.string().min(1, { message: 'Transportadora é obrigatória.' })
-    .refine(value => transportCompaniesStore.some(tc => tc.name.toUpperCase() === value.toUpperCase()), {
-      message: "Transportadora não encontrada. Selecione uma transportadora da lista ou cadastre-a em Cadastros Gerais."
-    }),
+  transportCompanyName: z.string().min(1, { message: 'Transportadora é obrigatória.' }),
   plate1: z.string().min(7, { message: 'Placa 1 é obrigatória (mín. 7 caracteres).' }).max(8),
   plate2: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 2 inválida (mín. 7 caracteres)."}),
   plate3: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 3 inválida (mín. 7 caracteres)."}),
-  internalDestinationName: z.string().min(1, { message: 'Destino interno é obrigatório.' })
-    .refine(value => internalDestinationsStore.some(id => id.name.toUpperCase() === value.toUpperCase()), {
-      message: "Destino interno não encontrado. Selecione um destino da lista ou cadastre-o em Cadastros Gerais."
-    }),
+  internalDestinationName: z.string().min(1, { message: 'Destino interno é obrigatório.' }),
   movementType: z.string().min(1, { message: 'Tipo de movimentação é obrigatório.' }),
   observation: z.string().max(500, { message: 'Observação muito longa (máx. 500 caracteres).' }).optional(),
 });
@@ -428,18 +419,7 @@ export default function RegistroEntradaPage() {
                           <Input 
                             placeholder="Digite ou selecione o motorista" 
                             {...field} 
-                            list="driver-list" 
-                            onBlur={(e) => {
-                              const value = e.target.value;
-                              if (value && !personsStore.some(p => p.name.toUpperCase() === value.toUpperCase())) {
-                                form.setError('driverName', { type: 'manual', message: 'Motorista não cadastrado. Verifique ou cadastre em Cadastros Gerais.' });
-                              } else if (value === "" && !form.formState.errors.driverName?.message?.includes("obrigatório")) { 
-                                form.clearErrors('driverName');
-                              } else if (value && personsStore.some(p => p.name.toUpperCase() === value.toUpperCase())) {
-                                form.clearErrors('driverName');
-                              }
-                              field.onBlur(e); 
-                            }}
+                            list="driver-list"
                           />
                         </FormControl>
                         <FormMessage />
@@ -464,17 +444,6 @@ export default function RegistroEntradaPage() {
                               placeholder="Digite ou selecione a transportadora" 
                               {...field} 
                               list="transport-company-list"
-                              onBlur={(e) => {
-                                const value = e.target.value;
-                                if (value && !transportCompaniesStore.some(tc => tc.name.toUpperCase() === value.toUpperCase())) {
-                                  form.setError('transportCompanyName', { type: 'manual', message: 'Transportadora não cadastrada. Verifique ou cadastre em Cadastros Gerais.' });
-                                } else if (value === "" && !form.formState.errors.transportCompanyName?.message?.includes("obrigatória")) {
-                                  form.clearErrors('transportCompanyName');
-                                } else if (value && transportCompaniesStore.some(tc => tc.name.toUpperCase() === value.toUpperCase())){
-                                   form.clearErrors('transportCompanyName');
-                                }
-                                field.onBlur(e); 
-                              }}
                             />
                         </FormControl>
                         <FormMessage />
@@ -608,17 +577,6 @@ export default function RegistroEntradaPage() {
                               placeholder="Digite ou selecione o destino" 
                               {...field} 
                               list="internal-destination-list" 
-                              onBlur={(e) => {
-                                const value = e.target.value;
-                                if (value && !internalDestinationsStore.some(id => id.name.toUpperCase() === value.toUpperCase())) {
-                                  form.setError('internalDestinationName', { type: 'manual', message: 'Destino Interno não cadastrado. Verifique ou cadastre.' });
-                                } else if (value === "" && !form.formState.errors.internalDestinationName?.message?.includes("obrigatório")) {
-                                   form.clearErrors('internalDestinationName');
-                                } else if (value && internalDestinationsStore.some(id => id.name.toUpperCase() === value.toUpperCase())) {
-                                   form.clearErrors('internalDestinationName');
-                                }
-                                field.onBlur(e); 
-                              }}
                             />
                         </FormControl>
                         <FormMessage />
