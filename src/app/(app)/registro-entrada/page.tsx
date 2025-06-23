@@ -37,14 +37,8 @@ const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRAN
 
 const entrySchema = z.object({
   driverName: z.string().min(1, { message: 'Nome do motorista é obrigatório.' }),
-  assistant1Name: z.string().optional().transform(val => val === "" ? undefined : val) 
-    .refine(value => !value || personsStore.some(p => p.name.toUpperCase() === value.toUpperCase()), {
-      message: "Ajudante 1 não encontrado. Selecione um ajudante da lista ou cadastre-o em Cadastros Gerais."
-    }),
-  assistant2Name: z.string().optional().transform(val => val === "" ? undefined : val) 
-    .refine(value => !value || personsStore.some(p => p.name.toUpperCase() === value.toUpperCase()), {
-      message: "Ajudante 2 não encontrado. Selecione um ajudante da lista ou cadastre-o em Cadastros Gerais."
-    }),
+  assistant1Name: z.string().optional().transform(val => val === "" ? undefined : val),
+  assistant2Name: z.string().optional().transform(val => val === "" ? undefined : val),
   transportCompanyName: z.string().min(1, { message: 'Transportadora é obrigatória.' }),
   plate1: z.string().min(7, { message: 'Placa 1 é obrigatória (mín. 7 caracteres).' }).max(8),
   plate2: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 2 inválida (mín. 7 caracteres)."}),
@@ -342,6 +336,18 @@ export default function RegistroEntradaPage() {
     }
   };
 
+  const formatDisplayPhoneNumber = (val: string): string => {
+    if (typeof val !== 'string' || !val) return "";
+    const digits = val.replace(/\D/g, "");
+
+    if (digits.length === 0) return "";
+    let formatted = `(${digits.substring(0, 2)}`;
+    if (digits.length > 2) {
+      formatted += `)${digits.substring(2, 11)}`;
+    }
+    return formatted;
+  };
+
   const handleCopyWaitingData = async () => {
     if (filteredWaitingVehicles.length === 0) {
       toast({ variant: 'destructive', title: 'Nenhum dado', description: 'Não há veículos aguardando para copiar.' });
@@ -349,9 +355,12 @@ export default function RegistroEntradaPage() {
     }
 
     const dataToCopy = filteredWaitingVehicles.map((vehicle, index) => {
+      const driver = personsStore.find(p => p.name === vehicle.driverName);
+      const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
       return [
         `Ordem: ${index + 1}`,
         `Motorista: ${vehicle.driverName}`,
+        `Telefone: ${phone}`,
         `Transportadora: ${vehicle.transportCompanyName}`,
         `Placa 1: ${vehicle.plate1}`,
         `Observação: ${vehicle.observation || '-'}`,
@@ -476,15 +485,6 @@ export default function RegistroEntradaPage() {
                               placeholder="Digite ou selecione o ajudante 1" 
                               {...field} 
                               list="assistant-list" 
-                              onBlur={(e) => {
-                                const value = e.target.value;
-                                if (value && !personsStore.some(p => p.name.toUpperCase() === value.toUpperCase())) {
-                                  form.setError('assistant1Name', { type: 'manual', message: 'Ajudante 1 não cadastrado. Verifique ou cadastre.' });
-                                } else {
-                                  form.clearErrors('assistant1Name');
-                                }
-                                field.onBlur(e); 
-                              }}
                             />
                             </FormControl>
                             <FormMessage />
@@ -509,15 +509,6 @@ export default function RegistroEntradaPage() {
                               placeholder="Digite ou selecione o ajudante 2" 
                               {...field} 
                               list="assistant-list" 
-                              onBlur={(e) => {
-                                const value = e.target.value;
-                                if (value && !personsStore.some(p => p.name.toUpperCase() === value.toUpperCase())) {
-                                  form.setError('assistant2Name', { type: 'manual', message: 'Ajudante 2 não cadastrado. Verifique ou cadastre.' });
-                                } else {
-                                  form.clearErrors('assistant2Name');
-                                }
-                                field.onBlur(e); 
-                              }}
                             />
                             </FormControl>
                             <FormMessage />
@@ -687,6 +678,7 @@ export default function RegistroEntradaPage() {
                 <TableRow>
                   <TableHead>Ordem</TableHead>
                   <TableHead>Motorista</TableHead>
+                  <TableHead>Telefone</TableHead>
                   <TableHead>Transportadora</TableHead>
                   <TableHead>Placa 1</TableHead>
                   <TableHead>Observação</TableHead>
@@ -695,29 +687,34 @@ export default function RegistroEntradaPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredWaitingVehicles.map((vehicle, index) => (
-                  <TableRow key={vehicle.id}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>{vehicle.driverName}</TableCell>
-                    <TableCell>{vehicle.transportCompanyName}</TableCell>
-                    <TableCell>{vehicle.plate1}</TableCell>
-                    <TableCell className="max-w-xs truncate">{vehicle.observation || '-'}</TableCell>
-                    <TableCell>{new Date(vehicle.arrivalTimestamp).toLocaleString('pt-BR')}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => {
-                          setApprovalContext({ type: 'waiting_list', vehicle });
-                          setIsDialogOpen(true);
-                        }}
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        <Printer className="mr-2 h-4 w-4" /> Liberar Entrada
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredWaitingVehicles.map((vehicle, index) => {
+                  const driver = personsStore.find(p => p.name === vehicle.driverName);
+                  const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
+                  return (
+                    <TableRow key={vehicle.id}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{vehicle.driverName}</TableCell>
+                      <TableCell>{phone}</TableCell>
+                      <TableCell>{vehicle.transportCompanyName}</TableCell>
+                      <TableCell>{vehicle.plate1}</TableCell>
+                      <TableCell className="max-w-xs truncate">{vehicle.observation || '-'}</TableCell>
+                      <TableCell>{new Date(vehicle.arrivalTimestamp).toLocaleString('pt-BR')}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => {
+                            setApprovalContext({ type: 'waiting_list', vehicle });
+                            setIsDialogOpen(true);
+                          }}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <Printer className="mr-2 h-4 w-4" /> Liberar Entrada
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
             </div>
