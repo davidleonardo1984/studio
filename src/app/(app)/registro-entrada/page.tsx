@@ -14,8 +14,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import type { VehicleEntryFormData, VehicleEntry, TransportCompany } from '@/lib/types';
-import { Save, SendToBack, Clock, CheckCircle, Search, Printer, ClipboardCopy } from 'lucide-react';
+import type { VehicleEntryFormData, VehicleEntry } from '@/lib/types';
+import { Save, SendToBack, Clock, CheckCircle, Search, Printer, ClipboardCopy, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { personsStore, internalDestinationsStore } from '@/lib/store';
@@ -32,8 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { useTransportCompanies } from '@/context/TransportCompanyContext';
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -173,24 +172,7 @@ export default function RegistroEntradaPage() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
-  const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>([]);
-
-  useEffect(() => {
-    const fetchTransportCompanies = async () => {
-      try {
-        const companiesCollection = collection(db, 'transportCompanies');
-        const q = query(companiesCollection, orderBy("name"));
-        const snapshot = await getDocs(q);
-        const companies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany));
-        setTransportCompanies(companies);
-      } catch (error) {
-        console.error("Failed to fetch transport companies:", error);
-        toast({ variant: "destructive", title: "Erro", description: "Falha ao carregar Transportadoras / Empresas do banco de dados." });
-      }
-    };
-    fetchTransportCompanies();
-  }, [toast]);
-
+  const { companies: transportCompanies, isLoading: companiesLoading } = useTransportCompanies();
 
   useEffect(() => {
     const syncWaitingVehicles = () => {
@@ -465,12 +447,16 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Transportadora / Empresa</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Digite ou selecione a Transportadora / Empresa"
-                          {...field}
-                          list="transport-company-list"
-                        />
+                       <FormControl>
+                        <div className="relative">
+                          <Input
+                            placeholder={companiesLoading ? "CARREGANDO..." : "Digite ou selecione a empresa"}
+                            {...field}
+                            list="transport-company-list"
+                            disabled={companiesLoading}
+                          />
+                           {companiesLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
+                        </div>
                       </FormControl>
                       <datalist id="transport-company-list">
                         {transportCompanies.map((company) => (

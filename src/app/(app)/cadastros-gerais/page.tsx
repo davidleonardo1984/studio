@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import type { Driver, TransportCompany, InternalDestination } from '@/lib/types';
+import type { Driver, TransportCompany, InternalDestination, TransportCompanyFormData } from '@/lib/types';
 import { personsStore, internalDestinationsStore } from '@/lib/store';
 import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin, Loader2 } from 'lucide-react';
 import {
@@ -26,8 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { useTransportCompanies } from '@/context/TransportCompanyContext';
 
 
 // Schemas for forms
@@ -42,7 +41,7 @@ type PersonFormData = z.infer<typeof personSchema>;
 const transportCompanySchema = z.object({
   name: z.string().min(3, 'Nome da Transportadora / Empresa é obrigatório (mín. 3 caracteres).'),
 });
-type TransportCompanyFormData = z.infer<typeof transportCompanySchema>;
+
 
 const internalDestinationSchema = z.object({
   name: z.string().min(3, 'Nome do destino é obrigatório (mín. 3 caracteres).'),
@@ -170,28 +169,13 @@ function CadastroSection<TData extends { id: string; name: string }, TFormData e
 }
 
 // Specific component for Transport Companies using Firestore
-function TransportCompaniesTab() {
+function TransportCompaniesSection() {
   const { toast } = useToast();
-  const [data, setData] = useState<TransportCompany[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { companies: data, isLoading, addCompany, updateCompany, deleteCompany } = useTransportCompanies();
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<TransportCompany | null>(null);
-
-  const companiesCollection = collection(db, 'transportCompanies');
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    const q = query(companiesCollection, orderBy("name"));
-    const snapshot = await getDocs(q);
-    const companies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany));
-    setData(companies);
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const form = useForm<TransportCompanyFormData>({
     resolver: zodResolver(transportCompanySchema),
@@ -211,20 +195,18 @@ function TransportCompaniesTab() {
     setIsSubmitting(true);
     try {
       if (editingItem) {
-        const companyDoc = doc(db, 'transportCompanies', editingItem.id);
-        await updateDoc(companyDoc, formData);
+        await updateCompany(editingItem.id, formData);
         toast({ title: "Transportadora / Empresa atualizada!", description: `${formData.name} foi atualizada com sucesso.` });
       } else {
-        await addDoc(companiesCollection, formData);
+        await addCompany(formData);
         toast({ title: "Transportadora / Empresa cadastrada!", description: `${formData.name} foi cadastrada com sucesso.` });
       }
       setEditingItem(null);
       setShowForm(false);
       form.reset({ name: '' });
-      await fetchData();
     } catch (error) {
       console.error("Error saving transport company: ", error);
-      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a Transportadora / Empresa." });
+      // Error toast is handled in the context now
     } finally {
       setIsSubmitting(false);
     }
@@ -232,13 +214,11 @@ function TransportCompaniesTab() {
 
   const handleDelete = async (id: string) => {
     try {
-      const companyDoc = doc(db, 'transportCompanies', id);
-      await deleteDoc(companyDoc);
-      toast({ title: "Transportadora / Empresa excluída!", description: `Item foi excluído com sucesso.` });
-      await fetchData();
+      await deleteCompany(id);
+      // Success toast handled in context
     } catch (error) {
       console.error("Error deleting transport company: ", error);
-      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a Transportadora / Empresa." });
+      // Error toast handled in context
     }
   };
 
@@ -285,6 +265,7 @@ function TransportCompaniesTab() {
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-4 text-muted-foreground">Carregando empresas...</p>
           </div>
         ) : data.length > 0 ? (
           <Table>
@@ -313,7 +294,11 @@ function TransportCompaniesTab() {
             </TableBody>
           </Table>
         ) : (
-          <p className="text-muted-foreground text-center py-4">Nenhuma Transportadora / Empresa cadastrada no banco de dados.</p>
+          <div className="text-center py-12">
+            <Truck className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
+            <p className="text-lg font-medium text-muted-foreground">Nenhuma empresa encontrada.</p>
+            <p className="text-sm text-muted-foreground mt-1">Clique em "Nova Transportadora / Empresa" para começar.</p>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -449,7 +434,7 @@ export default function CadastrosGeraisPage() {
           />
         </TabsContent>
         <TabsContent value="transportCompanies">
-           <TransportCompaniesTab />
+           <TransportCompaniesSection />
         </TabsContent>
         <TabsContent value="internalDestinations">
           <CadastroSection

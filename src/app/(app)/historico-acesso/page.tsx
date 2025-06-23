@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry, TransportCompany } from '@/lib/types';
-import { Download, Printer, Trash2, Search, Truck, RotateCcw, CheckCircle } from 'lucide-react';
+import { Download, Printer, Trash2, Search, Truck, RotateCcw, CheckCircle, Loader2 } from 'lucide-react';
 import type { DateRange } from "react-day-picker";
 import {
   AlertDialog,
@@ -24,8 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
-import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { useTransportCompanies } from '@/context/TransportCompanyContext';
 import html2canvas from 'html2canvas';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 
@@ -153,24 +152,7 @@ export default function HistoricoAcessoPage() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
-  const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>([]);
-
-  useEffect(() => {
-    const fetchTransportCompanies = async () => {
-      try {
-        const companiesCollection = collection(db, 'transportCompanies');
-        const q = query(companiesCollection, orderBy("name"));
-        const snapshot = await getDocs(q);
-        const companies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany));
-        setTransportCompanies(companies);
-      } catch (error) {
-        console.error("Failed to fetch transport companies:", error);
-        toast({ variant: "destructive", title: "Erro", description: "Falha ao carregar Transportadoras / Empresas do banco de dados." });
-      }
-    };
-    fetchTransportCompanies();
-  }, [toast]);
-
+  const { companies: transportCompanies, isLoading: companiesLoading } = useTransportCompanies();
 
   useEffect(() => {
     const syncAllEntries = () => {
@@ -377,14 +359,17 @@ export default function HistoricoAcessoPage() {
             </div>
              <div className="space-y-1">
                 <Label htmlFor="transportCompanyFilter">Transportadora / Empresa</Label>
-                <Input
-                  id="transportCompanyFilter"
-                  placeholder="FILTRAR POR TRANSPORTADORA / EMPRESA..."
-                  value={filters.transportCompany}
-                  onChange={(e) => setFilters(prev => ({ ...prev, transportCompany: e.target.value }))}
-                  disabled={!!searchTerm.trim()}
-                  list="transport-company-filter-list"
-                />
+                <div className="relative">
+                  <Input
+                    id="transportCompanyFilter"
+                    placeholder={companiesLoading ? "CARREGANDO..." : "FILTRAR POR EMPRESA..."}
+                    value={filters.transportCompany}
+                    onChange={(e) => setFilters(prev => ({ ...prev, transportCompany: e.target.value }))}
+                    disabled={!!searchTerm.trim() || companiesLoading}
+                    list="transport-company-filter-list"
+                  />
+                   {companiesLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
+                </div>
                 <datalist id="transport-company-filter-list">
                   {transportCompanies.map((company) => (
                     <option key={company.id} value={company.name} />
