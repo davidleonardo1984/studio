@@ -40,7 +40,7 @@ type UserAccessFormData = z.infer<typeof userAccessSchema>;
 
 export default function CadastroAcessoPage() {
   const { toast } = useToast();
-  const { user, users: allUsersFromAuth, addUser, updateUser, findUserByLogin } = useAuth();
+  const { user, users: allUsersFromAuth, addUser, updateUser, findUserByLogin, deleteUser } = useAuth();
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -136,6 +136,14 @@ export default function CadastroAcessoPage() {
     setEditingUser(userToEdit);
   };
   
+  const handleDeleteUser = (userId: string) => {
+    deleteUser(userId);
+    toast({
+      title: 'Usuário Excluído',
+      description: 'O usuário foi removido com sucesso.',
+    });
+  };
+
   if (user?.role !== 'admin') {
     return (
       <div className="container mx-auto py-8 text-center">
@@ -254,13 +262,16 @@ export default function CadastroAcessoPage() {
                        {user?.login !== u.login && u.login !== 'admin' && ( // Prevent deleting self and the main 'admin' account
                            <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" title="Excluir" disabled={true}> {/* Disabled for now */}
+                                <Button variant="ghost" size="icon" title="Excluir">
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o usuário {u.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => {/* TODO: Implement deleteUser(u.id) in AuthContext */ toast({title: "Exclusão não implementada."})}} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteUser(u.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+                                </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                        )}

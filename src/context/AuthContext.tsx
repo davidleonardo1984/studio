@@ -16,6 +16,7 @@ interface AuthContextType {
   updateUser: (updatedUser: User) => boolean;
   findUserByLogin: (login: string) => User | undefined;
   changePassword: (userId: string, currentPasswordInput: string, newPasswordInput: string) => Promise<{ success: boolean; message: string }>;
+  deleteUser: (userId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -133,9 +134,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { success: false, message: 'Função desabilitada. A alteração de senha requer um backend seguro.' };
   };
 
+  const deleteUser = (userId: string) => {
+    setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+  };
+
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, users, addUser, updateUser, findUserByLogin, changePassword }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, users, addUser, updateUser, findUserByLogin, changePassword, deleteUser }}>
       {children}
     </AuthContext.Provider>
   );
