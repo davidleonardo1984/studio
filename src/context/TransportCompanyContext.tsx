@@ -32,7 +32,7 @@ export const TransportCompanyProvider = ({ children }: { children: ReactNode }) 
       const snapshot = await getDocs(q);
       const companiesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany));
       setCompanies(companiesList);
-    } catch (error) {
+    } catch (error)      {
       console.error("Failed to fetch transport companies:", error);
       toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar as Transportadoras / Empresas." });
     } finally {
@@ -42,12 +42,16 @@ export const TransportCompanyProvider = ({ children }: { children: ReactNode }) 
 
   useEffect(() => {
     fetchCompanies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const addCompany = async (newCompanyData: { name: string }) => {
     try {
-      await addDoc(companiesCollection, newCompanyData);
-      await fetchCompanies(); // Refresh list
+      const docRef = await addDoc(companiesCollection, newCompanyData);
+      const newCompany = { id: docRef.id, ...newCompanyData };
+      setCompanies(prevCompanies => 
+        [...prevCompanies, newCompany].sort((a, b) => a.name.localeCompare(b.name))
+      );
     } catch (error) {
       console.error("Error adding company:", error);
       toast({ variant: 'destructive', title: "Erro", description: "Não foi possível adicionar a Transportadora / Empresa." });
@@ -59,7 +63,11 @@ export const TransportCompanyProvider = ({ children }: { children: ReactNode }) 
     try {
       const companyDoc = doc(db, 'transportCompanies', companyId);
       await updateDoc(companyDoc, updatedCompanyData);
-      await fetchCompanies(); // Refresh list
+      setCompanies(prevCompanies => 
+        prevCompanies
+          .map(c => c.id === companyId ? { ...c, ...updatedCompanyData } : c)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      );
     } catch (error) {
       console.error("Error updating company:", error);
       toast({ variant: 'destructive', title: "Erro", description: "Não foi possível atualizar a Transportadora / Empresa." });
@@ -71,7 +79,8 @@ export const TransportCompanyProvider = ({ children }: { children: ReactNode }) 
     try {
       const companyDoc = doc(db, 'transportCompanies', companyId);
       await deleteDoc(companyDoc);
-      await fetchCompanies(); // Refresh list
+      setCompanies(prevCompanies => prevCompanies.filter(c => c.id !== companyId));
+      toast({ title: 'Excluído!', description: 'A empresa foi removida com sucesso.' });
     } catch (error) {
       console.error("Error deleting company:", error);
       toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a Transportadora / Empresa." });
