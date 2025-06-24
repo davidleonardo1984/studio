@@ -13,7 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { Driver, TransportCompany, InternalDestination, NewDriver, NewTransportCompany, NewInternalDestination } from '@/lib/types';
-import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin, Loader2 } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin, Loader2, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +50,30 @@ const internalDestinationSchema = z.object({
 type InternalDestinationFormData = z.infer<typeof internalDestinationSchema>;
 
 
+const FirebaseErrorDisplay = () => (
+    <Card className="shadow-lg mt-4">
+        <CardHeader>
+            <CardTitle className="text-xl font-semibold text-destructive flex items-center">
+                <AlertTriangle className="mr-3 h-6 w-6" />
+                Erro de Configuração do Banco de Dados
+            </CardTitle>
+            <CardDescription>
+                A conexão com o banco de dados não foi estabelecida.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Firebase não está conectado</AlertTitle>
+                <AlertDescription>
+                   Por favor, verifique se o arquivo `.env.local` existe e se as credenciais do seu projeto Firebase estão corretas. Os dados não podem ser carregados ou salvos sem esta configuração.
+                </AlertDescription>
+            </Alert>
+        </CardContent>
+    </Card>
+);
+
+
 // Specific component for Persons using Firestore
 function PersonsSection() {
   const { toast } = useToast();
@@ -63,6 +88,9 @@ function PersonsSection() {
     defaultValues: { name: '', cpf: '', cnh: '', phone: '' },
   });
   
+  if (!db) {
+      return <FirebaseErrorDisplay />;
+  }
   const personsCollection = collection(db, 'persons');
 
   const refreshData = async () => {
@@ -265,6 +293,9 @@ function TransportCompaniesSection() {
     defaultValues: { name: '' },
   });
 
+  if (!db) {
+    return <FirebaseErrorDisplay />;
+  }
   const companiesCollection = collection(db, 'transportCompanies');
 
   const refreshData = async () => {
@@ -446,6 +477,9 @@ function InternalDestinationsSection() {
     defaultValues: { name: '' },
   });
 
+  if (!db) {
+    return <FirebaseErrorDisplay />;
+  }
   const destinationsCollection = collection(db, 'internalDestinations');
 
   const refreshData = async () => {
@@ -619,3 +653,5 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
+
+    
