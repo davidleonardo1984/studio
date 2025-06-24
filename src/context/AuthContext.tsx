@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, getDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -131,11 +131,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const changePassword = async (userId: string, currentPasswordInput: string, newPasswordInput: string): Promise<{ success: boolean; message: string }> => {
+    if (userId === 'admin001') {
+      return { success: false, message: 'A senha do usuário administrador não pode ser alterada aqui.' };
+    }
     const userDocRef = doc(db, "users", userId);
-    const userDoc = await getDocs(query(usersCollection, where(doc.id, "==", userId), where("password", "==", currentPasswordInput)));
+    const userDocSnap = await getDoc(userDocRef);
 
-    if (userDoc.empty) {
-        return { success: false, message: 'Senha atual incorreta.' };
+    if (!userDocSnap.exists()) {
+      return { success: false, message: 'Usuário não encontrado.' };
+    }
+
+    const userData = userDocSnap.data();
+
+    if (userData.password !== currentPasswordInput) {
+      return { success: false, message: 'Senha atual incorreta.' };
     }
     
     await updateDoc(userDocRef, { password: newPasswordInput });
