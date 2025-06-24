@@ -5,7 +5,8 @@ import type { User, UserRole, NewUser } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, getDoc } from 'firebase/firestore';
 
 interface AuthContextType {
@@ -24,14 +25,27 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]); 
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const usersCollection = collection(db, "users");
+  useEffect(() => {
+    if (!isFirebaseConfigured) {
+      toast({
+        variant: 'destructive',
+        title: 'Configuração Incompleta',
+        description: 'As credenciais do Firebase não foram encontradas. Renomeie o arquivo .env para .env.local e preencha com suas chaves. Os dados não serão salvos.',
+        duration: Infinity, // Keep the toast visible
+      });
+    }
+  }, [toast]);
+  
+  const usersCollection = db ? collection(db, "users") : null;
 
   const refreshUsers = async () => {
+    if (!usersCollection) return;
     const querySnapshot = await getDocs(query(usersCollection, orderBy("name")));
     const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
     setUsers(usersList);
@@ -55,7 +69,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (loginInput: string, pass: string): Promise<boolean> => {
     setIsLoading(true);
 
-    // Special case for hardcoded admin user
     if (loginInput.toLowerCase() === 'admin' && pass === 'Michelin') {
         const adminUser: User = { id: 'admin001', name: 'Administrador', login: 'admin', role: 'admin' };
         setUser(adminUser);
@@ -64,7 +77,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return true;
     }
 
-    // Check Firestore for other users
+    if (!usersCollection) {
+        setIsLoading(false);
+        return false;
+    }
+
     try {
         const q = query(usersCollection, where("login", "==", loginInput.toLowerCase()), where("password", "==", pass));
         const querySnapshot = await getDocs(q);
@@ -94,6 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addUser = async (newUser: NewUser): Promise<boolean> => {
+    if (!usersCollection) return false;
     const userExists = await findUserByLogin(newUser.login);
     if (userExists) return false;
     
@@ -103,13 +121,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateUser = async (updatedUser: User): Promise<boolean> => {
+    if (!db) return false;
     const existingUserWithLogin = await findUserByLogin(updatedUser.login);
     if (existingUserWithLogin && existingUserWithLogin.id !== updatedUser.id) {
         return false; // Login already taken by another user
     }
     
     const userDoc = doc(db, 'users', updatedUser.id);
-    await updateDoc(userDoc, updatedUser as any); // Use 'as any' to avoid TS issues with password field
+    await updateDoc(userDoc, updatedUser as any); 
 
     if (user && user.id === updatedUser.id) {
         const { password, ...userToStore } = updatedUser;
@@ -121,6 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const findUserByLogin = async (loginInput: string): Promise<User | undefined> => {
+    if (!usersCollection) return undefined;
     const q = query(usersCollection, where("login", "==", loginInput.toLowerCase()));
     const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
@@ -131,6 +151,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const changePassword = async (userId: string, currentPasswordInput: string, newPasswordInput: string): Promise<{ success: boolean; message: string }> => {
+    if (!db) return { success: false, message: 'Base de dados não configurada.' };
+
     if (userId === 'admin001') {
       return { success: false, message: 'A senha do usuário administrador não pode ser alterada aqui.' };
     }
@@ -152,6 +174,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteUser = async (userId: string): Promise<void> => {
+    if (!db) return;
     const userDoc = doc(db, 'users', userId);
     await deleteDoc(userDoc);
     await refreshUsers();
