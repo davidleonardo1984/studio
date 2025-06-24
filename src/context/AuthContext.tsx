@@ -54,12 +54,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const initializeAuth = async () => {
         setIsLoading(true);
-        const storedUser = localStorage.getItem('currentUser');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
+        try {
+            const storedUser = localStorage.getItem('currentUser');
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
+            }
+            await refreshUsers();
+        } catch (error) {
+            console.error("Failed to initialize auth context:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Erro de Inicialização',
+                description: 'Não foi possível carregar os dados de usuário. Verifique a conexão e as regras do Firebase.',
+            });
+        } finally {
+            setIsLoading(false);
         }
-        await refreshUsers();
-        setIsLoading(false);
     };
     initializeAuth();
      // eslint-disable-next-line react-hooks/exhaustive-deps
