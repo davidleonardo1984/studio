@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import type { Driver, TransportCompany, InternalDestination, NewTransportCompany } from '@/lib/types';
+import type { Driver, TransportCompany, InternalDestination, NewDriver, NewTransportCompany, NewInternalDestination } from '@/lib/types';
 import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-import { personsStore, destinationsStore } from '@/lib/in-memory-store';
 
 
 // Schemas for forms
@@ -50,7 +49,7 @@ const internalDestinationSchema = z.object({
 type InternalDestinationFormData = z.infer<typeof internalDestinationSchema>;
 
 
-// Specific component for Persons using in-memory store
+// Specific component for Persons using Firestore
 function PersonsSection() {
   const { toast } = useToast();
   const [data, setData] = useState<Driver[]>([]);
@@ -63,15 +62,27 @@ function PersonsSection() {
     resolver: zodResolver(personSchema),
     defaultValues: { name: '', cpf: '', cnh: '', phone: '' },
   });
+  
+  const personsCollection = collection(db, 'persons');
 
-  const refreshData = () => {
-    setData(personsStore.getPersons().sort((a,b) => a.name.localeCompare(b.name)));
+  const refreshData = async () => {
+      setIsLoading(true);
+      try {
+        const q = query(personsCollection, orderBy("name"));
+        const snapshot = await getDocs(q);
+        const personList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Driver));
+        setData(personList);
+      } catch (error) {
+        console.error("Failed to fetch persons:", error);
+        toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar as Pessoas." });
+      } finally {
+        setIsLoading(false);
+      }
   }
 
   useEffect(() => {
-    setIsLoading(true);
     refreshData();
-    setIsLoading(false);
+     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -83,25 +94,39 @@ function PersonsSection() {
     }
   }, [editingItem, form]);
 
-  const onSubmit = async (formData: PersonFormData) => {
+  const onSubmit = async (formData: NewDriver) => {
     setIsSubmitting(true);
-    if (editingItem) {
-      personsStore.updatePerson({ ...editingItem, ...formData });
-      toast({ title: "Pessoa atualizada!", description: `${formData.name} foi atualizado com sucesso.` });
-    } else {
-      personsStore.addPerson(formData);
-      toast({ title: "Pessoa cadastrada!", description: `${formData.name} foi cadastrado com sucesso.` });
+    try {
+        if (editingItem) {
+            const itemDoc = doc(db, 'persons', editingItem.id);
+            await updateDoc(itemDoc, formData);
+            toast({ title: "Pessoa atualizada!", description: `${formData.name} foi atualizado com sucesso.` });
+        } else {
+            await addDoc(personsCollection, formData);
+            toast({ title: "Pessoa cadastrada!", description: `${formData.name} foi cadastrado com sucesso.` });
+        }
+        await refreshData();
+        setEditingItem(null);
+        setShowForm(false);
+        form.reset();
+    } catch (error) {
+        console.error("Error saving person:", error);
+        toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a pessoa." });
+    } finally {
+        setIsSubmitting(false);
     }
-    refreshData();
-    setEditingItem(null);
-    setShowForm(false);
-    setIsSubmitting(false);
   };
 
   const handleDelete = async (id: string) => {
-    personsStore.deletePerson(id);
-    toast({ title: 'Excluído!', description: 'A pessoa foi removida com sucesso.' });
-    refreshData();
+    try {
+        const itemDoc = doc(db, 'persons', id);
+        await deleteDoc(itemDoc);
+        toast({ title: 'Excluído!', description: 'A pessoa foi removida com sucesso.' });
+        await refreshData();
+    } catch (error) {
+        console.error("Error deleting person:", error);
+        toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a pessoa." });
+    }
   };
 
   const formatDisplayPhoneNumber = (val: string): string => {
@@ -242,8 +267,7 @@ function TransportCompaniesSection() {
 
   const companiesCollection = collection(db, 'transportCompanies');
 
-  useEffect(() => {
-    const fetchCompanies = async () => {
+  const refreshData = async () => {
       setIsLoading(true);
       try {
         const q = query(companiesCollection, orderBy("name"));
@@ -256,8 +280,10 @@ function TransportCompaniesSection() {
       } finally {
         setIsLoading(false);
       }
-    };
-    fetchCompanies();
+  }
+  
+  useEffect(() => {
+    refreshData();
      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -270,33 +296,35 @@ function TransportCompaniesSection() {
     }
   }, [editingItem, form]);
 
-  const onSubmit = async (formData: NewTransportCompany) => {
+ const onSubmit = async (formData: NewTransportCompany) => {
     setIsSubmitting(true);
+    const originalData = [...data];
+
     try {
       if (editingItem) {
-        const companyDoc = doc(db, 'transportCompanies', editingItem.id);
-        
         // Optimistic update
         setData(prevData => prevData.map(item => item.id === editingItem.id ? { ...item, ...formData } : item).sort((a, b) => a.name.localeCompare(b.name)));
-        
+        const companyDoc = doc(db, 'transportCompanies', editingItem.id);
         await updateDoc(companyDoc, formData);
         toast({ title: "Transportadora / Empresa atualizada!", description: `${formData.name} foi atualizada com sucesso.` });
       } else {
-        // For new items, we need the ID from Firestore, so we can't be fully optimistic
-        const docRef = await addDoc(companiesCollection, formData);
-        const newCompany = { id: docRef.id, ...formData } as TransportCompany;
-        
+        // Optimistic add (with a temporary ID)
+        const tempId = `temp_${Date.now()}`;
+        const newCompany = { id: tempId, ...formData } as TransportCompany;
         setData(prevData => [...prevData, newCompany].sort((a, b) => a.name.localeCompare(b.name)));
-        
+        const docRef = await addDoc(companiesCollection, formData);
+        // Replace temporary item with the real one from Firestore
+        setData(prevData => prevData.map(item => item.id === tempId ? { ...item, id: docRef.id } : item));
         toast({ title: "Transportadora / Empresa cadastrada!", description: `${formData.name} foi cadastrada com sucesso.` });
       }
       setEditingItem(null);
       setShowForm(false);
       form.reset({ name: '' });
     } catch (error) {
+      // Revert optimistic update on failure
+      setData(originalData);
       console.error("Error saving transport company: ", error);
-      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a Transportadora / Empresa." });
-      // Here you might want to revert the optimistic update on failure
+      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a Transportadora / Empresa. A lista foi restaurada." });
     } finally {
       setIsSubmitting(false);
     }
@@ -404,7 +432,7 @@ function TransportCompaniesSection() {
   );
 }
 
-// Specific component for Internal Destinations using in-memory store
+// Specific component for Internal Destinations using Firestore
 function InternalDestinationsSection() {
   const { toast } = useToast();
   const [data, setData] = useState<InternalDestination[]>([]);
@@ -418,14 +446,26 @@ function InternalDestinationsSection() {
     defaultValues: { name: '' },
   });
 
-  const refreshData = () => {
-    setData(destinationsStore.getDestinations().sort((a,b) => a.name.localeCompare(b.name)));
+  const destinationsCollection = collection(db, 'internalDestinations');
+
+  const refreshData = async () => {
+    setIsLoading(true);
+    try {
+        const q = query(destinationsCollection, orderBy("name"));
+        const snapshot = await getDocs(q);
+        const destList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InternalDestination));
+        setData(destList);
+    } catch (error) {
+        console.error("Failed to fetch internal destinations:", error);
+        toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar os Destinos Internos." });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   useEffect(() => {
-    setIsLoading(true);
     refreshData();
-    setIsLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -437,25 +477,39 @@ function InternalDestinationsSection() {
     }
   }, [editingItem, form]);
 
-  const onSubmit = async (formData: InternalDestinationFormData) => {
+  const onSubmit = async (formData: NewInternalDestination) => {
     setIsSubmitting(true);
-    if (editingItem) {
-      destinationsStore.updateDestination({ ...editingItem, ...formData });
-      toast({ title: "Destino Interno atualizado!", description: `${formData.name} foi atualizado com sucesso.` });
-    } else {
-      destinationsStore.addDestination(formData);
-      toast({ title: "Destino Interno cadastrado!", description: `${formData.name} foi cadastrado com sucesso.` });
+    try {
+        if (editingItem) {
+            const itemDoc = doc(db, 'internalDestinations', editingItem.id);
+            await updateDoc(itemDoc, formData);
+            toast({ title: "Destino Interno atualizado!", description: `${formData.name} foi atualizado com sucesso.` });
+        } else {
+            await addDoc(destinationsCollection, formData);
+            toast({ title: "Destino Interno cadastrado!", description: `${formData.name} foi cadastrado com sucesso.` });
+        }
+        await refreshData();
+        setEditingItem(null);
+        setShowForm(false);
+        form.reset();
+    } catch (error) {
+        console.error("Error saving destination:", error);
+        toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar o destino." });
+    } finally {
+        setIsSubmitting(false);
     }
-    refreshData();
-    setEditingItem(null);
-    setShowForm(false);
-    setIsSubmitting(false);
   };
 
   const handleDelete = async (id: string) => {
-    destinationsStore.deleteDestination(id);
-    toast({ title: 'Excluído!', description: 'O destino interno foi removido com sucesso.' });
-    refreshData();
+    try {
+        const itemDoc = doc(db, 'internalDestinations', id);
+        await deleteDoc(itemDoc);
+        toast({ title: 'Excluído!', description: 'O destino interno foi removido com sucesso.' });
+        await refreshData();
+    } catch (error) {
+        console.error("Error deleting destination:", error);
+        toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir o destino." });
+    }
   };
 
   const formFields = (form: any) => (

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -22,8 +22,9 @@ import {
 import { Label } from '@/components/ui/label';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import html2canvas from 'html2canvas';
-import { entriesStore } from '@/lib/in-memory-store';
 import { useIsClient } from '@/hooks/use-is-client';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot, doc, updateDoc, orderBy } from 'firebase/firestore';
 
 
 const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success: boolean; imageUrl?: string; error?: any }> => {
@@ -145,27 +146,28 @@ export default function AguardandoLiberacaoPage() {
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const isClient = useIsClient();
 
-
-  const fetchWaitingVehicles = useCallback(() => {
+  // Real-time listener for waiting vehicles
+  useEffect(() => {
     setIsLoading(true);
-    // Simulating async fetch
-    setTimeout(() => {
-        try {
-            const vehicles = entriesStore.getEntriesByStatus('aguardando_patio');
-            setWaitingVehicles(vehicles.sort((a,b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime()));
-        } catch (error) {
-            console.error("Error fetching waiting vehicles:", error);
-            toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar os veículos." });
-        } finally {
-            setIsLoading(false);
-        }
-    }, 500);
+    const entriesCollection = collection(db, 'vehicleEntries');
+    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'), orderBy('arrivalTimestamp', 'asc'));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const vehicles: VehicleEntry[] = [];
+      querySnapshot.forEach((doc) => {
+        vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
+      });
+      setWaitingVehicles(vehicles);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error fetching waiting vehicles:", error);
+      toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar os veículos em tempo real." });
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe(); // Cleanup listener on unmount
   }, [toast]);
 
-
-  useEffect(() => {
-    fetchWaitingVehicles();
-  }, [fetchWaitingVehicles]);
 
   // Reset local state when dialog closes
   useEffect(() => {
@@ -176,24 +178,25 @@ export default function AguardandoLiberacaoPage() {
   }, [isDialogOpen]);
 
 
-  const filteredVehicles = useMemo(() => {
-    if (!searchTerm) return waitingVehicles;
-    return waitingVehicles.filter(v =>
-      v.plate1.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.transportCompanyName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [waitingVehicles, searchTerm]);
+  const filteredVehicles = waitingVehicles.filter(v =>
+    v.plate1.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    v.transportCompanyName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const handleApproveEntry = async (vehicleId: string, liberatedBy?: string) => {
+  const handleApproveEntry = async (vehicle: VehicleEntry, liberatedBy?: string) => {
+    const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
     const updatedVehicleData = {
+        status: 'entrada_liberada',
         liberationTimestamp: new Date().toISOString(),
-        liberatedBy: liberatedBy?.trim(),
+        liberatedBy: liberatedBy?.trim() || '',
     };
     
-    const updatedVehicle = entriesStore.updateEntryStatus(vehicleId, 'entrada_liberada', updatedVehicleData);
+    try {
+        await updateDoc(vehicleDocRef, updatedVehicleData);
+        
+        const updatedVehicle = { ...vehicle, ...updatedVehicleData };
 
-    if (updatedVehicle) {
         toast({
             title: `Veículo ${updatedVehicle.plate1} Liberado!`,
             description: `Preparando documento para visualização...`,
@@ -206,7 +209,7 @@ export default function AguardandoLiberacaoPage() {
         if (imageResult.success && imageResult.imageUrl) {
             setPreviewImageUrl(imageResult.imageUrl);
             setIsPreviewModalOpen(true);
-            fetchWaitingVehicles(); // Re-fetch the list
+            // No need to re-fetch, real-time listener will update the list
         } else {
             toast({
                 variant: 'destructive',
@@ -214,7 +217,8 @@ export default function AguardandoLiberacaoPage() {
                 description: `Falha ao gerar o documento para ${updatedVehicle.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
             });
         }
-    } else {
+    } catch (error) {
+        console.error("Error approving entry: ", error);
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível liberar a entrada do veículo." });
     }
   };
@@ -341,7 +345,7 @@ export default function AguardandoLiberacaoPage() {
               if (e.key === 'Enter') {
                 e.preventDefault();
                 if(selectedVehicle) {
-                  handleApproveEntry(selectedVehicle.id, liberatedByName);
+                  handleApproveEntry(selectedVehicle, liberatedByName);
                   setIsDialogOpen(false);
                 }
               }
@@ -354,7 +358,7 @@ export default function AguardandoLiberacaoPage() {
           <AlertDialogAction
             onClick={() => {
               if (selectedVehicle) {
-                handleApproveEntry(selectedVehicle.id, liberatedByName);
+                handleApproveEntry(selectedVehicle, liberatedByName);
                 setIsDialogOpen(false);
               }
             }}

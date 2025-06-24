@@ -13,11 +13,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, AlertTriangle, Search } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
-import { entriesStore } from '@/lib/in-memory-store';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 
 const exitSchema = z.object({
-  barcode: z.string().length(14, { message: 'Código de barras deve ter 14 dígitos.' }).regex(/^\d+$/, { message: 'Código de barras deve conter apenas números.' }),
+  barcode: z.string().min(1, { message: 'Código de barras é obrigatório.' }),
 });
 
 type ExitFormValues = z.infer<typeof exitSchema>;
@@ -37,54 +38,70 @@ export default function RegistroSaidaPage() {
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (foundEntry) {
+    if (foundEntry || entryNotFound) {
       timer = setTimeout(() => {
         setFoundEntry(null);
+        setEntryNotFound(false);
       }, 5000); // 5 seconds
     }
-    if (entryNotFound) {
-        timer = setTimeout(() => {
-            setEntryNotFound(false);
-        }, 5000);
-    }
-    return () => clearTimeout(timer); // Cleanup timeout on component unmount or if foundEntry/entryNotFound changes
+    return () => clearTimeout(timer); // Cleanup timeout
   }, [foundEntry, entryNotFound]);
 
-  const processExit = (barcode: string): VehicleEntry | null => {
-    const entry = entriesStore.findEntryById(barcode);
-    if (entry && entry.status === 'entrada_liberada') {
-        return entriesStore.updateEntryStatus(barcode, 'saiu', { exitTimestamp: new Date().toISOString() });
+ const processExit = async (barcode: string): Promise<VehicleEntry | null> => {
+    // In Firestore, the document ID is the barcode
+    const entryDocRef = doc(db, 'vehicleEntries', barcode);
+    const entryDoc = await getDoc(entryDocRef);
+
+    if (entryDoc.exists()) {
+      const entry = { id: entryDoc.id, ...entryDoc.data() } as VehicleEntry;
+      if (entry.status === 'entrada_liberada') {
+        const exitTimestamp = new Date().toISOString();
+        await updateDoc(entryDocRef, {
+          status: 'saiu',
+          exitTimestamp: exitTimestamp,
+        });
+        return { ...entry, status: 'saiu', exitTimestamp };
+      }
     }
-    return null;
+    return null; // Not found or already exited
   };
 
-
-  const onSubmit = (data: ExitFormValues) => {
+  const onSubmit = async (data: ExitFormValues) => {
     setIsProcessing(true);
     setFoundEntry(null);
     setEntryNotFound(false);
     
-    const updatedEntry = processExit(data.barcode);
+    try {
+        const updatedEntry = await processExit(data.barcode);
 
-    if (updatedEntry) {
-      setFoundEntry(updatedEntry);
-      toast({
-        title: 'Saída Registrada!',
-        description: `Saída do veículo ${updatedEntry.plate1} (Código: ${updatedEntry.id}) registrada com sucesso.`,
-        className: 'bg-green-600 text-white',
-        icon: <CheckCircle className="h-6 w-6 text-white" />
-      });
-      form.reset();
-    } else {
-      setEntryNotFound(true);
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao Registrar Saída',
-        description: 'Código de barras não encontrado ou veículo já saiu.',
-      });
-      form.reset();
+        if (updatedEntry) {
+            setFoundEntry(updatedEntry);
+            toast({
+                title: 'Saída Registrada!',
+                description: `Saída do veículo ${updatedEntry.plate1} (Código: ${updatedEntry.id}) registrada com sucesso.`,
+                className: 'bg-green-600 text-white',
+                icon: <CheckCircle className="h-6 w-6 text-white" />
+            });
+        } else {
+            setEntryNotFound(true);
+            toast({
+                variant: 'destructive',
+                title: 'Erro ao Registrar Saída',
+                description: 'Código de barras não encontrado ou veículo já saiu/não liberado.',
+            });
+        }
+    } catch (error) {
+        console.error("Error processing exit:", error);
+        setEntryNotFound(true);
+        toast({
+            variant: 'destructive',
+            title: 'Erro de Sistema',
+            description: 'Ocorreu um erro ao comunicar com o banco de dados.',
+        });
+    } finally {
+        form.reset();
+        setIsProcessing(false);
     }
-    setIsProcessing(false);
   };
 
   return (
@@ -92,7 +109,7 @@ export default function RegistroSaidaPage() {
       <Card className="max-w-lg mx-auto shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Saída de Veículo</CardTitle>
-          <CardDescription>Insira o código de barras de 14 dígitos para registrar a saída.</CardDescription>
+          <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -102,24 +119,21 @@ export default function RegistroSaidaPage() {
                 name="barcode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Código de Barras (14 dígitos)</FormLabel>
+                    <FormLabel>Código de Barras</FormLabel>
                     <FormControl>
                       <div className="flex">
                         <Input
                           placeholder="Ex: 20230101120000"
                           {...field}
-                          onChange={(e) => {
-                            field.onChange(e); // Update form state
-                            const newValue = e.target.value;
-                            if (newValue.length === 14) {
-                              if (!isProcessing) {
-                                // handleSubmit will validate using Zod schema before calling onSubmit
-                                form.handleSubmit(onSubmit)(); 
-                              }
-                            }
-                          }}
+                           onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (!isProcessing) {
+                                        form.handleSubmit(onSubmit)();
+                                    }
+                                }
+                            }}
                           className="rounded-r-none"
-                          maxLength={14}
                           noAutoUppercase={true}
                         />
                         <Button type="submit" className="rounded-l-none" disabled={isProcessing}>
@@ -157,7 +171,7 @@ export default function RegistroSaidaPage() {
               <AlertTriangle className="h-5 w-5" />
               <AlertTitle>Código Não Encontrado</AlertTitle>
               <AlertDescription>
-                O código de barras informado não corresponde a nenhum veículo com entrada registrada ou o veículo já teve sua saída registrada. Por favor, verifique o código e tente novamente.
+                O código de barras informado não corresponde a nenhum veículo com entrada liberada na fábrica. Por favor, verifique o código e tente novamente.
               </AlertDescription>
             </Alert>
           )}

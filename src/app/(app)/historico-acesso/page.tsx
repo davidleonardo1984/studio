@@ -13,10 +13,9 @@ import type { VehicleEntry, TransportCompany } from '@/lib/types';
 import { Download, Printer, Search, Truck, RotateCcw, Loader2 } from 'lucide-react';
 import type { DateRange } from "react-day-picker";
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, onSnapshot, Timestamp, getDoc, doc as firestoreDoc } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
-import { entriesStore } from '@/lib/in-memory-store';
 import { useIsClient } from '@/hooks/use-is-client';
 
 
@@ -139,7 +138,6 @@ export default function HistoricoAcessoPage() {
   const { toast } = useToast();
   const isClient = useIsClient();
   
-  // State for Preview Modal
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
@@ -147,8 +145,6 @@ export default function HistoricoAcessoPage() {
   const [companiesLoading, setCompaniesLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
 
-  // States for data
-  const [allEntries, setAllEntries] = useState<VehicleEntry[]>([]);
   const [vehiclesInsideFactory, setVehiclesInsideFactory] = useState<VehicleEntry[]>([]);
   const [filteredEntries, setFilteredEntries] = useState<VehicleEntry[]>([]);
   
@@ -158,8 +154,8 @@ export default function HistoricoAcessoPage() {
     dateRange: undefined as DateRange | undefined,
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
 
-  // Fetch transport companies for filter dropdown
   useEffect(() => {
     const fetchCompanies = async () => {
       setCompaniesLoading(true);
@@ -178,51 +174,71 @@ export default function HistoricoAcessoPage() {
     fetchCompanies();
   }, [toast]);
 
-  // Fetch all data from in-memory store
-  const fetchData = useCallback(() => {
+  useEffect(() => {
+    const entriesCollection = collection(db, 'vehicleEntries');
+    const q = query(entriesCollection, where('status', '==', 'entrada_liberada'), orderBy('arrivalTimestamp', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const vehicles: VehicleEntry[] = [];
+        querySnapshot.forEach((doc) => {
+            vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
+        });
+        setVehiclesInsideFactory(vehicles);
+    }, (error) => {
+        console.error("Error fetching vehicles inside factory:", error);
+        toast({ variant: "destructive", title: "Erro em Tempo Real", description: "Não foi possível atualizar a lista de veículos na fábrica." });
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
+
+
+  const handleSearch = useCallback(async () => {
     setIsSearching(true);
-    setAllEntries(entriesStore.getEntries());
-    setVehiclesInsideFactory(entriesStore.getEntriesByStatus('entrada_liberada'));
-    setIsSearching(false);
-  }, []);
+    setHasSearched(true);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    try {
+        let q = query(collection(db, 'vehicleEntries'), orderBy('arrivalTimestamp', 'desc'));
 
+        if (filters.transportCompany.trim()) {
+            q = query(q, where('transportCompanyName', '==', filters.transportCompany.trim()));
+        }
+        if (filters.plate.trim()) {
+            // Firestore doesn't support partial text search natively.
+            // This will filter for exact plate match. For 'contains', you'd need a more complex setup (e.g., third-party search service).
+             q = query(q, where('plate1', '>=', filters.plate.trim().toUpperCase()), where('plate1', '<=', filters.plate.trim().toUpperCase() + '\uf8ff'));
+        }
+        if (filters.dateRange?.from) {
+            q = query(q, where('arrivalTimestamp', '>=', Timestamp.fromDate(filters.dateRange.from)));
+        }
+        if (filters.dateRange?.to) {
+            // Adjust 'to' date to include the whole day
+            const toDate = new Date(filters.dateRange.to);
+            toDate.setHours(23, 59, 59, 999);
+            q = query(q, where('arrivalTimestamp', '<=', Timestamp.fromDate(toDate)));
+        }
+        
+        const querySnapshot = await getDocs(q);
+        let results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
 
-  const areAnyFiltersActive = useMemo(() => {
-    return filters.transportCompany.trim() !== '' || filters.plate.trim() !== '' || !!filters.dateRange?.from || searchTerm.trim() !== '';
-  }, [filters, searchTerm]);
+        // Client-side filtering for global search term
+        if (searchTerm.trim()) {
+            const lowerSearchTerm = searchTerm.trim().toLowerCase();
+            results = results.filter(e =>
+                Object.values(e).some(val => String(val).toLowerCase().includes(lowerSearchTerm))
+            );
+        }
 
-  useEffect(() => {
-    let results = [...allEntries];
+        setFilteredEntries(results);
 
-    if (filters.transportCompany.trim()) {
-        results = results.filter(e => e.transportCompanyName.toUpperCase() === filters.transportCompany.trim().toUpperCase());
+    } catch (error) {
+        console.error("Error searching entries:", error);
+        toast({ variant: 'destructive', title: 'Erro de Busca', description: 'Não foi possível realizar a busca no histórico.' });
+    } finally {
+        setIsSearching(false);
     }
-    if (filters.plate.trim()) {
-        results = results.filter(e => e.plate1.toUpperCase().includes(filters.plate.trim().toUpperCase()));
-    }
-    if (filters.dateRange?.from) {
-        const fromDate = new Date(filters.dateRange.from);
-        fromDate.setHours(0, 0, 0, 0);
-        results = results.filter(e => new Date(e.arrivalTimestamp) >= fromDate);
-    }
-    if (filters.dateRange?.to) {
-        const toDate = new Date(filters.dateRange.to);
-        toDate.setHours(23, 59, 59, 999);
-        results = results.filter(e => new Date(e.arrivalTimestamp) <= toDate);
-    }
-    if (searchTerm.trim()) {
-        const lowerSearchTerm = searchTerm.trim().toLowerCase();
-        results = results.filter(e =>
-            Object.values(e).some(val => String(val).toLowerCase().includes(lowerSearchTerm))
-        );
-    }
-    setFilteredEntries(results.sort((a,b) => new Date(b.arrivalTimestamp).getTime() - new Date(a.arrivalTimestamp).getTime()));
+  }, [filters, searchTerm, toast]);
 
-  }, [filters, searchTerm, allEntries]);
 
   const handleExportToCSV = () => {
     if (filteredEntries.length === 0) {
@@ -297,6 +313,8 @@ export default function HistoricoAcessoPage() {
   const resetFilters = () => {
     setFilters({ transportCompany: '', plate: '', dateRange: undefined });
     setSearchTerm('');
+    setFilteredEntries([]);
+    setHasSearched(false);
   };
   
   const handleClosePreview = () => {
@@ -362,6 +380,10 @@ export default function HistoricoAcessoPage() {
             </div>
           </div>
            <div className="flex flex-wrap gap-2 pt-2">
+              <Button onClick={handleSearch} disabled={isSearching}>
+                  <Search className="mr-2 h-4 w-4" /> 
+                  {isSearching ? "Buscando..." : "Buscar"}
+              </Button>
             <Button onClick={resetFilters} variant="outline"><RotateCcw className="mr-2 h-4 w-4" /> LIMPAR FILTROS</Button>
           </div>
         </CardContent>
@@ -375,7 +397,7 @@ export default function HistoricoAcessoPage() {
              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                 <CardTitle className="text-xl font-semibold text-primary">Resultados ({filteredEntries.length})</CardTitle>
                 <div className="mt-4 sm:mt-0 w-full sm:w-auto max-w-xs">
-                    <Input id="searchTermGlobal" placeholder="BUSCAR NOS RESULTADOS..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    <Input id="searchTermGlobal" placeholder="BUSCAR NOS RESULTADOS..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleSearch() }}/>
                 </div>
             </div>
           </CardHeader>
@@ -385,7 +407,7 @@ export default function HistoricoAcessoPage() {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     <p className="ml-4 text-muted-foreground">Buscando registros...</p>
                 </div>
-             ) : areAnyFiltersActive ? (
+             ) : hasSearched ? (
                  filteredEntries.length > 0 ? (
                   <div className="overflow-x-auto">
                   <Table>
@@ -441,7 +463,7 @@ export default function HistoricoAcessoPage() {
                         APLIQUE UM FILTRO PARA COMEÇAR
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                        Utilize os campos acima para buscar no histórico de acessos.
+                        Utilize os campos acima e clique em "Buscar" para consultar o histórico.
                     </p>
                 </div>
             )}

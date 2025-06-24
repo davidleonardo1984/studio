@@ -5,9 +5,11 @@ export interface User {
   id: string;
   name: string;
   login: string;
-  password?: string; // Only for creation/update forms
+  password?: string; // Stored in DB, but optional in frontend models
   role: UserRole;
 }
+
+export type NewUser = Omit<User, 'id'>;
 
 export interface Driver {
   id: string;
@@ -17,6 +19,8 @@ export interface Driver {
   phone?: string;
 }
 
+export type NewDriver = Omit<Driver, 'id'>;
+
 export interface Assistant extends Driver {}
 
 export interface TransportCompany {
@@ -24,15 +28,20 @@ export interface TransportCompany {
   name: string;
 }
 
+export type NewTransportCompany = Omit<TransportCompany, 'id'>;
+
 export interface InternalDestination {
   id: string;
   name: string;
 }
 
+export type NewInternalDestination = Omit<InternalDestination, 'id'>;
+
+
 export type EntryStatus = 'aguardando_patio' | 'entrada_liberada' | 'saiu';
 
 export interface VehicleEntry {
-  id: string; // Barcode: YYYYMMDDHHMMSS, generated on entry
+  id: string; 
   driverName: string; 
   assistant1Name?: string;
   assistant2Name?: string;
@@ -43,15 +52,15 @@ export interface VehicleEntry {
   internalDestinationName: string;
   movementType: string; 
   observation?: string;
-  arrivalTimestamp: string; // Renamed from entryTimestamp
-  liberationTimestamp?: string; // New field for liberation time
-  exitTimestamp?: string; // ISO string or formatted
+  arrivalTimestamp: string; 
+  liberationTimestamp?: string;
+  exitTimestamp?: string; 
   status: EntryStatus;
-  registeredBy: string; // User login
+  registeredBy: string; 
   liberatedBy?: string;
 }
 
-// For forms that might reference IDs from registered entities
+
 export interface VehicleEntryFormData {
   driverName: string; 
   assistant1Name?: string;
@@ -64,7 +73,3 @@ export interface VehicleEntryFormData {
   movementType: string;
   observation?: string;
 }
-
-
-// Firestore specific types - to be used when interacting with DB
-export type NewTransportCompany = Omit<TransportCompany, 'id'>;

@@ -1,11 +1,12 @@
 
 "use client";
 
-import type { User, UserRole } from '@/lib/types';
+import type { User, UserRole, NewUser } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { usersStore } from '@/lib/in-memory-store';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -13,9 +14,9 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   users: User[];
-  addUser: (newUser: Omit<User, 'id'>) => Promise<boolean>;
+  addUser: (newUser: NewUser) => Promise<boolean>;
   updateUser: (updatedUser: User) => Promise<boolean>;
-  findUserByLogin: (login: string) => User | undefined;
+  findUserByLogin: (login: string) => Promise<User | undefined>;
   changePassword: (userId: string, currentPasswordInput: string, newPasswordInput: string) => Promise<{ success: boolean; message: string }>;
   deleteUser: (userId: string) => Promise<void>;
 }
@@ -28,30 +29,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const refreshUsers = () => {
-    setUsers(usersStore.getUsers());
+  const usersCollection = collection(db, "users");
+
+  const refreshUsers = async () => {
+    const querySnapshot = await getDocs(query(usersCollection, orderBy("name")));
+    const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+    setUsers(usersList);
   };
 
   useEffect(() => {
-    setIsLoading(true);
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    refreshUsers();
-    setIsLoading(false);
+    const initializeAuth = async () => {
+        setIsLoading(true);
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+        await refreshUsers();
+        setIsLoading(false);
+    };
+    initializeAuth();
+     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
   const login = async (loginInput: string, pass: string): Promise<boolean> => {
     setIsLoading(true);
-    const foundUser = usersStore.checkCredentials(loginInput, pass);
-    if (foundUser) {
-      setUser(foundUser);
-      localStorage.setItem('currentUser', JSON.stringify(foundUser));
-      setIsLoading(false);
-      return true;
+
+    // Special case for hardcoded admin user
+    if (loginInput.toLowerCase() === 'admin' && pass === 'Michelin') {
+        const adminUser: User = { id: 'admin001', name: 'Administrador', login: 'admin', role: 'admin' };
+        setUser(adminUser);
+        localStorage.setItem('currentUser', JSON.stringify(adminUser));
+        setIsLoading(false);
+        return true;
     }
+
+    // Check Firestore for other users
+    try {
+        const q = query(usersCollection, where("login", "==", loginInput.toLowerCase()), where("password", "==", pass));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0];
+            const foundUser = { id: userDoc.id, ...userDoc.data() } as User;
+            const { password, ...userToStore } = foundUser;
+            setUser(userToStore);
+            localStorage.setItem('currentUser', JSON.stringify(userToStore));
+            setIsLoading(false);
+            return true;
+        }
+    } catch (error) {
+        console.error("Error during login:", error);
+    }
+    
     setUser(null);
     setIsLoading(false);
     return false;
@@ -63,47 +93,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/login');
   };
 
-  const addUser = async (newUser: Omit<User, 'id'>): Promise<boolean> => {
-    const added = usersStore.addUser(newUser);
-    if (added) {
-      refreshUsers();
-    }
-    return !!added;
+  const addUser = async (newUser: NewUser): Promise<boolean> => {
+    const userExists = await findUserByLogin(newUser.login);
+    if (userExists) return false;
+    
+    await addDoc(usersCollection, newUser);
+    await refreshUsers();
+    return true;
   };
 
   const updateUser = async (updatedUser: User): Promise<boolean> => {
-    const updated = usersStore.updateUser(updatedUser);
-    if (updated) {
-      // If the currently logged-in user is being updated, update the context state as well
-      if(user && user.id === updated.id) {
-          const { password, ...userToStore } = updated;
-          setUser(userToStore);
-          localStorage.setItem('currentUser', JSON.stringify(userToStore));
-      }
-      refreshUsers();
+    const existingUserWithLogin = await findUserByLogin(updatedUser.login);
+    if (existingUserWithLogin && existingUserWithLogin.id !== updatedUser.id) {
+        return false; // Login already taken by another user
     }
-    return !!updated;
+    
+    const userDoc = doc(db, 'users', updatedUser.id);
+    await updateDoc(userDoc, updatedUser as any); // Use 'as any' to avoid TS issues with password field
+
+    if (user && user.id === updatedUser.id) {
+        const { password, ...userToStore } = updatedUser;
+        setUser(userToStore);
+        localStorage.setItem('currentUser', JSON.stringify(userToStore));
+    }
+    await refreshUsers();
+    return true;
   };
 
-  const findUserByLogin = (loginInput: string): User | undefined => {
-    return usersStore.findUserByLogin(loginInput);
+  const findUserByLogin = async (loginInput: string): Promise<User | undefined> => {
+    const q = query(usersCollection, where("login", "==", loginInput.toLowerCase()));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        return { id: userDoc.id, ...userDoc.data() } as User;
+    }
+    return undefined;
   }
 
   const changePassword = async (userId: string, currentPasswordInput: string, newPasswordInput: string): Promise<{ success: boolean; message: string }> => {
-    const userToUpdate = usersStore.findUserById(userId);
-    if (!userToUpdate || userToUpdate.password !== currentPasswordInput) {
+    const userDocRef = doc(db, "users", userId);
+    const userDoc = await getDocs(query(usersCollection, where(doc.id, "==", userId), where("password", "==", currentPasswordInput)));
+
+    if (userDoc.empty) {
         return { success: false, message: 'Senha atual incorreta.' };
     }
-    usersStore.updateUser({ ...userToUpdate, password: newPasswordInput });
-    refreshUsers();
+    
+    await updateDoc(userDocRef, { password: newPasswordInput });
     return { success: true, message: 'Senha alterada com sucesso.' };
   };
 
   const deleteUser = async (userId: string): Promise<void> => {
-    const success = usersStore.deleteUser(userId);
-      if (success) {
-          refreshUsers();
-      }
+    const userDoc = doc(db, 'users', userId);
+    await deleteDoc(userDoc);
+    await refreshUsers();
   };
 
 

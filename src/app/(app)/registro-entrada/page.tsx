@@ -18,8 +18,7 @@ import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, Inte
 import { Save, SendToBack, Clock, CheckCircle, Search, Printer, ClipboardCopy, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { entriesStore, personsStore, destinationsStore } from '@/lib/in-memory-store';
+import { collection, getDocs, query, orderBy, addDoc, doc, updateDoc, where, onSnapshot } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import {
   AlertDialog,
@@ -47,6 +46,17 @@ const entrySchema = z.object({
   movementType: z.string().min(1, { message: 'Tipo de movimentação é obrigatório.' }),
   observation: z.string().max(500, { message: 'Observação muito longa (máx. 500 caracteres).' }).optional(),
 });
+
+const generateBarcode = () => {
+    const now = new Date();
+    const year = now.getFullYear().toString();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+    return `${year}${month}${day}${hours}${minutes}${seconds}`;
+};
 
 
 const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success: boolean; imageUrl?: string; error?: any }> => {
@@ -161,38 +171,31 @@ export default function RegistroEntradaPage() {
   const [currentWaitingVehicles, setCurrentWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // State for "Liberado por" dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [liberatedByName, setLiberatedByName] = useState('');
   const [approvalContext, setApprovalContext] = useState<{ type: 'new_entry' | 'waiting_list'; vehicle?: VehicleEntry } | null>(null);
 
-  // State for PDF Preview Modal
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
-  // Data
   const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>([]);
   const [persons, setPersons] = useState<Driver[]>([]);
   const [internalDestinations, setInternalDestinations] = useState<InternalDestination[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // Fetch all required data
   useEffect(() => {
     const fetchData = async () => {
         setDataLoading(true);
         try {
-            // Fetch companies from Firestore
-            const transportCompaniesPromise = getDocs(query(collection(db, 'transportCompanies'), orderBy("name")));
+            const companiesPromise = getDocs(query(collection(db, 'transportCompanies'), orderBy("name")));
+            const personsPromise = getDocs(query(collection(db, 'persons'), orderBy("name")));
+            const destinationsPromise = getDocs(query(collection(db, 'internalDestinations'), orderBy("name")));
             
-            // Fetch others from in-memory store
-            const personsData = personsStore.getPersons();
-            const internalDestinationsData = destinationsStore.getDestinations();
+            const [companiesSnap, personsSnap, destinationsSnap] = await Promise.all([companiesPromise, personsPromise, destinationsPromise]);
 
-            const transportCompaniesSnap = await transportCompaniesPromise;
-
-            setTransportCompanies(transportCompaniesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany)));
-            setPersons(personsData);
-            setInternalDestinations(internalDestinationsData);
+            setTransportCompanies(companiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany)));
+            setPersons(personsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Driver)));
+            setInternalDestinations(destinationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as InternalDestination)));
 
         } catch (error) {
             console.error("Failed to fetch data:", error);
@@ -204,18 +207,24 @@ export default function RegistroEntradaPage() {
     fetchData();
   }, [toast]);
   
-  // Refresh waiting vehicles from in-memory store
-  const refreshWaitingVehicles = () => {
-    const vehicles = entriesStore.getEntriesByStatus('aguardando_patio');
-    setCurrentWaitingVehicles(vehicles.sort((a,b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime()));
-  }
-
-  // Initial load and setup for waiting vehicles
   useEffect(() => {
-    refreshWaitingVehicles();
-  }, []);
+    const entriesCollection = collection(db, 'vehicleEntries');
+    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'), orderBy('arrivalTimestamp', 'asc'));
 
-  // Reset dialog state when it closes
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const vehicles: VehicleEntry[] = [];
+        querySnapshot.forEach((doc) => {
+            vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
+        });
+        setCurrentWaitingVehicles(vehicles);
+    }, (error) => {
+        console.error("Error fetching waiting vehicles:", error);
+        toast({ variant: "destructive", title: "Erro em Tempo Real", description: "Não foi possível carregar a lista de espera." });
+    });
+    
+    return () => unsubscribe();
+  }, [toast]);
+
   useEffect(() => {
     if (!isDialogOpen) {
       setApprovalContext(null);
@@ -248,21 +257,34 @@ export default function RegistroEntradaPage() {
     }
     setIsSubmitting(true);
     
-    const createdEntry = entriesStore.addEntry(data, status, user.login, liberatedBy);
+    const currentTime = new Date().toISOString();
+    const newEntryData: Omit<VehicleEntry, 'id'> = {
+        ...data,
+        id: generateBarcode(), // This is actually used as a unique identifier before it becomes the doc ID
+        arrivalTimestamp: currentTime,
+        status,
+        registeredBy: user.login,
+        ...(status === 'entrada_liberada' && {
+            liberationTimestamp: currentTime,
+            liberatedBy,
+        }),
+    };
 
-    if (createdEntry) {
+    try {
+        const docRef = await addDoc(collection(db, 'vehicleEntries'), newEntryData);
+        const createdEntry: VehicleEntry = { ...newEntryData, id: docRef.id };
+
         if (status === 'aguardando_patio') {
             toast({
-            title: 'Registro Enviado para o Pátio',
-            description: `Veículo ${createdEntry.plate1} aguardando liberação. Código: ${createdEntry.id}`,
-            className: 'bg-yellow-500 text-white',
-            icon: <Clock className="h-6 w-6 text-white" />
+                title: 'Registro Enviado para o Pátio',
+                description: `Veículo ${createdEntry.plate1} aguardando liberação.`,
+                className: 'bg-yellow-500 text-white',
+                icon: <Clock className="h-6 w-6 text-white" />
             });
-            refreshWaitingVehicles();
         } else { 
             toast({
                 title: `Entrada de ${createdEntry.plate1} Registrada!`,
-                description: `Preparando documento para visualização... Código: ${createdEntry.id}.`,
+                description: `Preparando documento para visualização...`,
                 className: 'bg-green-600 text-white',
                 icon: <CheckCircle className="h-6 w-6 text-white" />
             });
@@ -280,7 +302,8 @@ export default function RegistroEntradaPage() {
                 });
             }
         }
-    } else {
+    } catch (error) {
+        console.error("Error saving entry:", error);
         toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível salvar o registro de entrada.' });
     }
 
@@ -298,32 +321,38 @@ export default function RegistroEntradaPage() {
     ); 
   }, [currentWaitingVehicles, searchTerm]);
 
-  const handleApproveEntry = async (vehicleId: string, liberatedBy?: string) => {
-    const updatedData = { liberationTimestamp: new Date().toISOString(), liberatedBy: liberatedBy?.trim() };
-    const vehicleToApprove = entriesStore.updateEntryStatus(vehicleId, 'entrada_liberada', updatedData);
+  const handleApproveEntry = async (vehicle: VehicleEntry, liberatedBy?: string) => {
+    const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
+    const updatedData = { 
+        status: 'entrada_liberada',
+        liberationTimestamp: new Date().toISOString(), 
+        liberatedBy: liberatedBy?.trim() || ''
+    };
 
-    if (vehicleToApprove) {
+    try {
+        await updateDoc(vehicleDocRef, updatedData);
+        const updatedVehicle = { ...vehicle, ...updatedData };
         toast({
-            title: `Veículo ${vehicleToApprove.plate1} Liberado!`,
-            description: `Preparando documento para visualização... Código: ${vehicleToApprove.id}.`,
+            title: `Veículo ${updatedVehicle.plate1} Liberado!`,
+            description: `Preparando documento para visualização...`,
             className: 'bg-green-600 text-white',
             icon: <CheckCircle className="h-6 w-6 text-white" />
         });
 
-        const imageResult = await generateVehicleEntryImage(vehicleToApprove);
+        const imageResult = await generateVehicleEntryImage(updatedVehicle);
         
         if (imageResult.success && imageResult.imageUrl) {
             setPreviewImageUrl(imageResult.imageUrl);
             setIsPreviewModalOpen(true);
-            refreshWaitingVehicles(); // Update list after approval
         } else {
             toast({
                 variant: 'destructive',
                 title: 'Erro no Documento',
-                description: `Falha ao gerar o documento para ${vehicleToApprove.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
+                description: `Falha ao gerar o documento para ${updatedVehicle.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
             });
         }
-    } else {
+    } catch (error) {
+        console.error("Error approving entry:", error);
         toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível aprovar a entrada do veículo.' });
     }
   };
@@ -388,7 +417,7 @@ export default function RegistroEntradaPage() {
     if (approvalContext.type === 'new_entry') {
       handleFormSubmit(form.getValues(), 'entrada_liberada', liberatedByName);
     } else if (approvalContext.type === 'waiting_list' && approvalContext.vehicle) {
-      handleApproveEntry(approvalContext.vehicle.id, liberatedByName);
+      handleApproveEntry(approvalContext.vehicle, liberatedByName);
     }
     
     setIsDialogOpen(false);
