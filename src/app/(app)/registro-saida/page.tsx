@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, AlertTriangle, Search } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
 
 
 const exitSchema = z.object({
@@ -28,6 +28,7 @@ export default function RegistroSaidaPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [foundEntry, setFoundEntry] = useState<VehicleEntry | null>(null);
   const [entryNotFound, setEntryNotFound] = useState(false);
+  const barcodeRef = useRef<HTMLInputElement | null>(null);
 
   const form = useForm<ExitFormValues>({
     resolver: zodResolver(exitSchema),
@@ -35,6 +36,23 @@ export default function RegistroSaidaPage() {
       barcode: '',
     },
   });
+
+  const { watch, handleSubmit } = form;
+  const barcodeValue = watch('barcode');
+
+  // Auto-focus on mount
+  useEffect(() => {
+    barcodeRef.current?.focus();
+  }, []);
+
+  // Auto-submit on 14 chars
+  useEffect(() => {
+    if (barcodeValue && barcodeValue.length === 14 && !isProcessing) {
+      handleSubmit(onSubmit)();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [barcodeValue, handleSubmit, isProcessing]);
+
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -47,23 +65,24 @@ export default function RegistroSaidaPage() {
     return () => clearTimeout(timer); // Cleanup timeout
   }, [foundEntry, entryNotFound]);
 
- const processExit = async (barcode: string): Promise<VehicleEntry | null> => {
-    // In Firestore, the document ID is the barcode
-    const entryDocRef = doc(db, 'vehicleEntries', barcode);
-    const entryDoc = await getDoc(entryDocRef);
+  const processExit = async (barcodeToFind: string): Promise<VehicleEntry | null> => {
+    const entriesCollection = collection(db, 'vehicleEntries');
+    const q = query(entriesCollection, where('barcode', '==', barcodeToFind));
+    const querySnapshot = await getDocs(q);
 
-    if (entryDoc.exists()) {
+    if (!querySnapshot.empty) {
+      const entryDoc = querySnapshot.docs[0];
       const entry = { id: entryDoc.id, ...entryDoc.data() } as VehicleEntry;
       if (entry.status === 'entrada_liberada') {
         const exitTimestamp = new Date().toISOString();
-        await updateDoc(entryDocRef, {
+        await updateDoc(doc(db, 'vehicleEntries', entry.id), {
           status: 'saiu',
           exitTimestamp: exitTimestamp,
         });
         return { ...entry, status: 'saiu', exitTimestamp };
       }
     }
-    return null; // Not found or already exited
+    return null; // Not found or already exited or not liberated
   };
 
   const onSubmit = async (data: ExitFormValues) => {
@@ -78,7 +97,7 @@ export default function RegistroSaidaPage() {
             setFoundEntry(updatedEntry);
             toast({
                 title: 'Saída Registrada!',
-                description: `Saída do veículo ${updatedEntry.plate1} (Código: ${updatedEntry.id}) registrada com sucesso.`,
+                description: `Saída do veículo ${updatedEntry.plate1} (Código: ${updatedEntry.barcode}) registrada com sucesso.`,
                 className: 'bg-green-600 text-white',
                 icon: <CheckCircle className="h-6 w-6 text-white" />
             });
@@ -101,6 +120,8 @@ export default function RegistroSaidaPage() {
     } finally {
         form.reset();
         setIsProcessing(false);
+        // Re-focus after processing
+        setTimeout(() => barcodeRef.current?.focus(), 100);
     }
   };
 
@@ -123,16 +144,20 @@ export default function RegistroSaidaPage() {
                     <FormControl>
                       <div className="flex">
                         <Input
-                          placeholder="Ex: 20230101120000"
                           {...field}
-                           onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    if (!isProcessing) {
-                                        form.handleSubmit(onSubmit)();
-                                    }
-                                }
-                            }}
+                          ref={(e) => {
+                            field.ref(e);
+                            barcodeRef.current = e;
+                          }}
+                          placeholder="Leia o código de barras aqui"
+                          onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (!isProcessing) {
+                                      form.handleSubmit(onSubmit)();
+                                  }
+                              }
+                          }}
                           className="rounded-r-none"
                           noAutoUppercase={true}
                         />
@@ -178,7 +203,7 @@ export default function RegistroSaidaPage() {
         </CardContent>
         <CardFooter>
             <p className="text-xs text-muted-foreground text-center w-full">
-                Ao registrar a saída, o sistema automaticamente dará baixa no veículo.
+                O sistema buscará automaticamente após a leitura do código de 14 dígitos.
             </p>
         </CardFooter>
       </Card>
