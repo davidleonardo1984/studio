@@ -66,6 +66,7 @@ export default function RegistroSaidaPage() {
   }, [foundEntry, entryNotFound]);
 
   const processExit = async (barcodeToFind: string): Promise<VehicleEntry | null> => {
+    if (!db) return null;
     const entriesCollection = collection(db, 'vehicleEntries');
     const q = query(entriesCollection, where('barcode', '==', barcodeToFind));
     const querySnapshot = await getDocs(q);
@@ -82,7 +83,7 @@ export default function RegistroSaidaPage() {
         return { ...entry, status: 'saiu', exitTimestamp };
       }
     }
-    return null; // Not found or already exited or not liberated
+    return null;
   };
 
   const onSubmit = async (data: ExitFormValues) => {
@@ -120,10 +121,36 @@ export default function RegistroSaidaPage() {
     } finally {
         form.reset();
         setIsProcessing(false);
-        // Re-focus after processing
         setTimeout(() => barcodeRef.current?.focus(), 100);
     }
   };
+
+  if (!db) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="shadow-lg mt-4 max-w-2xl mx-auto">
+            <CardHeader>
+                <CardTitle className="text-xl font-semibold text-destructive flex items-center">
+                    <AlertTriangle className="mr-3 h-6 w-6" />
+                    Erro de Configuração do Banco de Dados
+                </CardTitle>
+                <CardDescription>
+                    A conexão com o banco de dados não foi estabelecida.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Firebase não está conectado</AlertTitle>
+                    <AlertDescription>
+                       Por favor, verifique se as credenciais do seu projeto Firebase estão configuradas corretamente nas variáveis de ambiente. Os dados não podem ser carregados ou salvos sem esta configuração.
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8">

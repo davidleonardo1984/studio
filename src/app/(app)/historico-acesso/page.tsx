@@ -10,13 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry, TransportCompany } from '@/lib/types';
-import { Download, Printer, Search, Truck, RotateCcw, Loader2 } from 'lucide-react';
+import { Download, Printer, Search, Truck, RotateCcw, Loader2, AlertTriangle } from 'lucide-react';
 import type { DateRange } from "react-day-picker";
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, orderBy, onSnapshot, Timestamp, getDoc, doc as firestoreDoc } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import { useIsClient } from '@/hooks/use-is-client';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success: boolean; imageUrl?: string; error?: any }> => {
@@ -157,6 +158,10 @@ export default function HistoricoAcessoPage() {
   const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
+    if (!db) {
+        setCompaniesLoading(false);
+        return;
+    }
     const fetchCompanies = async () => {
       setCompaniesLoading(true);
       try {
@@ -175,14 +180,17 @@ export default function HistoricoAcessoPage() {
   }, [toast]);
 
   useEffect(() => {
+    if (!db) return;
     const entriesCollection = collection(db, 'vehicleEntries');
-    const q = query(entriesCollection, where('status', '==', 'entrada_liberada'), orderBy('arrivalTimestamp', 'desc'));
+    const q = query(entriesCollection, where('status', '==', 'entrada_liberada'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const vehicles: VehicleEntry[] = [];
         querySnapshot.forEach((doc) => {
             vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
         });
+        // Sort client-side
+        vehicles.sort((a, b) => new Date(b.arrivalTimestamp).getTime() - new Date(a.arrivalTimestamp).getTime());
         setVehiclesInsideFactory(vehicles);
     }, (error) => {
         console.error("Error fetching vehicles inside factory:", error);
@@ -194,6 +202,7 @@ export default function HistoricoAcessoPage() {
 
 
   const handleSearch = useCallback(async () => {
+    if (!db) return;
     setIsSearching(true);
     setHasSearched(true);
 
@@ -204,15 +213,12 @@ export default function HistoricoAcessoPage() {
             q = query(q, where('transportCompanyName', '==', filters.transportCompany.trim()));
         }
         if (filters.plate.trim()) {
-            // Firestore doesn't support partial text search natively.
-            // This will filter for exact plate match. For 'contains', you'd need a more complex setup (e.g., third-party search service).
-             q = query(q, where('plate1', '>=', filters.plate.trim().toUpperCase()), where('plate1', '<=', filters.plate.trim().toUpperCase() + '\uf8ff'));
+            q = query(q, where('plate1', '>=', filters.plate.trim().toUpperCase()), where('plate1', '<=', filters.plate.trim().toUpperCase() + '\uf8ff'));
         }
         if (filters.dateRange?.from) {
             q = query(q, where('arrivalTimestamp', '>=', Timestamp.fromDate(filters.dateRange.from)));
         }
         if (filters.dateRange?.to) {
-            // Adjust 'to' date to include the whole day
             const toDate = new Date(filters.dateRange.to);
             toDate.setHours(23, 59, 59, 999);
             q = query(q, where('arrivalTimestamp', '<=', Timestamp.fromDate(toDate)));
@@ -329,6 +335,33 @@ export default function HistoricoAcessoPage() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-4 text-muted-foreground">Carregando...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!db) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="shadow-lg mt-4 max-w-2xl mx-auto">
+            <CardHeader>
+                <CardTitle className="text-xl font-semibold text-destructive flex items-center">
+                    <AlertTriangle className="mr-3 h-6 w-6" />
+                    Erro de Configuração do Banco de Dados
+                </CardTitle>
+                <CardDescription>
+                    A conexão com o banco de dados não foi estabelecida.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Firebase não está conectado</AlertTitle>
+                    <AlertDescription>
+                       Por favor, verifique se as credenciais do seu projeto Firebase estão configuradas corretamente nas variáveis de ambiente. Os dados não podem ser carregados ou salvos sem esta configuração.
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+        </Card>
       </div>
     );
   }

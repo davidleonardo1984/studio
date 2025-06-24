@@ -23,10 +23,16 @@ export const TransportCompanyProvider = ({ children }: { children: ReactNode }) 
   const [companies, setCompanies] = useState<TransportCompany[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const companiesCollection = collection(db, 'transportCompanies');
-
   const fetchCompanies = async () => {
     setIsLoading(true);
+    if (!db) {
+        // Silently fail if db is not configured, or show a toast
+        console.warn("Firebase is not configured. Transport companies cannot be fetched.");
+        setIsLoading(false);
+        return;
+    }
+    const companiesCollection = collection(db, 'transportCompanies');
+
     try {
       const q = query(companiesCollection, orderBy("name"));
       const snapshot = await getDocs(q);
@@ -46,6 +52,11 @@ export const TransportCompanyProvider = ({ children }: { children: ReactNode }) 
   }, []);
 
   const addCompany = async (newCompanyData: { name: string }) => {
+    if (!db) {
+      toast({ variant: 'destructive', title: "Erro de Configuração", description: "O Firebase não está configurado." });
+      throw new Error("Firebase not configured.");
+    }
+    const companiesCollection = collection(db, 'transportCompanies');
     try {
       const docRef = await addDoc(companiesCollection, newCompanyData);
       const newCompany = { id: docRef.id, ...newCompanyData };
@@ -60,6 +71,10 @@ export const TransportCompanyProvider = ({ children }: { children: ReactNode }) 
   };
   
   const updateCompany = async (companyId: string, updatedCompanyData: { name: string }) => {
+     if (!db) {
+      toast({ variant: 'destructive', title: "Erro de Configuração", description: "O Firebase não está configurado." });
+      throw new Error("Firebase not configured.");
+    }
     try {
       const companyDoc = doc(db, 'transportCompanies', companyId);
       await updateDoc(companyDoc, updatedCompanyData);
@@ -76,6 +91,10 @@ export const TransportCompanyProvider = ({ children }: { children: ReactNode }) 
   };
 
   const deleteCompany = async (companyId: string) => {
+    if (!db) {
+      toast({ variant: 'destructive', title: "Erro de Configuração", description: "O Firebase não está configurado." });
+      throw new Error("Firebase not configured.");
+    }
     try {
       const companyDoc = doc(db, 'transportCompanies', companyId);
       await deleteDoc(companyDoc);

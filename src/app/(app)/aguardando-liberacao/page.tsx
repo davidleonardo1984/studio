@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry } from '@/lib/types';
-import { CheckCircle, Clock, Search, Loader2 } from 'lucide-react';
+import { CheckCircle, Clock, Search, Loader2, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
@@ -25,6 +25,7 @@ import html2canvas from 'html2canvas';
 import { useIsClient } from '@/hooks/use-is-client';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, orderBy } from 'firebase/firestore';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success: boolean; imageUrl?: string; error?: any }> => {
@@ -148,15 +149,21 @@ export default function AguardandoLiberacaoPage() {
 
   // Real-time listener for waiting vehicles
   useEffect(() => {
+    if (!db) {
+      setIsLoading(false);
+      return;
+    };
     setIsLoading(true);
     const entriesCollection = collection(db, 'vehicleEntries');
-    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'), orderBy('arrivalTimestamp', 'asc'));
+    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const vehicles: VehicleEntry[] = [];
       querySnapshot.forEach((doc) => {
         vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
       });
+      // Sort client-side
+      vehicles.sort((a, b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime());
       setWaitingVehicles(vehicles);
       setIsLoading(false);
     }, (error) => {
@@ -185,6 +192,7 @@ export default function AguardandoLiberacaoPage() {
   );
 
   const handleApproveEntry = async (vehicle: VehicleEntry, liberatedBy?: string) => {
+    if (!db) return;
     const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
     const updatedVehicleData = {
         status: 'entrada_liberada',
@@ -209,7 +217,6 @@ export default function AguardandoLiberacaoPage() {
         if (imageResult.success && imageResult.imageUrl) {
             setPreviewImageUrl(imageResult.imageUrl);
             setIsPreviewModalOpen(true);
-            // No need to re-fetch, real-time listener will update the list
         } else {
             toast({
                 variant: 'destructive',
@@ -227,7 +234,7 @@ export default function AguardandoLiberacaoPage() {
     setIsPreviewModalOpen(false);
     setPreviewImageUrl(null);
   };
-
+  
   if (!isClient) {
     return (
       <div className="container mx-auto py-8">
@@ -235,6 +242,33 @@ export default function AguardandoLiberacaoPage() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-4 text-muted-foreground">Carregando...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!db) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="shadow-lg mt-4 max-w-2xl mx-auto">
+            <CardHeader>
+                <CardTitle className="text-xl font-semibold text-destructive flex items-center">
+                    <AlertTriangle className="mr-3 h-6 w-6" />
+                    Erro de Configuração do Banco de Dados
+                </CardTitle>
+                <CardDescription>
+                    A conexão com o banco de dados não foi estabelecida.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Firebase não está conectado</AlertTitle>
+                    <AlertDescription>
+                       Por favor, verifique se as credenciais do seu projeto Firebase estão configuradas corretamente nas variáveis de ambiente. Os dados não podem ser carregados ou salvos sem esta configuração.
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+        </Card>
       </div>
     );
   }

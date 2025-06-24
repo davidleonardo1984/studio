@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, InternalDestination } from '@/lib/types';
-import { Save, SendToBack, Clock, CheckCircle, Search, Printer, ClipboardCopy, Loader2 } from 'lucide-react';
+import { Save, SendToBack, Clock, CheckCircle, Search, Printer, ClipboardCopy, Loader2, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy, addDoc, doc, updateDoc, where, onSnapshot } from 'firebase/firestore';
@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -184,6 +185,10 @@ export default function RegistroEntradaPage() {
   const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
+    if (!db) {
+        setDataLoading(false);
+        return;
+    }
     const fetchData = async () => {
         setDataLoading(true);
         try {
@@ -208,18 +213,21 @@ export default function RegistroEntradaPage() {
   }, [toast]);
   
   useEffect(() => {
+    if (!db) return;
     const entriesCollection = collection(db, 'vehicleEntries');
-    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'), orderBy('arrivalTimestamp', 'asc'));
+    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const vehicles: VehicleEntry[] = [];
         querySnapshot.forEach((doc) => {
             vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
         });
+        // Sort client-side
+        vehicles.sort((a, b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime());
         setCurrentWaitingVehicles(vehicles);
     }, (error) => {
         console.error("Error fetching waiting vehicles:", error);
-        toast({ variant: "destructive", title: "Erro em Tempo Real", description: "Não foi possível carregar a lista de espera." });
+        toast({ variant: "destructive", title: "Erro em Tempo Real", description: "Não foi possível carregar la lista de espera." });
     });
     
     return () => unsubscribe();
@@ -251,8 +259,8 @@ export default function RegistroEntradaPage() {
   });
 
   const handleFormSubmit = async (data: VehicleEntryFormData, status: 'aguardando_patio' | 'entrada_liberada', liberatedBy?: string) => {
-    if (!user) {
-      toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
+    if (!user || !db) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado ou conexão com banco de dados falhou.' });
       return;
     }
     setIsSubmitting(true);
@@ -322,6 +330,7 @@ export default function RegistroEntradaPage() {
   }, [currentWaitingVehicles, searchTerm]);
 
   const handleApproveEntry = async (vehicle: VehicleEntry, liberatedBy?: string) => {
+    if (!db) return;
     const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
     const updatedData = { 
         status: 'entrada_liberada',
@@ -427,6 +436,33 @@ export default function RegistroEntradaPage() {
     setIsPreviewModalOpen(false);
     setPreviewImageUrl(null);
   };
+
+  if (!db) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="shadow-lg mt-4 max-w-2xl mx-auto">
+            <CardHeader>
+                <CardTitle className="text-xl font-semibold text-destructive flex items-center">
+                    <AlertTriangle className="mr-3 h-6 w-6" />
+                    Erro de Configuração do Banco de Dados
+                </CardTitle>
+                <CardDescription>
+                    A conexão com o banco de dados não foi estabelecida.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Firebase não está conectado</AlertTitle>
+                    <AlertDescription>
+                       Por favor, verifique se as credenciais do seu projeto Firebase estão configuradas corretamente nas variáveis de ambiente. Os dados não podem ser carregados ou salvos sem esta configuração.
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
 
   return (
