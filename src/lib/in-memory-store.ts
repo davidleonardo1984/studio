@@ -3,7 +3,7 @@ import type { User, UserRole, Driver, InternalDestination, VehicleEntry, Vehicle
 
 // In-memory store for users
 let users: User[] = [
-  { id: 'admin001', name: 'Administrador', login: 'admin', role: 'admin' as UserRole, password: 'admin' },
+  { id: 'admin001', name: 'Administrador', login: 'admin', role: 'admin' as UserRole, password: 'Michelin' },
   { id: 'user001', name: 'Usuário Padrão', login: 'user', role: 'user' as UserRole, password: 'user' },
 ];
 
