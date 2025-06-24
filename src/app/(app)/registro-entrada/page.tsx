@@ -14,14 +14,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import type { VehicleEntryFormData, VehicleEntry, TransportCompany } from '@/lib/types';
+import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, InternalDestination } from '@/lib/types';
 import { Save, SendToBack, Clock, CheckCircle, Search, Printer, ClipboardCopy, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useRouter } from 'next/navigation';
-import { personsStore, internalDestinationsStore } from '@/lib/store';
-import { entriesStore, waitingYardStore } from '@/lib/vehicleEntryStores'; 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, onSnapshot, doc, updateDoc, where } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import {
   AlertDialog,
@@ -157,7 +154,6 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
 export default function RegistroEntradaPage() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAssistants, setShowAssistants] = useState(false);
   
@@ -173,40 +169,54 @@ export default function RegistroEntradaPage() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
+  // Data from Firestore
   const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>([]);
-  const [companiesLoading, setCompaniesLoading] = useState(true);
+  const [persons, setPersons] = useState<Driver[]>([]);
+  const [internalDestinations, setInternalDestinations] = useState<InternalDestination[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
+  // Fetch all required data from Firestore
   useEffect(() => {
-    const fetchCompanies = async () => {
-      setCompaniesLoading(true);
-      try {
-        const companiesCollection = collection(db, 'transportCompanies');
-        const q = query(companiesCollection, orderBy("name"));
-        const snapshot = await getDocs(q);
-        setTransportCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany)));
-      } catch (error) {
-        console.error("Failed to fetch transport companies:", error);
-        toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar as Transportadoras / Empresas." });
-      } finally {
-        setCompaniesLoading(false);
-      }
+    const fetchData = async () => {
+        setDataLoading(true);
+        try {
+            const transportCompaniesPromise = getDocs(query(collection(db, 'transportCompanies'), orderBy("name")));
+            const personsPromise = getDocs(query(collection(db, 'persons'), orderBy("name")));
+            const internalDestinationsPromise = getDocs(query(collection(db, 'internalDestinations'), orderBy("name")));
+
+            const [transportCompaniesSnap, personsSnap, internalDestinationsSnap] = await Promise.all([
+                transportCompaniesPromise,
+                personsPromise,
+                internalDestinationsPromise
+            ]);
+
+            setTransportCompanies(transportCompaniesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany)));
+            setPersons(personsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Driver)));
+            setInternalDestinations(internalDestinationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as InternalDestination)));
+
+        } catch (error) {
+            console.error("Failed to fetch data:", error);
+            toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar os dados de cadastro." });
+        } finally {
+            setDataLoading(false);
+        }
     };
-    fetchCompanies();
+    fetchData();
   }, [toast]);
-
+  
+  // Real-time listener for waiting vehicles
   useEffect(() => {
-    const syncWaitingVehicles = () => {
-      const currentWaitingStr = JSON.stringify(currentWaitingVehicles.map(v => v.id).sort());
-      const globalWaitingStr = JSON.stringify(waitingYardStore.map(v => v.id).sort());
-
-      if (currentWaitingStr !== globalWaitingStr || currentWaitingVehicles.length !== waitingYardStore.length) {
-        setCurrentWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime()));
-      }
-    };
-    syncWaitingVehicles(); 
-    const intervalId = setInterval(syncWaitingVehicles, 2000); 
-    return () => clearInterval(intervalId); 
-  }, [currentWaitingVehicles]); 
+    const q = query(collection(db, "vehicleEntries"), where("status", "==", "aguardando_patio"), orderBy("arrivalTimestamp", "asc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const vehicles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
+      setCurrentWaitingVehicles(vehicles);
+    }, (error) => {
+      console.error("Error fetching waiting vehicles:", error);
+      toast({ variant: "destructive", title: "Erro em tempo real", description: "Não foi possível atualizar a lista de veículos aguardando." });
+    });
+    
+    return () => unsubscribe();
+  }, [toast]);
 
   // Reset dialog state when it closes
   useEffect(() => {
@@ -253,61 +263,55 @@ export default function RegistroEntradaPage() {
     setIsSubmitting(true);
     const currentTime = new Date().toISOString();
 
-    const newEntry: VehicleEntry = {
+    const newEntry: Omit<VehicleEntry, 'id'> = {
       ...data,
-      id: generateBarcode(),
       arrivalTimestamp: currentTime,
-      liberationTimestamp: status === 'entrada_liberada' ? currentTime : undefined,
-      liberatedBy: liberatedBy?.trim(),
       status: status,
       registeredBy: user.login,
+      ...(status === 'entrada_liberada' && {
+        liberationTimestamp: currentTime,
+        liberatedBy: liberatedBy?.trim(),
+      }),
     };
 
-    await new Promise(resolve => setTimeout(resolve, 500)); 
+    try {
+      const docRef = await addDoc(collection(db, 'vehicleEntries'), { ...newEntry, id: generateBarcode() });
+      const createdEntry: VehicleEntry = { ...newEntry, id: docRef.id };
 
-    if (status === 'aguardando_patio') {
-      waitingYardStore.push(newEntry);
-      toast({
-        title: 'Registro Enviado para o Pátio',
-        description: `Veículo ${newEntry.plate1} aguardando liberação. Código: ${newEntry.id}`,
-        className: 'bg-yellow-500 text-white',
-        icon: <Clock className="h-6 w-6 text-white" />
-      });
-    } else { 
-      entriesStore.push(newEntry);
-      toast({
-          title: `Entrada de ${newEntry.plate1} Registrada!`,
-          description: `Preparando documento para visualização... Código: ${newEntry.id}.`,
-          className: 'bg-green-600 text-white',
-          icon: <CheckCircle className="h-6 w-6 text-white" />
-      });
+      if (status === 'aguardando_patio') {
+        toast({
+          title: 'Registro Enviado para o Pátio',
+          description: `Veículo ${createdEntry.plate1} aguardando liberação. Código: ${createdEntry.id}`,
+          className: 'bg-yellow-500 text-white',
+          icon: <Clock className="h-6 w-6 text-white" />
+        });
+      } else { 
+        toast({
+            title: `Entrada de ${createdEntry.plate1} Registrada!`,
+            description: `Preparando documento para visualização... Código: ${createdEntry.id}.`,
+            className: 'bg-green-600 text-white',
+            icon: <CheckCircle className="h-6 w-6 text-white" />
+        });
 
-      const imageResult = await generateVehicleEntryImage(newEntry);
-      
-      if (imageResult.success && imageResult.imageUrl) {
-          setPreviewImageUrl(imageResult.imageUrl);
-          setIsPreviewModalOpen(true);
-      } else {
-          toast({
-              variant: 'destructive',
-              title: 'Erro no Documento',
-              description: `Falha ao gerar o documento para ${newEntry.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
-          });
+        const imageResult = await generateVehicleEntryImage(createdEntry);
+        
+        if (imageResult.success && imageResult.imageUrl) {
+            setPreviewImageUrl(imageResult.imageUrl);
+            setIsPreviewModalOpen(true);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Erro no Documento',
+                description: `Falha ao gerar o documento para ${createdEntry.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
+            });
+        }
       }
+    } catch (error) {
+       console.error("Error saving entry:", error);
+       toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível salvar o registro de entrada.' });
     }
 
-    form.reset({
-        driverName: '',
-        assistant1Name: '',
-        assistant2Name: '',
-        transportCompanyName: '',
-        plate1: '',
-        plate2: '',
-        plate3: '',
-        internalDestinationName: '',
-        movementType: '', 
-        observation: '',
-    });
+    form.reset();
     setShowAssistants(false);
     setIsSubmitting(false);
   };
@@ -322,53 +326,60 @@ export default function RegistroEntradaPage() {
   }, [currentWaitingVehicles, searchTerm]);
 
   const handleApproveEntry = async (vehicleId: string, liberatedBy?: string) => {
-    const vehicleToApproveIndex = waitingYardStore.findIndex(v => v.id === vehicleId);
-    if (vehicleToApproveIndex > -1) {
-      const vehicleToApprove = waitingYardStore[vehicleToApproveIndex];
-      const updatedVehicle: VehicleEntry = { 
-        ...vehicleToApprove, 
+    const vehicleToApprove = currentWaitingVehicles.find(v => v.id === vehicleId);
+    if (vehicleToApprove) {
+      const updatedVehicleData = {
         status: 'entrada_liberada' as 'entrada_liberada',
         liberationTimestamp: new Date().toISOString(),
         liberatedBy: liberatedBy?.trim(),
       };
       
-      waitingYardStore.splice(vehicleToApproveIndex, 1); 
-      entriesStore.push(updatedVehicle); 
-      setCurrentWaitingVehicles([...waitingYardStore].sort((a,b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime()));
+      try {
+        const vehicleDocRef = doc(db, 'vehicleEntries', vehicleId);
+        await updateDoc(vehicleDocRef, updatedVehicleData);
+        
+        const fullVehicleDataForImage = { ...vehicleToApprove, ...updatedVehicleData};
 
-      toast({
-          title: `Veículo ${updatedVehicle.plate1} Liberado!`,
-          description: `Preparando documento para visualização... Código: ${updatedVehicle.id}.`,
-          className: 'bg-green-600 text-white',
-          icon: <CheckCircle className="h-6 w-6 text-white" />
-      });
+        toast({
+            title: `Veículo ${fullVehicleDataForImage.plate1} Liberado!`,
+            description: `Preparando documento para visualização... Código: ${fullVehicleDataForImage.id}.`,
+            className: 'bg-green-600 text-white',
+            icon: <CheckCircle className="h-6 w-6 text-white" />
+        });
 
-      const imageResult = await generateVehicleEntryImage(updatedVehicle);
-      
-      if (imageResult.success && imageResult.imageUrl) {
-          setPreviewImageUrl(imageResult.imageUrl);
-          setIsPreviewModalOpen(true);
-      } else {
-           toast({
-              variant: 'destructive',
-              title: 'Erro no Documento',
-              description: `Falha ao gerar o documento para ${updatedVehicle.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
-          });
+        const imageResult = await generateVehicleEntryImage(fullVehicleDataForImage);
+        
+        if (imageResult.success && imageResult.imageUrl) {
+            setPreviewImageUrl(imageResult.imageUrl);
+            setIsPreviewModalOpen(true);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Erro no Documento',
+                description: `Falha ao gerar o documento para ${fullVehicleDataForImage.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
+            });
+        }
+      } catch (error) {
+        console.error("Error approving entry:", error);
+        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível aprovar a entrada do veículo.' });
       }
     }
   };
 
-  const formatDisplayPhoneNumber = (val: string): string => {
-    if (typeof val !== 'string' || !val) return "";
-    const digits = val.replace(/\D/g, "");
-
-    if (digits.length === 0) return "";
-    let formatted = `(${digits.substring(0, 2)}`;
-    if (digits.length > 2) {
-      formatted += `)${digits.substring(2, 11)}`;
-    }
-    return formatted;
-  };
+    const formatDisplayPhoneNumber = (val: string): string => {
+        if (typeof val !== 'string' || !val) return "";
+        const digits = val.replace(/\D/g, "");
+        if (digits.length === 0) return "";
+        let formatted = `(${digits.substring(0, 2)}`;
+        if (digits.length > 2) {
+            const end = digits.length === 11 ? 7 : 6;
+            formatted += `) ${digits.substring(2, end)}`;
+            if (digits.length > 6) {
+                formatted += `-${digits.substring(end, 11)}`;
+            }
+        }
+        return formatted;
+    };
 
   const handleCopyWaitingData = async () => {
     if (filteredWaitingVehicles.length === 0) {
@@ -377,7 +388,7 @@ export default function RegistroEntradaPage() {
     }
 
     const dataToCopy = filteredWaitingVehicles.map((vehicle, index) => {
-      const driver = personsStore.find(p => p.name === vehicle.driverName);
+      const driver = persons.find(p => p.name === vehicle.driverName);
       const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
       return [
         `Ordem: ${index + 1}`,
@@ -447,13 +458,14 @@ export default function RegistroEntradaPage() {
                       <FormLabel>Nome do Motorista</FormLabel>
                        <FormControl>
                         <Input
-                          placeholder="Digite ou selecione o motorista"
+                          placeholder={dataLoading ? "CARREGANDO..." : "Digite ou selecione o motorista"}
                           {...field}
                           list="driver-list"
+                          disabled={dataLoading}
                         />
                       </FormControl>
                       <datalist id="driver-list">
-                        {personsStore.map((person) => (
+                        {persons.map((person) => (
                           <option key={person.id} value={person.name} />
                         ))}
                       </datalist>
@@ -470,12 +482,12 @@ export default function RegistroEntradaPage() {
                        <FormControl>
                         <div className="relative">
                           <Input
-                            placeholder={companiesLoading ? "CARREGANDO..." : "Digite ou selecione a Transportadora / Empresa"}
+                            placeholder={dataLoading ? "CARREGANDO..." : "Digite ou selecione a Transportadora / Empresa"}
                             {...field}
                             list="transport-company-list"
-                            disabled={companiesLoading}
+                            disabled={dataLoading}
                           />
-                           {companiesLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
+                           {dataLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
                         </div>
                       </FormControl>
                       <datalist id="transport-company-list">
@@ -503,14 +515,15 @@ export default function RegistroEntradaPage() {
                         <FormLabel>Ajudante 1 (Opcional)</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Digite ou selecione o ajudante 1"
+                            placeholder={dataLoading ? "CARREGANDO..." : "Digite ou selecione o ajudante 1"}
                             {...field}
                             value={field.value ?? ''}
                             list="assistant-list"
+                            disabled={dataLoading}
                           />
                         </FormControl>
                         <datalist id="assistant-list">
-                          {personsStore.map((person) => (
+                          {persons.map((person) => (
                             <option key={person.id} value={person.name} />
                           ))}
                         </datalist>
@@ -526,10 +539,11 @@ export default function RegistroEntradaPage() {
                         <FormLabel>Ajudante 2 (Opcional)</FormLabel>
                          <FormControl>
                           <Input
-                            placeholder="Digite ou selecione o ajudante 2"
+                            placeholder={dataLoading ? "CARREGANDO..." : "Digite ou selecione o ajudante 2"}
                             {...field}
                             value={field.value ?? ''}
                             list="assistant-list"
+                            disabled={dataLoading}
                           />
                         </FormControl>
                          <FormMessage />
@@ -584,13 +598,14 @@ export default function RegistroEntradaPage() {
                       <FormLabel>Destino Interno</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Digite ou selecione o destino"
+                          placeholder={dataLoading ? "CARREGANDO..." : "Digite ou selecione o destino"}
                           {...field}
                           list="destination-list"
+                          disabled={dataLoading}
                         />
                       </FormControl>
                       <datalist id="destination-list">
-                        {internalDestinationsStore.map((dest) => (
+                        {internalDestinations.map((dest) => (
                           <option key={dest.id} value={dest.name} />
                         ))}
                       </datalist>
@@ -638,7 +653,7 @@ export default function RegistroEntradaPage() {
             <Button
                 variant="outline"
                 onClick={form.handleSubmit(data => handleFormSubmit(data, 'aguardando_patio'))}
-                disabled={isSubmitting}
+                disabled={isSubmitting || dataLoading}
                 className="w-full sm:w-auto"
             >
                 {isSubmitting ? <Clock className="mr-2 h-4 w-4 animate-spin" /> : <SendToBack className="mr-2 h-4 w-4" /> }
@@ -646,7 +661,7 @@ export default function RegistroEntradaPage() {
             </Button>
             <Button
                 onClick={initiateNewEntryApproval}
-                disabled={isSubmitting}
+                disabled={isSubmitting || dataLoading}
                 className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
             >
                 {isSubmitting ? <Clock className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
@@ -706,7 +721,7 @@ export default function RegistroEntradaPage() {
               </TableHeader>
               <TableBody>
                 {filteredWaitingVehicles.map((vehicle, index) => {
-                  const driver = personsStore.find(p => p.name === vehicle.driverName);
+                  const driver = persons.find(p => p.name === vehicle.driverName);
                   const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
                   return (
                     <TableRow key={vehicle.id}>

@@ -5,6 +5,8 @@ import type { User, UserRole } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { db } from '@/lib/firebase';
+import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -12,59 +14,81 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   users: User[];
-  addUser: (newUser: User) => boolean;
-  updateUser: (updatedUser: User) => boolean;
+  addUser: (newUser: User) => Promise<boolean>;
+  updateUser: (updatedUser: User) => Promise<boolean>;
   findUserByLogin: (login: string) => User | undefined;
   changePassword: (userId: string, currentPasswordInput: string, newPasswordInput: string) => Promise<{ success: boolean; message: string }>;
-  deleteUser: (userId: string) => void;
+  deleteUser: (userId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user data WITHOUT passwords.
-const MOCK_USERS: Omit<User, 'password'>[] = [
-    {
-      id: 'admin001',
-      name: 'Administrador',
-      login: 'admin',
-      role: 'admin',
-    }
-];
+const HARDCODED_ADMIN_USER = {
+    id: 'admin001',
+    name: 'Administrador',
+    login: 'admin',
+    role: 'admin' as UserRole,
+};
 
 // This function simulates checking passwords on a backend.
-// In a real app, this would be an API call.
-const checkCredentials = (login: string, pass: string): Omit<User, 'password'> | null => {
+// In a real app, this would be an API call with hashed passwords.
+const checkCredentials = async (login: string, pass: string): Promise<User | null> => {
     const lowerLogin = login.toLowerCase();
+    
     // Special case for the hardcoded admin user for demo purposes
     if (lowerLogin === 'admin' && pass === 'Michelin') {
-        return MOCK_USERS.find(u => u.login === 'admin') || null;
+        return HARDCODED_ADMIN_USER;
     }
-    // In a real app, you would have logic here to check other users against a database.
-    // For this demo, other users cannot log in as their passwords are not stored.
+
+    // Check against Firestore for other users. THIS IS INSECURE FOR A REAL APP.
+    const q = query(collection(db, "users"), where("login", "==", lowerLogin), where("password", "==", pass));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        const { password, ...userData } = userDoc.data(); // Exclude password from returned user object
+        return { id: userDoc.id, ...userData } as User;
+    }
+    
     return null;
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(MOCK_USERS.map(u => ({...u, password: ''}))); // For user management list
+  const [users, setUsers] = useState<User[]>([]); 
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
+  // Initial load: check local storage, then fetch users
   useEffect(() => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
-      const parsedUser: User = JSON.parse(storedUser);
-      // Ensure the stored user exists in our mock list
-      const foundUser = MOCK_USERS.find(u => u.login.toLowerCase() === parsedUser.login.toLowerCase()); 
-      if (foundUser) {
-        setUser(foundUser);
-      } else {
-        localStorage.removeItem('currentUser');
-      }
+      setUser(JSON.parse(storedUser));
     }
     setIsLoading(false);
   }, []);
 
+  // Listen for real-time updates to the users collection
+  useEffect(() => {
+    const q = query(collection(db, "users"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const usersList: User[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+        
+        // Ensure admin user is always in the list for management purposes
+        if (!usersList.some(u => u.login === 'admin')) {
+             usersList.unshift(HARDCODED_ADMIN_USER);
+        }
+        setUsers(usersList);
+    }, (error) => {
+        console.error("Error fetching users:", error);
+        // Fallback to just admin if firestore fails
+        setUsers([HARDCODED_ADMIN_USER]);
+    });
+    
+    return () => unsubscribe();
+  }, []);
+
+  // Update current user if their data changes in the main list
   useEffect(() => {
     if(user){
         const currentUserFromUsersArray = users.find(u => u.id === user.id);
@@ -75,6 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 localStorage.setItem('currentUser', JSON.stringify(userToStore));
             }
         } else {
+            // Current user was deleted, log out
             logout();
         }
     }
@@ -83,13 +108,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (loginInput: string, pass: string): Promise<boolean> => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const foundUser = checkCredentials(loginInput, pass);
+    const foundUser = await checkCredentials(loginInput, pass);
 
     if (foundUser) {
-      setUser(foundUser);
-      localStorage.setItem('currentUser', JSON.stringify(foundUser));
+      const { password, ...userToStore } = foundUser;
+      setUser(userToStore);
+      localStorage.setItem('currentUser', JSON.stringify(userToStore));
       setIsLoading(false);
       return true;
     }
@@ -104,22 +128,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/login');
   };
 
-  const addUser = (newUser: User): boolean => {
-    if (users.some(u => u.login.toLowerCase() === newUser.login.toLowerCase())) {
+  const addUser = async (newUser: User): Promise<boolean> => {
+    const existingUser = findUserByLogin(newUser.login);
+    if (existingUser) {
       return false; 
     }
-    // Note: The password for new users is not actually stored or used for login in this mock setup.
-    setUsers(prevUsers => [...prevUsers, newUser]);
+    // In a real app, hash the password here before saving
+    await addDoc(collection(db, "users"), newUser);
     return true;
   };
 
-  const updateUser = (updatedUser: User): boolean => {
+  const updateUser = async (updatedUser: User): Promise<boolean> => {
+    const userRef = doc(db, "users", updatedUser.id);
+    // Ensure login uniqueness on update
     if (users.some(u => u.id !== updatedUser.id && u.login.toLowerCase() === updatedUser.login.toLowerCase())) {
       return false; 
     }
-    setUsers(prevUsers => 
-      prevUsers.map(u => u.id === updatedUser.id ? updatedUser : u)
-    );
+    // Don't save an empty password field to the database if it wasn't changed
+    const { password, ...userData } = updatedUser;
+    const dataToUpdate: any = userData;
+    if (password) {
+        dataToUpdate.password = password; // In a real app, hash this
+    }
+    await updateDoc(userRef, dataToUpdate);
     return true;
   }
 
@@ -134,8 +165,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { success: false, message: 'Função desabilitada. A alteração de senha requer um backend seguro.' };
   };
 
-  const deleteUser = (userId: string) => {
-    setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+  const deleteUser = async (userId: string) => {
+    await deleteDoc(doc(db, "users", userId));
   };
 
 

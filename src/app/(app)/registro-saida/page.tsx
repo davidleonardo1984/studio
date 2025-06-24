@@ -13,7 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, AlertTriangle, Search } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
-import { entriesStore } from '@/lib/vehicleEntryStores'; // Using centralized vehicle entry stores
+import { db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 
 const exitSchema = z.object({
@@ -51,14 +52,20 @@ export default function RegistroSaidaPage() {
   }, [foundEntry, entryNotFound]);
 
   const processExit = async (barcode: string): Promise<VehicleEntry | null> => {
-    const entryIndex = entriesStore.findIndex(e => e.id === barcode && e.status !== 'saiu');
-    if (entryIndex !== -1) {
-      entriesStore[entryIndex] = {
-        ...entriesStore[entryIndex],
-        status: 'saiu',
-        exitTimestamp: new Date().toISOString(),
-      };
-      return entriesStore[entryIndex];
+    const entryRef = doc(db, 'vehicleEntries', barcode);
+    try {
+        const entrySnap = await getDoc(entryRef);
+
+        if (entrySnap.exists() && entrySnap.data().status === 'entrada_liberada') {
+            const updatedData = {
+                status: 'saiu',
+                exitTimestamp: new Date().toISOString(),
+            };
+            await updateDoc(entryRef, updatedData);
+            return { ...entrySnap.data(), ...updatedData, id: entrySnap.id } as VehicleEntry;
+        }
+    } catch (error) {
+        console.error("Error processing exit:", error);
     }
     return null;
   };
@@ -68,8 +75,7 @@ export default function RegistroSaidaPage() {
     setIsProcessing(true);
     setFoundEntry(null);
     setEntryNotFound(false);
-
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+    
     const updatedEntry = await processExit(data.barcode);
 
     if (updatedEntry) {
