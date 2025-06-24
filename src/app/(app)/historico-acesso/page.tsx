@@ -10,23 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry, TransportCompany } from '@/lib/types';
-import { Download, Printer, Trash2, Search, Truck, RotateCcw, CheckCircle, Loader2 } from 'lucide-react';
+import { Download, Printer, Search, Truck, RotateCcw, Loader2 } from 'lucide-react';
 import type { DateRange } from "react-day-picker";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, where, onSnapshot, writeBatch, doc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
+import { entriesStore } from '@/lib/in-memory-store';
+import { useIsClient } from '@/hooks/use-is-client';
 
 
 const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success: boolean; imageUrl?: string; error?: any }> => {
@@ -146,6 +137,7 @@ const escapeCsvField = (field: any): string => {
 
 export default function HistoricoAcessoPage() {
   const { toast } = useToast();
+  const isClient = useIsClient();
   
   // State for Preview Modal
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
@@ -156,9 +148,9 @@ export default function HistoricoAcessoPage() {
   const [isSearching, setIsSearching] = useState(false);
 
   // States for data
+  const [allEntries, setAllEntries] = useState<VehicleEntry[]>([]);
   const [vehiclesInsideFactory, setVehiclesInsideFactory] = useState<VehicleEntry[]>([]);
   const [filteredEntries, setFilteredEntries] = useState<VehicleEntry[]>([]);
-  const [baseFilteredEntries, setBaseFilteredEntries] = useState<VehicleEntry[]>([]);
   
   const [filters, setFilters] = useState({
     transportCompany: '',
@@ -186,79 +178,51 @@ export default function HistoricoAcessoPage() {
     fetchCompanies();
   }, [toast]);
 
-  // Real-time listener for vehicles currently inside the factory
+  // Fetch all data from in-memory store
+  const fetchData = useCallback(() => {
+    setIsSearching(true);
+    setAllEntries(entriesStore.getEntries());
+    setVehiclesInsideFactory(entriesStore.getEntriesByStatus('entrada_liberada'));
+    setIsSearching(false);
+  }, []);
+
   useEffect(() => {
-    const q = query(collection(db, "vehicleEntries"), where("status", "==", "entrada_liberada"), orderBy("arrivalTimestamp", "asc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const vehicles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
-      setVehiclesInsideFactory(vehicles);
-    }, (error) => {
-        console.error("Error fetching vehicles inside factory:", error);
-        toast({variant: "destructive", title: "Erro em tempo real", description: "Não foi possível atualizar a lista de veículos na fábrica."});
-    });
-    return () => unsubscribe();
-  }, [toast]);
+    fetchData();
+  }, [fetchData]);
+
 
   const areAnyFiltersActive = useMemo(() => {
-    return filters.transportCompany.trim() !== '' || filters.plate.trim() !== '' || !!filters.dateRange?.from;
-  }, [filters]);
+    return filters.transportCompany.trim() !== '' || filters.plate.trim() !== '' || !!filters.dateRange?.from || searchTerm.trim() !== '';
+  }, [filters, searchTerm]);
 
-  const fetchFilteredEntries = useCallback(async () => {
-    if (!areAnyFiltersActive) {
-      setBaseFilteredEntries([]);
-      setFilteredEntries([]);
-      return;
-    }
-    
-    setIsSearching(true);
-    let constraints = [];
+  useEffect(() => {
+    let results = [...allEntries];
 
     if (filters.transportCompany.trim()) {
-        constraints.push(where("transportCompanyName", "==", filters.transportCompany.trim()));
+        results = results.filter(e => e.transportCompanyName.toUpperCase() === filters.transportCompany.trim().toUpperCase());
     }
     if (filters.plate.trim()) {
-        constraints.push(where("plate1", ">=", filters.plate.trim().toUpperCase()));
-        constraints.push(where("plate1", "<=", filters.plate.trim().toUpperCase() + '\uf8ff'));
+        results = results.filter(e => e.plate1.toUpperCase().includes(filters.plate.trim().toUpperCase()));
     }
     if (filters.dateRange?.from) {
         const fromDate = new Date(filters.dateRange.from);
         fromDate.setHours(0, 0, 0, 0);
-        constraints.push(where("arrivalTimestamp", ">=", fromDate.toISOString()));
+        results = results.filter(e => new Date(e.arrivalTimestamp) >= fromDate);
     }
     if (filters.dateRange?.to) {
         const toDate = new Date(filters.dateRange.to);
         toDate.setHours(23, 59, 59, 999);
-        constraints.push(where("arrivalTimestamp", "<=", toDate.toISOString()));
+        results = results.filter(e => new Date(e.arrivalTimestamp) <= toDate);
     }
-    
-    try {
-        const q = query(collection(db, "vehicleEntries"), ...constraints, orderBy("arrivalTimestamp", "desc"));
-        const querySnapshot = await getDocs(q);
-        const entries = querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as VehicleEntry);
-        setBaseFilteredEntries(entries);
-    } catch(error) {
-        console.error("Error fetching history:", error);
-        toast({variant: "destructive", title: "Erro na Busca", description: "Não foi possível realizar a busca. Tente filtros mais simples."});
-        setBaseFilteredEntries([]);
-    } finally {
-        setIsSearching(false);
-    }
-}, [filters, areAnyFiltersActive, toast]);
-
- useEffect(() => {
-    fetchFilteredEntries();
-  }, [fetchFilteredEntries]);
-  
-  useEffect(() => {
-    let results = [...baseFilteredEntries];
     if (searchTerm.trim()) {
         const lowerSearchTerm = searchTerm.trim().toLowerCase();
         results = results.filter(e =>
             Object.values(e).some(val => String(val).toLowerCase().includes(lowerSearchTerm))
         );
     }
-    setFilteredEntries(results);
-  }, [searchTerm, baseFilteredEntries]);
+    setFilteredEntries(results.sort((a,b) => new Date(b.arrivalTimestamp).getTime() - new Date(a.arrivalTimestamp).getTime()));
+
+  }, [filters, searchTerm, allEntries]);
 
   const handleExportToCSV = () => {
     if (filteredEntries.length === 0) {
@@ -309,39 +273,6 @@ export default function HistoricoAcessoPage() {
          toast({variant: 'destructive', title: "Erro", description: "Seu navegador não suporta a exportação direta."});
     }
   };
-
-  const handleDeleteOldRecords = async () => {
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    
-    toast({ title: 'Excluindo registros...', description: 'Buscando registros antigos para remover.' });
-
-    const q = query(
-        collection(db, "vehicleEntries"),
-        where("status", "==", "saiu"),
-        where("exitTimestamp", "<", oneYearAgo.toISOString())
-    );
-
-    try {
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-            toast({ title: 'Nenhum registro antigo', description: 'Não há registros com mais de 365 dias para excluir.' });
-            return;
-        }
-
-        const batch = writeBatch(db);
-        snapshot.docs.forEach(docSnapshot => {
-            batch.delete(doc(db, "vehicleEntries", docSnapshot.id));
-        });
-
-        await batch.commit();
-        toast({ title: 'Registros Antigos Excluídos', description: `${snapshot.size} registro(s) foram removidos.` });
-        fetchFilteredEntries(); // Refresh the current view
-    } catch (error) {
-        console.error("Error deleting old records:", error);
-        toast({ variant: "destructive", title: "Erro ao Excluir", description: "Ocorreu um erro ao excluir os registros antigos."});
-    }
-  };
   
   const handlePrintEntry = async (entry: VehicleEntry) => {
     toast({
@@ -372,6 +303,17 @@ export default function HistoricoAcessoPage() {
     setIsPreviewModalOpen(false);
     setPreviewImageUrl(null);
   };
+  
+  if (!isClient) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-4 text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -424,16 +366,7 @@ export default function HistoricoAcessoPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-wrap gap-2 justify-end">
-          <Button onClick={handleExportToCSV} variant="default" disabled={!areAnyFiltersActive || filteredEntries.length === 0}><Download className="mr-2 h-4 w-4" /> EXPORTAR PARA CSV</Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-                <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> EXCLUIR ANTIGOS (+365D)</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir registros de saída com mais de 365 dias? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                <AlertDialogFooter><AlertDialogCancel>CANCELAR</AlertDialogCancel><AlertDialogAction onClick={handleDeleteOldRecords} className="bg-destructive hover:bg-destructive/90">EXCLUIR</AlertDialogAction></AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Button onClick={handleExportToCSV} variant="default" disabled={filteredEntries.length === 0}><Download className="mr-2 h-4 w-4" /> EXPORTAR PARA CSV</Button>
         </CardFooter>
       </Card>
       
@@ -442,7 +375,7 @@ export default function HistoricoAcessoPage() {
              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                 <CardTitle className="text-xl font-semibold text-primary">Resultados ({filteredEntries.length})</CardTitle>
                 <div className="mt-4 sm:mt-0 w-full sm:w-auto max-w-xs">
-                    <Input id="searchTermGlobal" placeholder="BUSCAR NOS RESULTADOS..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} disabled={!areAnyFiltersActive}/>
+                    <Input id="searchTermGlobal" placeholder="BUSCAR NOS RESULTADOS..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
             </div>
           </CardHeader>

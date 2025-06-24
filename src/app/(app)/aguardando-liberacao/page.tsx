@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,9 +21,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from '@/components/ui/label';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
-import { db } from '@/lib/firebase';
-import { collection, doc, onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
+import { entriesStore } from '@/lib/in-memory-store';
+import { useIsClient } from '@/hooks/use-is-client';
 
 
 const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success: boolean; imageUrl?: string; error?: any }> => {
@@ -143,25 +143,29 @@ export default function AguardandoLiberacaoPage() {
   // State for PDF Preview Modal
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const isClient = useIsClient();
+
+
+  const fetchWaitingVehicles = useCallback(() => {
+    setIsLoading(true);
+    // Simulating async fetch
+    setTimeout(() => {
+        try {
+            const vehicles = entriesStore.getEntriesByStatus('aguardando_patio');
+            setWaitingVehicles(vehicles.sort((a,b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime()));
+        } catch (error) {
+            console.error("Error fetching waiting vehicles:", error);
+            toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar os veículos." });
+        } finally {
+            setIsLoading(false);
+        }
+    }, 500);
+  }, [toast]);
 
 
   useEffect(() => {
-    setIsLoading(true);
-    const vehicleEntriesCollection = collection(db, 'vehicleEntries');
-    const q = query(vehicleEntriesCollection, where("status", "==", "aguardando_patio"), orderBy("arrivalTimestamp", "asc"));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const vehicles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
-      setWaitingVehicles(vehicles);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error fetching waiting vehicles:", error);
-      toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar os veículos." });
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe(); // Cleanup listener on component unmount
-  }, [toast]);
+    fetchWaitingVehicles();
+  }, [fetchWaitingVehicles]);
 
   // Reset local state when dialog closes
   useEffect(() => {
@@ -182,44 +186,36 @@ export default function AguardandoLiberacaoPage() {
   }, [waitingVehicles, searchTerm]);
 
   const handleApproveEntry = async (vehicleId: string, liberatedBy?: string) => {
-    const vehicleToApprove = waitingVehicles.find(v => v.id === vehicleId);
+    const updatedVehicleData = {
+        liberationTimestamp: new Date().toISOString(),
+        liberatedBy: liberatedBy?.trim(),
+    };
+    
+    const updatedVehicle = entriesStore.updateEntryStatus(vehicleId, 'entrada_liberada', updatedVehicleData);
 
-    if (vehicleToApprove) {
-        const updatedVehicleData = { 
-            status: 'entrada_liberada' as 'entrada_liberada',
-            liberationTimestamp: new Date().toISOString(),
-            liberatedBy: liberatedBy?.trim(),
-        };
+    if (updatedVehicle) {
+        toast({
+            title: `Veículo ${updatedVehicle.plate1} Liberado!`,
+            description: `Preparando documento para visualização...`,
+            className: 'bg-green-600 text-white',
+            icon: <CheckCircle className="h-6 w-6 text-white" />
+        });
 
-        try {
-            const vehicleDocRef = doc(db, 'vehicleEntries', vehicleId);
-            await updateDoc(vehicleDocRef, updatedVehicleData);
-            
-            const updatedVehicleForImage = { ...vehicleToApprove, ...updatedVehicleData };
+        const imageResult = await generateVehicleEntryImage(updatedVehicle);
 
+        if (imageResult.success && imageResult.imageUrl) {
+            setPreviewImageUrl(imageResult.imageUrl);
+            setIsPreviewModalOpen(true);
+            fetchWaitingVehicles(); // Re-fetch the list
+        } else {
             toast({
-                title: `Veículo ${updatedVehicleForImage.plate1} Liberado!`,
-                description: `Preparando documento para visualização...`,
-                className: 'bg-green-600 text-white',
-                icon: <CheckCircle className="h-6 w-6 text-white" />
+                variant: 'destructive',
+                title: 'Erro no Documento',
+                description: `Falha ao gerar o documento para ${updatedVehicle.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
             });
-
-            const imageResult = await generateVehicleEntryImage(updatedVehicleForImage);
-
-            if (imageResult.success && imageResult.imageUrl) {
-                setPreviewImageUrl(imageResult.imageUrl);
-                setIsPreviewModalOpen(true);
-            } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'Erro no Documento',
-                    description: `Falha ao gerar o documento para ${updatedVehicleForImage.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
-                });
-            }
-        } catch (error) {
-            console.error("Error updating vehicle status:", error);
-            toast({ variant: "destructive", title: "Erro", description: "Não foi possível liberar a entrada do veículo." });
         }
+    } else {
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível liberar a entrada do veículo." });
     }
   };
   
@@ -227,6 +223,17 @@ export default function AguardandoLiberacaoPage() {
     setIsPreviewModalOpen(false);
     setPreviewImageUrl(null);
   };
+
+  if (!isClient) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-4 text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
 
   return (
