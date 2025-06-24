@@ -59,7 +59,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (storedUser) {
                 setUser(JSON.parse(storedUser));
             }
-            await refreshUsers();
+            if (isFirebaseConfigured) {
+                await refreshUsers();
+            }
         } catch (error) {
             console.error("Failed to initialize auth context:", error);
             toast({
@@ -79,15 +81,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (loginInput: string, pass: string): Promise<boolean> => {
     setIsLoading(true);
 
-    if (loginInput.toLowerCase() === 'admin' && pass === 'Michelin') {
-        const adminUser: User = { id: 'admin001', name: 'Administrador', login: 'admin', role: 'admin' };
-        setUser(adminUser);
-        localStorage.setItem('currentUser', JSON.stringify(adminUser));
-        setIsLoading(false);
-        return true;
-    }
-
     if (!usersCollection) {
+        toast({
+            variant: "destructive",
+            title: "Erro de Configuração",
+            description: "A conexão com o banco de dados não foi estabelecida."
+        });
         setIsLoading(false);
         return false;
     }
@@ -107,6 +106,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     } catch (error) {
         console.error("Error during login:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro de Login",
+            description: "Ocorreu um erro ao tentar fazer login. Verifique o console para mais detalhes."
+        });
     }
     
     setUser(null);
@@ -162,10 +166,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const changePassword = async (userId: string, currentPasswordInput: string, newPasswordInput: string): Promise<{ success: boolean; message: string }> => {
     if (!db) return { success: false, message: 'Base de dados não configurada.' };
-
-    if (userId === 'admin001') {
-      return { success: false, message: 'A senha do usuário administrador não pode ser alterada aqui.' };
-    }
+    
     const userDocRef = doc(db, "users", userId);
     const userDocSnap = await getDoc(userDocRef);
 
