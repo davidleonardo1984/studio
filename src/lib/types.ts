@@ -13,7 +13,7 @@ export type NewUser = Omit<User, 'id'>;
 
 export interface Driver {
   id: string;
-  name: string;
+  name:string;
   cpf: string;
   cnh?: string;
   phone?: string;
@@ -42,6 +42,7 @@ export type EntryStatus = 'aguardando_patio' | 'entrada_liberada' | 'saiu';
 
 export interface VehicleEntry {
   id: string; 
+  barcode: string;
   driverName: string; 
   assistant1Name?: string;
   assistant2Name?: string;

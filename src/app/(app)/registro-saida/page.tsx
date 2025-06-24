@@ -51,7 +51,7 @@ export default function RegistroSaidaPage() {
       handleSubmit(onSubmit)();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [barcodeValue, handleSubmit, isProcessing]);
+  }, [barcodeValue]);
 
 
   useEffect(() => {

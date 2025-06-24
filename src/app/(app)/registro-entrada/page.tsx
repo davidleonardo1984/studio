@@ -36,8 +36,8 @@ const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRAN
 
 const entrySchema = z.object({
   driverName: z.string().min(1, { message: 'Nome do motorista é obrigatório.' }),
-  assistant1Name: z.string().optional().transform(val => val === "" ? undefined : val),
-  assistant2Name: z.string().optional().transform(val => val === "" ? undefined : val),
+  assistant1Name: z.string().optional(),
+  assistant2Name: z.string().optional(),
   transportCompanyName: z.string().min(1, { message: 'Transportadora / Empresa é obrigatória.' }),
   plate1: z.string().min(7, { message: 'Placa 1 é obrigatória (mín. 7 caracteres).' }).max(8),
   plate2: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 2 inválida (mín. 7 caracteres)."}),
@@ -64,7 +64,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">ROMANEIO DE ENTRADA</h2>
       <div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: center; height: 100px; margin-bottom: 15px; border: 2px dashed #333; background-color: #f9f9f9; padding: 0 15px 0 15px;">
-        <p style="font-family: 'Libre Barcode 39 Text', 'Code 39', 'Courier New', monospace; font-size: 48px; text-align: center; margin: 0; color: #000; line-height: 0.9;">*${entry.id}*</p>
+        <p style="font-family: 'Libre Barcode 39 Text', 'Code 39', 'Courier New', monospace; font-size: 48px; text-align: center; margin: 0; color: #000; line-height: 0.9;">*${entry.barcode}*</p>
         <p style="font-size: 9px; text-align: center; margin: 2px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
       </div>
 
@@ -260,7 +260,7 @@ export default function RegistroEntradaPage() {
     const currentTime = new Date().toISOString();
     const newEntryData: Omit<VehicleEntry, 'id'> = {
         ...data,
-        id: generateBarcode(), // This is actually used as a unique identifier before it becomes the doc ID
+        barcode: generateBarcode(),
         arrivalTimestamp: currentTime,
         status,
         registeredBy: user.login,
@@ -277,7 +277,7 @@ export default function RegistroEntradaPage() {
         if (status === 'aguardando_patio') {
             toast({
                 title: 'Registro Enviado para o Pátio',
-                description: `Veículo ${createdEntry.plate1} aguardando liberação.`,
+                description: `Veículo ${createdEntry.plate1} (Cód: ${createdEntry.barcode}) aguardando liberação.`,
                 className: 'bg-yellow-500 text-white',
                 icon: <Clock className="h-6 w-6 text-white" />
             });

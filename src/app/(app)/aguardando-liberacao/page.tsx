@@ -32,7 +32,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
     <div id="pdf-content-${entry.id}" style="font-family: Arial, sans-serif; padding: 20px; width: 580px; border: 1px solid #ccc; background-color: #fff;">
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">ROMANEIO DE ENTRADA</h2>
       <div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: center; height: 100px; margin-bottom: 15px; border: 2px dashed #333; background-color: #f9f9f9; padding: 0 15px 0 15px;">
-        <p style="font-family: 'Libre Barcode 39 Text', 'Code 39', 'Courier New', monospace; font-size: 48px; text-align: center; margin: 0; color: #000; line-height: 0.9;">*${entry.id}*</p>
+        <p style="font-family: 'Libre Barcode 39 Text', 'Code 39', 'Courier New', monospace; font-size: 48px; text-align: center; margin: 0; color: #000; line-height: 0.9;">*${entry.barcode}*</p>
         <p style="font-size: 9px; text-align: center; margin: 2px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
       </div>
 
@@ -289,7 +289,7 @@ export default function AguardandoLiberacaoPage() {
               <TableBody>
                 {filteredVehicles.map((vehicle) => (
                   <TableRow key={vehicle.id}>
-                    <TableCell className="font-mono text-xs">{vehicle.id}</TableCell>
+                    <TableCell className="font-mono text-xs">{vehicle.barcode}</TableCell>
                     <TableCell>{vehicle.driverName}</TableCell>
                     <TableCell>{vehicle.transportCompanyName}</TableCell>
                     <TableCell>{vehicle.plate1}</TableCell>
