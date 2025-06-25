@@ -182,7 +182,7 @@ export default function RegistroSaidaPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <Card ref={cardRef} className="max-w-lg mx-auto shadow-xl bg-card flex flex-col min-h-[50vh] fullscreen:min-h-screen">
+      <Card ref={cardRef} className="max-w-2xl mx-auto shadow-xl bg-card flex flex-col min-h-[50vh] fullscreen:min-h-screen">
         <CardHeader>
           <div className="flex justify-between items-center">
               <div className="flex-grow">
