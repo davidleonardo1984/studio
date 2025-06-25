@@ -468,7 +468,7 @@ export default function RegistroEntradaPage() {
   return (
     <>
     <div className="container mx-auto py-8 space-y-8">
-      <Card className="max-w-4xl mx-auto shadow-xl">
+      <Card className="max-w-6xl mx-auto shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Nova Entrada</CardTitle>
           <CardDescription>Preencha os dados abaixo para registrar la entrada de um veículo.</CardDescription>
@@ -697,7 +697,7 @@ export default function RegistroEntradaPage() {
         </CardFooter>
       </Card>
 
-      <Card className="max-w-4xl mx-auto shadow-xl">
+      <Card className="max-w-6xl mx-auto shadow-xl">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex-grow">
