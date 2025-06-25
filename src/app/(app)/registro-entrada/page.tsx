@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -170,6 +170,7 @@ export default function RegistroEntradaPage() {
   
   const [currentWaitingVehicles, setCurrentWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [now, setNow] = useState(new Date());
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [liberatedByName, setLiberatedByName] = useState('');
@@ -182,6 +183,13 @@ export default function RegistroEntradaPage() {
   const [persons, setPersons] = useState<Driver[]>([]);
   const [internalDestinations, setInternalDestinations] = useState<InternalDestination[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 60000); // Update every minute
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!db) {
@@ -221,11 +229,11 @@ export default function RegistroEntradaPage() {
         querySnapshot.forEach((doc) => {
             vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
         });
-        // Sort client-side to avoid needing a composite index
+        // Sort client-side
         vehicles.sort((a, b) => {
             const dateA = (a.arrivalTimestamp as any)?.toDate ? (a.arrivalTimestamp as any).toDate() : new Date(a.arrivalTimestamp as string);
             const dateB = (b.arrivalTimestamp as any)?.toDate ? (b.arrivalTimestamp as any).toDate() : new Date(b.arrivalTimestamp as string);
-            return dateA.getTime() - dateB.getTime(); // asc
+            return dateA.getTime() - dateB.getTime();
         });
         setCurrentWaitingVehicles(vehicles);
     }, (error) => {
@@ -243,6 +251,31 @@ export default function RegistroEntradaPage() {
     }
   }, [isDialogOpen]);
 
+  const calculateWaitingTime = useCallback((arrivalTimestamp: VehicleEntry['arrivalTimestamp'], currentTime: Date): string => {
+    if (!arrivalTimestamp) return 'N/A';
+    const arrivalDate = (arrivalTimestamp as any).toDate ? (arrivalTimestamp as any).toDate() : new Date(arrivalTimestamp as string);
+    if (isNaN(arrivalDate.getTime())) return 'Inválido';
+
+    let diff = currentTime.getTime() - arrivalDate.getTime();
+    if (diff < 0) diff = 0;
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    diff -= days * (1000 * 60 * 60 * 24);
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    diff -= hours * (1000 * 60 * 60);
+
+    const mins = Math.floor(diff / (1000 * 60));
+
+    const parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (mins > 0 || (days === 0 && hours === 0)) parts.push(`${mins}m`);
+    
+    if (parts.length === 0) return "Agora";
+
+    return parts.join(' ');
+  }, []);
 
   const form = useForm<VehicleEntryFormData>({
     resolver: zodResolver(entrySchema),
@@ -753,6 +786,7 @@ export default function RegistroEntradaPage() {
                   <TableHead>Placa 1</TableHead>
                   <TableHead>Observação</TableHead>
                   <TableHead>Data/Hora Chegada</TableHead>
+                  <TableHead>Tempo no Pátio</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -769,6 +803,7 @@ export default function RegistroEntradaPage() {
                       <TableCell>{vehicle.plate1}</TableCell>
                       <TableCell className="max-w-xs truncate">{vehicle.observation || '-'}</TableCell>
                       <TableCell>{formatDate(vehicle.arrivalTimestamp)}</TableCell>
+                      <TableCell className="font-medium text-amber-700">{calculateWaitingTime(vehicle.arrivalTimestamp, now)}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
                           variant="default"
