@@ -350,38 +350,79 @@ export default function HistoricoAcessoPage() {
     }
   };
 
+  const calculateTimeDiff = (start: VehicleEntry['arrivalTimestamp'], end: VehicleEntry['arrivalTimestamp']): string => {
+    if (!start || !end) {
+      return 'N/A';
+    }
+  
+    const startDate = (start as any).toDate ? (start as any).toDate() : new Date(start as string);
+    const endDate = (end as any).toDate ? (end as any).toDate() : new Date(end as string);
+  
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return 'N/A';
+    }
+  
+    let diff = endDate.getTime() - startDate.getTime(); 
+  
+    if (diff < 0) {
+      return 'N/A';
+    }
+  
+    const hours = Math.floor(diff / 3600000);
+    diff %= 3600000;
+    const mins = Math.floor(diff / 60000);
+    diff %= 60000;
+    const secs = Math.floor(diff / 1000);
+  
+    const pad = (num: number) => num.toString().padStart(2, '0');
+  
+    return `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+  }
+
 
   const handleExportToCSV = () => {
     if (filteredEntries.length === 0) {
         toast({variant: 'destructive', title: "Nenhum dado", description: "Não há dados para exportar com os filtros atuais."});
         return;
     }
-    const headers = ["ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA / EMPRESA", "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "LIBERADO POR", "DATA/HORA SAÍDA", "STATUS", "REGISTRADO POR"];
+    const headers = [
+      "ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA / EMPRESA", 
+      "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", 
+      "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "LIBERADO POR", "DATA/HORA SAÍDA", 
+      "STATUS", "REGISTRADO POR", "TEMPO CHEGADA-LIBERAÇÃO", "TEMPO LIBERAÇÃO-SAÍDA"
+    ];
     const csvRows = [
         headers.map(escapeCsvField).join(','),
-        ...filteredEntries.map(e => [
-            escapeCsvField(e.barcode),
-            escapeCsvField(e.driverName),
-            escapeCsvField(e.assistant1Name || ''),
-            escapeCsvField(e.assistant2Name || ''),
-            escapeCsvField(e.transportCompanyName),
-            escapeCsvField(e.plate1),
-            escapeCsvField(e.plate2 || ''),
-            escapeCsvField(e.plate3 || ''),
-            escapeCsvField(e.internalDestinationName),
-            escapeCsvField(e.movementType),
-            escapeCsvField(e.observation || ''),
-            escapeCsvField(formatDate(e.arrivalTimestamp)),
-            escapeCsvField(formatDate(e.liberationTimestamp)),
-            escapeCsvField(e.liberatedBy || ''),
-            escapeCsvField(formatDate(e.exitTimestamp)),
-            escapeCsvField(
-                e.status === 'saiu' ? 'Saiu' :
-                e.status === 'entrada_liberada' ? 'Na fábrica' :
-                'No pátio' 
-            ),
-            escapeCsvField(e.registeredBy)
-        ].join(','))
+        ...filteredEntries.map(e => {
+            const tempoChegadaLiberacao = calculateTimeDiff(e.arrivalTimestamp, e.liberationTimestamp);
+            const tempoLiberacaoSaida = calculateTimeDiff(e.liberationTimestamp, e.exitTimestamp);
+            
+            return [
+                escapeCsvField(e.barcode),
+                escapeCsvField(e.driverName),
+                escapeCsvField(e.assistant1Name || ''),
+                escapeCsvField(e.assistant2Name || ''),
+                escapeCsvField(e.transportCompanyName),
+                escapeCsvField(e.plate1),
+                escapeCsvField(e.plate2 || ''),
+                escapeCsvField(e.plate3 || ''),
+                escapeCsvField(e.internalDestinationName),
+                escapeCsvField(e.movementType),
+                escapeCsvField(e.observation || ''),
+                escapeCsvField(formatDate(e.arrivalTimestamp)),
+                escapeCsvField(formatDate(e.liberationTimestamp)),
+                escapeCsvField(e.liberatedBy || ''),
+                escapeCsvField(formatDate(e.exitTimestamp)),
+                escapeCsvField(
+                    e.status === 'saiu' ? 'Saiu' :
+                    e.status === 'entrada_liberada' ? 'Na fábrica' :
+                    'No pátio' 
+                ),
+                escapeCsvField(e.registeredBy),
+                escapeCsvField(tempoChegadaLiberacao),
+                escapeCsvField(tempoLiberacaoSaida),
+            ].join(',')
+        })
     ];
     const csvString = csvRows.join('\n');
     const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
@@ -708,3 +749,5 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
+
+    
