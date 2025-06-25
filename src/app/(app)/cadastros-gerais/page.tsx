@@ -126,6 +126,26 @@ function PersonsSection() {
   const onSubmit = async (formData: NewDriver) => {
     setIsSubmitting(true);
     try {
+        // Check for duplicates
+        const isDuplicateCpf = data.some(
+            p => p.cpf === formData.cpf && p.id !== editingItem?.id
+        );
+        if (isDuplicateCpf) {
+            form.setError("cpf", { type: "manual", message: "Este CPF já está cadastrado." });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const isDuplicateName = data.some(
+            p => p.name.trim().toLowerCase() === formData.name.trim().toLowerCase() && p.id !== editingItem?.id
+        );
+        if (isDuplicateName) {
+            form.setError("name", { type: "manual", message: "Este nome já está cadastrado." });
+            setIsSubmitting(false);
+            return;
+        }
+
+
         if (editingItem) {
             const itemDoc = doc(db, 'persons', editingItem.id);
             await updateDoc(itemDoc, formData);
@@ -360,58 +380,53 @@ function TransportCompaniesSection() {
     );
   }, [data, searchTerm]);
 
- const onSubmit = async (formData: NewTransportCompany) => {
+  const onSubmit = async (formData: NewTransportCompany) => {
     setIsSubmitting(true);
-    const originalData = [...data];
+    
+    const normalizedName = formData.name.trim().toLowerCase();
+    const isDuplicate = data.some(
+      company => company.name.trim().toLowerCase() === normalizedName && company.id !== editingItem?.id
+    );
+
+    if (isDuplicate) {
+        form.setError("name", { type: "manual", message: "Esta transportadora / empresa já está cadastrada." });
+        setIsSubmitting(false);
+        return;
+    }
 
     try {
       if (editingItem) {
-        // Optimistic update
-        setData(prevData => prevData.map(item => item.id === editingItem.id ? { ...item, ...formData } : item).sort((a, b) => a.name.localeCompare(b.name)));
         const companyDoc = doc(db, 'transportCompanies', editingItem.id);
         await updateDoc(companyDoc, formData);
         toast({ title: "Transportadora / Empresa atualizada!", description: `${formData.name} foi atualizada com sucesso.` });
       } else {
-        // Optimistic add (with a temporary ID)
-        const tempId = `temp_${Date.now()}`;
-        const newCompany = { id: tempId, ...formData } as TransportCompany;
-        setData(prevData => [...prevData, newCompany].sort((a, b) => a.name.localeCompare(b.name)));
-        const docRef = await addDoc(companiesCollection, formData);
-        // Replace temporary item with the real one from Firestore
-        setData(prevData => prevData.map(item => item.id === tempId ? { ...item, id: docRef.id } : item));
+        await addDoc(companiesCollection, formData);
         toast({ title: "Transportadora / Empresa cadastrada!", description: `${formData.name} foi cadastrada com sucesso.` });
       }
+      await refreshData();
       setEditingItem(null);
       setShowForm(false);
       form.reset({ name: '' });
     } catch (error) {
-      // Revert optimistic update on failure
-      setData(originalData);
       console.error("Error saving transport company: ", error);
-      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a Transportadora / Empresa. A lista foi restaurada." });
+      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a Transportadora / Empresa." });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    const originalData = [...data];
-    const companyToDelete = data.find(c => c.id === id);
-    
-    // Optimistic delete from UI
-    setData(prevData => prevData.filter(item => item.id !== id));
-    
     try {
         const companyDoc = doc(db, 'transportCompanies', id);
         await deleteDoc(companyDoc);
         toast({ title: 'Excluído!', description: 'A Transportadora / Empresa foi removida com sucesso.' });
+        await refreshData();
     } catch (error) {
-      // Revert on error
-      setData(originalData);
       console.error("Error deleting transport company: ", error);
-      toast({ variant: 'destructive', title: "Erro ao Excluir", description: `A exclusão falhou. A empresa ${companyToDelete?.name || ''} foi restaurada.` });
+      toast({ variant: 'destructive', title: "Erro ao Excluir", description: `A exclusão falhou.` });
     }
   };
+
 
   const handleEdit = (item: TransportCompany) => {
     setEditingItem(item);
@@ -569,6 +584,18 @@ function InternalDestinationsSection() {
 
   const onSubmit = async (formData: NewInternalDestination) => {
     setIsSubmitting(true);
+
+    const normalizedName = formData.name.trim().toLowerCase();
+    const isDuplicate = data.some(
+      dest => dest.name.trim().toLowerCase() === normalizedName && dest.id !== editingItem?.id
+    );
+
+    if (isDuplicate) {
+        form.setError("name", { type: "manual", message: "Este destino já está cadastrado." });
+        setIsSubmitting(false);
+        return;
+    }
+
     try {
         if (editingItem) {
             const itemDoc = doc(db, 'internalDestinations', editingItem.id);
