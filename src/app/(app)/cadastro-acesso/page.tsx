@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { User, UserRole } from '@/lib/types';
-import { PlusCircle, Edit2, Trash2, UserPlus, ShieldAlert, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, UserPlus, ShieldAlert, Eye, EyeOff, Loader2, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   AlertDialog,
@@ -46,6 +46,7 @@ export default function CadastroAcessoPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Redirect if not admin
   useEffect(() => {
@@ -78,6 +79,16 @@ export default function CadastroAcessoPage() {
         form.reset({ name: '', login: '', password: '', role: 'user' });
     }
   }, [editingUser, form]);
+  
+  const filteredUsers = useMemo(() => {
+    if (!searchTerm.trim()) return allUsersFromAuth;
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return allUsersFromAuth.filter(u => 
+      u.name.toLowerCase().includes(lowercasedTerm) ||
+      u.login.toLowerCase().includes(lowercasedTerm)
+    );
+  }, [allUsersFromAuth, searchTerm]);
+
 
   const onSubmit = async (data: UserAccessFormData) => {
     setIsSubmitting(true);
@@ -264,11 +275,19 @@ export default function CadastroAcessoPage() {
           <CardTitle className="text-xl font-semibold text-primary">Usuários Cadastrados</CardTitle>
         </CardHeader>
         <CardContent>
+           <div className="mb-6 mt-2">
+            <Input 
+                placeholder="Pesquisar por nome ou login..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+            />
+          </div>
           {isAuthLoading ? (
             <div className="flex justify-center py-4">
                 <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-          ) : allUsersFromAuth.length > 0 ? (
+          ) : filteredUsers.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -279,7 +298,7 @@ export default function CadastroAcessoPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {allUsersFromAuth.map((u) => (
+                {filteredUsers.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium">{u.name}</TableCell>
                     <TableCell>{u.login}</TableCell>
@@ -310,7 +329,7 @@ export default function CadastroAcessoPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-muted-foreground text-center py-4">Nenhum usuário cadastrado além do administrador padrão.</p>
+            <p className="text-muted-foreground text-center py-4">{searchTerm ? "Nenhum usuário encontrado com os termos da busca." : "Nenhum usuário cadastrado."}</p>
           )}
         </CardContent>
       </Card>
