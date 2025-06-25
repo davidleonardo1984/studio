@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, AlertTriangle, Search } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Search, Expand, Shrink } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
@@ -29,6 +29,8 @@ export default function RegistroSaidaPage() {
   const [foundEntry, setFoundEntry] = useState<VehicleEntry | null>(null);
   const [entryNotFound, setEntryNotFound] = useState(false);
   const barcodeRef = useRef<HTMLInputElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const form = useForm<ExitFormValues>({
     resolver: zodResolver(exitSchema),
@@ -64,6 +66,32 @@ export default function RegistroSaidaPage() {
     }
     return () => clearTimeout(timer); // Cleanup timeout
   }, [foundEntry, entryNotFound]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      cardRef.current?.requestFullscreen().catch(err => {
+        toast({
+          variant: 'destructive',
+          title: 'Erro de Tela Cheia',
+          description: `Não foi possível ativar o modo de tela cheia: ${err.message}`,
+        });
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
 
   const processExit = async (barcodeToFind: string): Promise<VehicleEntry | null> => {
     if (!db) return null;
@@ -154,12 +182,20 @@ export default function RegistroSaidaPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <Card className="max-w-lg mx-auto shadow-xl">
+      <Card ref={cardRef} className="max-w-lg mx-auto shadow-xl bg-card flex flex-col min-h-[50vh] fullscreen:min-h-screen">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Saída de Veículo</CardTitle>
-          <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
+          <div className="flex justify-between items-center">
+              <div className="flex-grow">
+                <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Saída de Veículo</CardTitle>
+                <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
+              </div>
+              <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="shrink-0">
+                {isFullscreen ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
+                <span className="sr-only">{isFullscreen ? 'Minimizar' : 'Tela Cheia'}</span>
+              </Button>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-grow flex flex-col justify-center">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
