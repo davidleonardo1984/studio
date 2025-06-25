@@ -699,7 +699,6 @@ export default function HistoricoAcessoPage() {
                   <TableHead>TRANSPORTADORA / EMPRESA</TableHead>
                   <TableHead>CHEGADA</TableHead>
                   <TableHead>LIBERAÇÃO</TableHead>
-                  <TableHead>TEMPO PÁTIO</TableHead>
                   <TableHead>STATUS</TableHead>
                    <TableHead className="text-right">AÇÕES</TableHead>
                 </TableRow>
@@ -713,7 +712,6 @@ export default function HistoricoAcessoPage() {
                     <TableCell>{entry.transportCompanyName}</TableCell>
                     <TableCell>{formatDate(entry.arrivalTimestamp)}</TableCell>
                     <TableCell>{formatDate(entry.liberationTimestamp)}</TableCell>
-                    <TableCell>{calculateDuration(entry.arrivalTimestamp, entry.liberationTimestamp)}</TableCell>
                      <TableCell>
                         <span className="px-2 py-1 text-xs rounded-full whitespace-nowrap bg-green-100 text-green-700">
                             Na fábrica
@@ -744,3 +742,5 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
+
+    
