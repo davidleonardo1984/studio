@@ -146,6 +146,16 @@ export default function AguardandoLiberacaoPage() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const isClient = useIsClient();
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    // Update the current time every minute to refresh the "time in yard" display
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 60000); // 60000 ms = 1 minute
+
+    return () => clearInterval(timer);
+  }, []);
 
   // Real-time listener for waiting vehicles
   useEffect(() => {
@@ -187,6 +197,32 @@ export default function AguardandoLiberacaoPage() {
       setLiberatedByName('');
     }
   }, [isDialogOpen]);
+
+  const calculateWaitingTime = useCallback((arrivalTimestamp: VehicleEntry['arrivalTimestamp'], currentTime: Date): string => {
+    if (!arrivalTimestamp) return 'N/A';
+    const arrivalDate = (arrivalTimestamp as any).toDate ? (arrivalTimestamp as any).toDate() : new Date(arrivalTimestamp as string);
+    if (isNaN(arrivalDate.getTime())) return 'Inválido';
+
+    let diff = currentTime.getTime() - arrivalDate.getTime();
+    if (diff < 0) diff = 0;
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    diff -= days * (1000 * 60 * 60 * 24);
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    diff -= hours * (1000 * 60 * 60);
+
+    const mins = Math.floor(diff / (1000 * 60));
+
+    const parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (mins > 0 || (days === 0 && hours === 0)) parts.push(`${mins}m`);
+    
+    if (parts.length === 0) return "Agora";
+
+    return parts.join(' ');
+  }, []);
 
 
   const filteredVehicles = waitingVehicles.filter(v =>
@@ -328,6 +364,7 @@ export default function AguardandoLiberacaoPage() {
                   <TableHead>Transportadora / Empresas</TableHead>
                   <TableHead>Placa 1</TableHead>
                   <TableHead>Data/Hora Chegada</TableHead>
+                  <TableHead>Tempo no Pátio</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -339,6 +376,7 @@ export default function AguardandoLiberacaoPage() {
                     <TableCell>{vehicle.transportCompanyName}</TableCell>
                     <TableCell>{vehicle.plate1}</TableCell>
                     <TableCell>{formatDate(vehicle.arrivalTimestamp)}</TableCell>
+                    <TableCell className="font-medium text-amber-700">{calculateWaitingTime(vehicle.arrivalTimestamp, now)}</TableCell>
                     <TableCell className="text-right space-x-2">
                        <Button 
                         variant="default" 
@@ -422,5 +460,3 @@ export default function AguardandoLiberacaoPage() {
     </>
   );
 }
-
-    
