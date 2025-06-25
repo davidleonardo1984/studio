@@ -181,7 +181,7 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <Card ref={cardRef} className="max-w-6xl mx-auto shadow-xl bg-card flex flex-col min-h-[50vh] fullscreen:min-h-screen fullscreen:max-w-none">
+    <Card ref={cardRef} className="max-w-6xl mx-auto shadow-xl bg-card flex flex-col fullscreen:min-h-screen fullscreen:max-w-none">
       <CardHeader>
         <div className="flex justify-between items-center">
             <div className="flex-grow">
