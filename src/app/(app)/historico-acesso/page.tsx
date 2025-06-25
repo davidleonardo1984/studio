@@ -147,6 +147,29 @@ const escapeCsvField = (field: any): string => {
   return stringField;
 };
 
+const calculateDuration = (start: VehicleEntry['arrivalTimestamp'], end: VehicleEntry['arrivalTimestamp']): string => {
+    if (!start || !end) return 'N/A';
+
+    const startDate = (start as any).toDate ? (start as any).toDate() : new Date(start as string);
+    const endDate = (end as any).toDate ? (end as any).toDate() : new Date(end as string);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return 'N/A';
+    }
+
+    let diff = endDate.getTime() - startDate.getTime();
+    if (diff < 0) diff = 0;
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    diff -= hours * (1000 * 60 * 60);
+    const mins = Math.floor(diff / (1000 * 60));
+    diff -= mins * (1000 * 60);
+    const secs = Math.floor(diff / 1000);
+
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+};
+
+
 export default function HistoricoAcessoPage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -359,8 +382,8 @@ export default function HistoricoAcessoPage() {
     const headers = [
       "ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA / EMPRESA", 
       "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", 
-      "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "LIBERADO POR", "DATA/HORA SAÍDA", 
-      "STATUS", "REGISTRADO POR"
+      "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "TEMPO PÁTIO (HH:MM:SS)", "LIBERADO POR", "DATA/HORA SAÍDA", 
+      "TEMPO FÁBRICA (HH:MM:SS)", "STATUS", "REGISTRADO POR"
     ];
     const csvRows = [
         headers.map(escapeCsvField).join(','),
@@ -378,8 +401,10 @@ export default function HistoricoAcessoPage() {
             escapeCsvField(e.observation || ''),
             escapeCsvField(formatDate(e.arrivalTimestamp)),
             escapeCsvField(formatDate(e.liberationTimestamp)),
+            escapeCsvField(calculateDuration(e.arrivalTimestamp, e.liberationTimestamp)),
             escapeCsvField(e.liberatedBy || ''),
             escapeCsvField(formatDate(e.exitTimestamp)),
+            escapeCsvField(calculateDuration(e.liberationTimestamp, e.exitTimestamp)),
             escapeCsvField(
                 e.status === 'saiu' ? 'Saiu' :
                 e.status === 'entrada_liberada' ? 'Na fábrica' :
@@ -602,6 +627,8 @@ export default function HistoricoAcessoPage() {
                         <TableHead>CHEGADA</TableHead>
                         <TableHead>LIBERAÇÃO</TableHead>
                         <TableHead>SAÍDA</TableHead>
+                        <TableHead>TEMPO PÁTIO</TableHead>
+                        <TableHead>TEMPO FÁBRICA</TableHead>
                         <TableHead>STATUS</TableHead>
                         <TableHead className="text-right">AÇÕES</TableHead>
                       </TableRow>
@@ -616,6 +643,8 @@ export default function HistoricoAcessoPage() {
                           <TableCell>{formatDate(entry.arrivalTimestamp)}</TableCell>
                           <TableCell>{formatDate(entry.liberationTimestamp)}</TableCell>
                           <TableCell>{formatDate(entry.exitTimestamp)}</TableCell>
+                          <TableCell>{calculateDuration(entry.arrivalTimestamp, entry.liberationTimestamp)}</TableCell>
+                          <TableCell>{calculateDuration(entry.liberationTimestamp, entry.exitTimestamp)}</TableCell>
                           <TableCell>
                               <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
                                   entry.status === 'saiu' ? 'bg-red-100 text-red-700' :
@@ -670,6 +699,7 @@ export default function HistoricoAcessoPage() {
                   <TableHead>TRANSPORTADORA / EMPRESA</TableHead>
                   <TableHead>CHEGADA</TableHead>
                   <TableHead>LIBERAÇÃO</TableHead>
+                  <TableHead>TEMPO PÁTIO</TableHead>
                   <TableHead>STATUS</TableHead>
                    <TableHead className="text-right">AÇÕES</TableHead>
                 </TableRow>
@@ -683,6 +713,7 @@ export default function HistoricoAcessoPage() {
                     <TableCell>{entry.transportCompanyName}</TableCell>
                     <TableCell>{formatDate(entry.arrivalTimestamp)}</TableCell>
                     <TableCell>{formatDate(entry.liberationTimestamp)}</TableCell>
+                    <TableCell>{calculateDuration(entry.arrivalTimestamp, entry.liberationTimestamp)}</TableCell>
                      <TableCell>
                         <span className="px-2 py-1 text-xs rounded-full whitespace-nowrap bg-green-100 text-green-700">
                             Na fábrica
