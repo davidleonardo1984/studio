@@ -154,7 +154,6 @@ export default function HistoricoAcessoPage() {
     plate: '',
     dateRange: undefined as DateRange | undefined,
   });
-  const [searchTerm, setSearchTerm] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
@@ -225,15 +224,7 @@ export default function HistoricoAcessoPage() {
         }
         
         const querySnapshot = await getDocs(q);
-        let results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
-
-        // Client-side filtering for global search term
-        if (searchTerm.trim()) {
-            const lowerSearchTerm = searchTerm.trim().toLowerCase();
-            results = results.filter(e =>
-                Object.values(e).some(val => String(val).toLowerCase().includes(lowerSearchTerm))
-            );
-        }
+        const results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
 
         setFilteredEntries(results);
 
@@ -243,7 +234,7 @@ export default function HistoricoAcessoPage() {
     } finally {
         setIsSearching(false);
     }
-  }, [filters, searchTerm, toast]);
+  }, [filters, toast]);
 
 
   const handleExportToCSV = () => {
@@ -318,7 +309,6 @@ export default function HistoricoAcessoPage() {
 
   const resetFilters = () => {
     setFilters({ transportCompany: '', plate: '', dateRange: undefined });
-    setSearchTerm('');
     setFilteredEntries([]);
     setHasSearched(false);
   };
@@ -427,13 +417,8 @@ export default function HistoricoAcessoPage() {
       
        <Card className="shadow-lg">
         <CardHeader>
-             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                <CardTitle className="text-xl font-semibold text-primary">Resultados ({filteredEntries.length})</CardTitle>
-                <div className="mt-4 sm:mt-0 w-full sm:w-auto max-w-xs">
-                    <Input id="searchTermGlobal" placeholder="BUSCAR NOS RESULTADOS..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleSearch() }}/>
-                </div>
-            </div>
-          </CardHeader>
+            <CardTitle className="text-xl font-semibold text-primary">Resultados ({filteredEntries.length})</CardTitle>
+        </CardHeader>
           <CardContent>
              {isSearching ? (
                 <div className="flex justify-center items-center py-12">
