@@ -216,55 +216,65 @@ export default function HistoricoAcessoPage() {
     setHasSearched(true);
 
     try {
-        let q = query(collection(db, 'vehicleEntries'), orderBy('arrivalTimestamp', 'desc'));
-
-        if (filters.dateRange?.from) {
-            q = query(q, where('arrivalTimestamp', '>=', Timestamp.fromDate(filters.dateRange.from)));
-        }
-        if (filters.dateRange?.to) {
-            const toDate = new Date(filters.dateRange.to);
-            toDate.setHours(23, 59, 59, 999);
-            q = query(q, where('arrivalTimestamp', '<=', Timestamp.fromDate(toDate)));
-        }
+        // Fetch all entries ordered by date. Filtering is done client-side
+        // for robustness against data inconsistencies and to avoid complex index requirements.
+        const q = query(collection(db, 'vehicleEntries'), orderBy('arrivalTimestamp', 'desc'));
         
         const querySnapshot = await getDocs(q);
-        let results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
+        let allEntries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
 
-        if (filters.driverName.trim()) {
-            const searchTerm = filters.driverName.trim().toLowerCase();
-            results = results.filter(entry => 
-                entry.driverName.toLowerCase().includes(searchTerm) ||
-                (entry.assistant1Name && entry.assistant1Name.toLowerCase().includes(searchTerm)) ||
-                (entry.assistant2Name && entry.assistant2Name.toLowerCase().includes(searchTerm))
-            );
-        }
-        if (filters.transportCompany.trim()) {
-            results = results.filter(entry => 
-                entry.transportCompanyName.toLowerCase().includes(filters.transportCompany.trim().toLowerCase())
-            );
-        }
-        if (filters.plate.trim()) {
-             results = results.filter(entry => 
-                entry.plate1.toLowerCase().includes(filters.plate.trim().toLowerCase()) ||
-                entry.plate2?.toLowerCase().includes(filters.plate.trim().toLowerCase()) ||
-                entry.plate3?.toLowerCase().includes(filters.plate.trim().toLowerCase())
-            );
-        }
+        const { dateRange, driverName, transportCompany, plate } = filters;
 
-        setFilteredEntries(results);
+        const filteredResults = allEntries.filter(entry => {
+            // Handle both string and Timestamp objects for arrivalTimestamp
+            const arrivalDate = (entry.arrivalTimestamp as any).toDate 
+                ? (entry.arrivalTimestamp as any).toDate() 
+                : new Date(entry.arrivalTimestamp as string);
+
+            // Date Range Filter
+            if (dateRange?.from && arrivalDate < dateRange.from) {
+                return false;
+            }
+            if (dateRange?.to) {
+                const toDate = new Date(dateRange.to);
+                toDate.setHours(23, 59, 59, 999); // Set to end of day for inclusive range
+                if (arrivalDate > toDate) {
+                    return false;
+                }
+            }
+
+            // Driver Name Filter
+            if (driverName.trim()) {
+                const searchTerm = driverName.trim().toLowerCase();
+                const driverMatch = entry.driverName.toLowerCase().includes(searchTerm) ||
+                    (entry.assistant1Name && entry.assistant1Name.toLowerCase().includes(searchTerm)) ||
+                    (entry.assistant2Name && entry.assistant2Name.toLowerCase().includes(searchTerm));
+                if (!driverMatch) return false;
+            }
+
+            // Transport Company Filter
+            if (transportCompany.trim()) {
+                const companyMatch = entry.transportCompanyName.toLowerCase().includes(transportCompany.trim().toLowerCase());
+                if (!companyMatch) return false;
+            }
+
+            // Plate Filter
+            if (plate.trim()) {
+                const plateSearchTerm = plate.trim().toLowerCase();
+                const plateMatch = entry.plate1.toLowerCase().includes(plateSearchTerm) ||
+                    (entry.plate2 && entry.plate2.toLowerCase().includes(plateSearchTerm)) ||
+                    (entry.plate3 && entry.plate3.toLowerCase().includes(plateSearchTerm));
+                if (!plateMatch) return false;
+            }
+
+            return true; // Entry passes all filters
+        });
+
+        setFilteredEntries(filteredResults);
 
     } catch (error) {
         console.error("Error searching entries:", error);
-        if (error instanceof Error && error.message.includes("index")) {
-            toast({
-                variant: 'destructive',
-                title: 'Erro de Banco de Dados',
-                description: 'A consulta requer um índice. Tente usar menos filtros ou contate o suporte.',
-                duration: 8000
-            });
-        } else {
-            toast({ variant: 'destructive', title: 'Erro de Busca', description: 'Não foi possível realizar a busca no histórico.' });
-        }
+        toast({ variant: 'destructive', title: 'Erro de Busca', description: 'Não foi possível realizar a busca no histórico.' });
     } finally {
         setIsSearching(false);
     }
