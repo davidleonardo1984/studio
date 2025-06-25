@@ -219,14 +219,23 @@ function PersonsSection() {
 
   return (
     <Card className="shadow-lg">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Users className="w-6 h-6 text-primary" />
           <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes</CardTitle>
         </div>
-        <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }}>
-          <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Pessoa'}
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Input 
+                placeholder="Pesquisar por nome ou CPF..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                className="w-full sm:w-auto"
+            />
+            <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }} className="shrink-0">
+              <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Pessoa'}
+            </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {showForm && (
@@ -243,14 +252,7 @@ function PersonsSection() {
             </form>
           </Form>
         )}
-        <div className="mb-6 mt-2">
-          <Input 
-              placeholder="Pesquisar por nome ou CPF..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-          />
-        </div>
+        
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -427,14 +429,23 @@ function TransportCompaniesSection() {
 
   return (
     <Card className="shadow-lg">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Truck className="w-6 h-6 text-primary" />
           <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras / Empresas</CardTitle>
         </div>
-        <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }}>
-          <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Transportadora / Empresa'}
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Input 
+                placeholder="Pesquisar por nome..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                className="w-full sm:w-auto"
+            />
+            <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }} className="shrink-0">
+              <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Transportadora / Empresa'}
+            </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {showForm && (
@@ -451,14 +462,7 @@ function TransportCompaniesSection() {
             </form>
           </Form>
         )}
-        <div className="mb-6 mt-2">
-            <Input 
-                placeholder="Pesquisar por nome..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-            />
-        </div>
+        
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -610,14 +614,23 @@ function InternalDestinationsSection() {
 
   return (
      <Card className="shadow-lg">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <MapPin className="w-6 h-6 text-primary" />
           <CardTitle className="text-xl font-semibold text-primary font-headline">Destinos Internos</CardTitle>
         </div>
-        <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }}>
-          <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Novo Destino'}
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Input 
+                placeholder="Pesquisar por nome..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                className="w-full sm:w-auto"
+            />
+            <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }} className="shrink-0">
+              <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Novo Destino'}
+            </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {showForm && (
@@ -634,14 +647,7 @@ function InternalDestinationsSection() {
             </form>
           </Form>
         )}
-        <div className="mb-6 mt-2">
-            <Input 
-                placeholder="Pesquisar por nome..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-            />
-        </div>
+        
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
