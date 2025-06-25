@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useToast } from '@/hooks/use-toast';
-import type { VehicleEntry, TransportCompany } from '@/lib/types';
+import type { VehicleEntry, TransportCompany, Driver } from '@/lib/types';
 import { Download, Printer, Search, Truck, RotateCcw, Loader2, AlertTriangle } from 'lucide-react';
 import type { DateRange } from "react-day-picker";
 import { db } from '@/lib/firebase';
@@ -143,7 +143,8 @@ export default function HistoricoAcessoPage() {
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>([]);
-  const [companiesLoading, setCompaniesLoading] = useState(true);
+  const [persons, setPersons] = useState<Driver[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
 
   const [vehiclesInsideFactory, setVehiclesInsideFactory] = useState<VehicleEntry[]>([]);
@@ -159,24 +160,28 @@ export default function HistoricoAcessoPage() {
 
   useEffect(() => {
     if (!db) {
-        setCompaniesLoading(false);
+        setDataLoading(false);
         return;
     }
-    const fetchCompanies = async () => {
-      setCompaniesLoading(true);
+    const fetchData = async () => {
+      setDataLoading(true);
       try {
-        const companiesCollection = collection(db, 'transportCompanies');
-        const q = query(companiesCollection, orderBy("name"));
-        const snapshot = await getDocs(q);
-        setTransportCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany)));
+        const companiesPromise = getDocs(query(collection(db, 'transportCompanies'), orderBy("name")));
+        const personsPromise = getDocs(query(collection(db, 'persons'), orderBy("name")));
+        
+        const [companiesSnap, personsSnap] = await Promise.all([companiesPromise, personsPromise]);
+
+        setTransportCompanies(companiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany)));
+        setPersons(personsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Driver)));
+
       } catch (error) {
-        console.error("Failed to fetch transport companies:", error);
-        toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar as Transportadoras / Empresas." });
+        console.error("Failed to fetch data:", error);
+        toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar os dados de cadastro." });
       } finally {
-        setCompaniesLoading(false);
+        setDataLoading(false);
       }
     };
-    fetchCompanies();
+    fetchData();
   }, [toast]);
 
   useEffect(() => {
@@ -198,7 +203,7 @@ export default function HistoricoAcessoPage() {
         setVehiclesInsideFactory(vehicles);
     }, (error) => {
         console.error("Error fetching vehicles inside factory:", error);
-        toast({ variant: "destructive", title: "Erro em Tempo Real", description: "Não foi possível atualizar a lista de veículos na fábrica." });
+        toast({ variant: "destructive", title: "Erro em Tempo Real", description: "Não foi possível atualizar la lista de veículos na fábrica." });
     });
 
     return () => unsubscribe();
@@ -407,25 +412,35 @@ export default function HistoricoAcessoPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             <div className="space-y-1">
               <Label htmlFor="driverNameFilter">Nome do Motorista / Ajudante</Label>
-              <Input
-                id="driverNameFilter"
-                placeholder="FILTRAR POR NOME..."
-                value={filters.driverName}
-                onChange={(e) => setFilters(prev => ({...prev, driverName: e.target.value}))}
-              />
+               <div className="relative">
+                    <Input
+                      id="driverNameFilter"
+                      placeholder={dataLoading ? "CARREGANDO..." : "FILTRAR POR NOME..."}
+                      value={filters.driverName}
+                      onChange={(e) => setFilters(prev => ({...prev, driverName: e.target.value}))}
+                      disabled={dataLoading}
+                      list="driver-filter-list"
+                    />
+                    {dataLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
+                </div>
+                <datalist id="driver-filter-list">
+                    {persons.map((person) => (
+                        <option key={person.id} value={person.name} />
+                    ))}
+                </datalist>
             </div>
              <div className="space-y-1">
                 <Label htmlFor="transportCompanyFilter">Transportadora / Empresa</Label>
                 <div className="relative">
                   <Input
                     id="transportCompanyFilter"
-                    placeholder={companiesLoading ? "CARREGANDO..." : "FILTRAR POR TRANSPORTADORA / EMPRESA..."}
+                    placeholder={dataLoading ? "CARREGANDO..." : "FILTRAR POR TRANSPORTADORA / EMPRESA..."}
                     value={filters.transportCompany}
                     onChange={(e) => setFilters(prev => ({ ...prev, transportCompany: e.target.value }))}
-                    disabled={companiesLoading}
+                    disabled={dataLoading}
                     list="transport-company-filter-list"
                   />
-                   {companiesLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
+                   {dataLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
                 </div>
                 <datalist id="transport-company-filter-list">
                   {transportCompanies.map((company) => (
@@ -593,5 +608,3 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
-
-    
