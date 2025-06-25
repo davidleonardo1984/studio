@@ -13,11 +13,18 @@ import type { VehicleEntry, TransportCompany } from '@/lib/types';
 import { Download, Printer, Search, Truck, RotateCcw, Loader2, AlertTriangle } from 'lucide-react';
 import type { DateRange } from "react-day-picker";
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, orderBy, onSnapshot, Timestamp, getDoc, doc as firestoreDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import { useIsClient } from '@/hooks/use-is-client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+
+const formatDateForImage = (timestamp: any) => {
+  if (!timestamp) return '-';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleString('pt-BR');
+};
 
 
 const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success: boolean; imageUrl?: string; error?: any }> => {
@@ -32,19 +39,12 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
       <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; line-height: 1.4;">
         <div style="display: inline-block; width: 48%; margin-right: 2%; vertical-align: top;">
           <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Chegada:</p>
-          <p style="margin: 0;">${new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</p>
+          <p style="margin: 0;">${formatDateForImage(entry.arrivalTimestamp)}</p>
         </div>
-        ${entry.liberationTimestamp ? `
         <div style="display: inline-block; width: 48%; vertical-align: top;">
           <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Liberação:</p>
-          <p style="margin: 0;">${new Date(entry.liberationTimestamp).toLocaleString('pt-BR')}</p>
+          <p style="margin: 0;">${formatDateForImage(entry.liberationTimestamp)}</p>
         </div>
-        ` : `
-        <div style="display: inline-block; width: 48%; vertical-align: top;">
-          <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Liberação:</p>
-          <p style="margin: 0;">-</p>
-        </div>
-        `}
       </div>
 
       <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
@@ -190,7 +190,11 @@ export default function HistoricoAcessoPage() {
             vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
         });
         // Sort client-side
-        vehicles.sort((a, b) => new Date(b.arrivalTimestamp).getTime() - new Date(a.arrivalTimestamp).getTime());
+        vehicles.sort((a, b) => {
+          const dateA = (a.arrivalTimestamp as any)?.toDate ? (a.arrivalTimestamp as any).toDate() : new Date(a.arrivalTimestamp as string);
+          const dateB = (b.arrivalTimestamp as any)?.toDate ? (b.arrivalTimestamp as any).toDate() : new Date(b.arrivalTimestamp as string);
+          return dateB.getTime() - dateA.getTime();
+        });
         setVehiclesInsideFactory(vehicles);
     }, (error) => {
         console.error("Error fetching vehicles inside factory:", error);
@@ -207,10 +211,8 @@ export default function HistoricoAcessoPage() {
     setHasSearched(true);
 
     try {
-        // Build the base query, always ordering by date. This is efficient.
         let q = query(collection(db, 'vehicleEntries'), orderBy('arrivalTimestamp', 'desc'));
 
-        // Apply date range filter on the server, as it's the most effective one.
         if (filters.dateRange?.from) {
             q = query(q, where('arrivalTimestamp', '>=', Timestamp.fromDate(filters.dateRange.from)));
         }
@@ -223,7 +225,6 @@ export default function HistoricoAcessoPage() {
         const querySnapshot = await getDocs(q);
         let results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
 
-        // Apply other filters on the client-side for flexibility
         if (filters.driverName.trim()) {
             const searchTerm = filters.driverName.trim().toLowerCase();
             results = results.filter(entry => 
@@ -263,7 +264,13 @@ export default function HistoricoAcessoPage() {
         setIsSearching(false);
     }
   }, [filters, toast]);
-
+  
+  const formatDate = (timestamp: VehicleEntry['arrivalTimestamp']) => {
+    if (!timestamp) return 'N/A';
+    // Firestore Timestamps have a toDate() method, legacy data might be strings
+    const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp as string);
+    return date.toLocaleString('pt-BR');
+  };
 
   const handleExportToCSV = () => {
     if (filteredEntries.length === 0) {
@@ -285,10 +292,10 @@ export default function HistoricoAcessoPage() {
             escapeCsvField(e.internalDestinationName),
             escapeCsvField(e.movementType),
             escapeCsvField(e.observation || ''),
-            escapeCsvField(new Date(e.arrivalTimestamp).toLocaleString('pt-BR')),
-            escapeCsvField(e.liberationTimestamp ? new Date(e.liberationTimestamp).toLocaleString('pt-BR') : ''),
+            escapeCsvField(formatDate(e.arrivalTimestamp)),
+            escapeCsvField(formatDate(e.liberationTimestamp)),
             escapeCsvField(e.liberatedBy || ''),
-            escapeCsvField(e.exitTimestamp ? new Date(e.exitTimestamp).toLocaleString('pt-BR') : ''),
+            escapeCsvField(formatDate(e.exitTimestamp)),
             escapeCsvField(
                 e.status === 'saiu' ? 'Saiu' :
                 e.status === 'entrada_liberada' ? 'Na fábrica' :
@@ -486,9 +493,9 @@ export default function HistoricoAcessoPage() {
                           <TableCell>{entry.driverName}</TableCell>
                           <TableCell>{entry.transportCompanyName}</TableCell>
                           <TableCell>{entry.plate1}</TableCell>
-                          <TableCell>{new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</TableCell>
-                          <TableCell>{entry.liberationTimestamp ? new Date(entry.liberationTimestamp).toLocaleString('pt-BR') : 'N/A'}</TableCell>
-                          <TableCell>{entry.exitTimestamp ? new Date(entry.exitTimestamp).toLocaleString('pt-BR') : 'N/A'}</TableCell>
+                          <TableCell>{formatDate(entry.arrivalTimestamp)}</TableCell>
+                          <TableCell>{formatDate(entry.liberationTimestamp)}</TableCell>
+                          <TableCell>{formatDate(entry.exitTimestamp)}</TableCell>
                           <TableCell>
                               <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
                                   entry.status === 'saiu' ? 'bg-red-100 text-red-700' :
@@ -554,8 +561,8 @@ export default function HistoricoAcessoPage() {
                     <TableCell>{entry.plate1}</TableCell>
                     <TableCell>{entry.driverName}</TableCell>
                     <TableCell>{entry.transportCompanyName}</TableCell>
-                    <TableCell>{new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</TableCell>
-                    <TableCell>{entry.liberationTimestamp ? new Date(entry.liberationTimestamp).toLocaleString('pt-BR') : 'N/A'}</TableCell>
+                    <TableCell>{formatDate(entry.arrivalTimestamp)}</TableCell>
+                    <TableCell>{formatDate(entry.liberationTimestamp)}</TableCell>
                      <TableCell>
                         <span className="px-2 py-1 text-xs rounded-full whitespace-nowrap bg-green-100 text-green-700">
                             Na fábrica
@@ -586,3 +593,5 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
+
+    

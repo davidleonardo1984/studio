@@ -24,8 +24,15 @@ import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import html2canvas from 'html2canvas';
 import { useIsClient } from '@/hooks/use-is-client';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, Timestamp } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+
+const formatDateForImage = (timestamp: any) => {
+  if (!timestamp) return '-';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleString('pt-BR');
+};
 
 
 const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success: boolean; imageUrl?: string; error?: any }> => {
@@ -40,19 +47,12 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
       <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; line-height: 1.4;">
         <div style="display: inline-block; width: 48%; margin-right: 2%; vertical-align: top;">
           <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Chegada:</p>
-          <p style="margin: 0;">${new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</p>
+          <p style="margin: 0;">${formatDateForImage(entry.arrivalTimestamp)}</p>
         </div>
-        ${entry.liberationTimestamp ? `
         <div style="display: inline-block; width: 48%; vertical-align: top;">
           <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Liberação:</p>
-          <p style="margin: 0;">${new Date(entry.liberationTimestamp).toLocaleString('pt-BR')}</p>
+          <p style="margin: 0;">${formatDateForImage(entry.liberationTimestamp)}</p>
         </div>
-        ` : `
-        <div style="display: inline-block; width: 48%; vertical-align: top;">
-          <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Liberação:</p>
-          <p style="margin: 0;">-</p>
-        </div>
-        `}
       </div>
 
       <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
@@ -155,15 +155,13 @@ export default function AguardandoLiberacaoPage() {
     };
     setIsLoading(true);
     const entriesCollection = collection(db, 'vehicleEntries');
-    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'));
+    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'), orderBy('arrivalTimestamp', 'asc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const vehicles: VehicleEntry[] = [];
       querySnapshot.forEach((doc) => {
         vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
       });
-      // Sort client-side
-      vehicles.sort((a, b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime());
       setWaitingVehicles(vehicles);
       setIsLoading(false);
     }, (error) => {
@@ -172,7 +170,7 @@ export default function AguardandoLiberacaoPage() {
       setIsLoading(false);
     });
 
-    return () => unsubscribe(); // Cleanup listener on unmount
+    return () => unsubscribe();
   }, [toast]);
 
 
@@ -195,15 +193,15 @@ export default function AguardandoLiberacaoPage() {
     if (!db) return;
     const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
     const updatedVehicleData = {
-        status: 'entrada_liberada',
-        liberationTimestamp: new Date().toISOString(),
+        status: 'entrada_liberada' as const,
+        liberationTimestamp: Timestamp.fromDate(new Date()),
         liberatedBy: liberatedBy?.trim() || '',
     };
     
     try {
         await updateDoc(vehicleDocRef, updatedVehicleData);
         
-        const updatedVehicle = { ...vehicle, ...updatedVehicleData };
+        const updatedVehicle: VehicleEntry = { ...vehicle, ...updatedVehicleData };
 
         toast({
             title: `Veículo ${updatedVehicle.plate1} Liberado!`,
@@ -226,13 +224,20 @@ export default function AguardandoLiberacaoPage() {
         }
     } catch (error) {
         console.error("Error approving entry: ", error);
-        toast({ variant: "destructive", title: "Erro", description: "Não foi possível liberar a entrada do veículo." });
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível liberar la entrada do veículo." });
     }
   };
   
   const handleClosePreview = () => {
     setIsPreviewModalOpen(false);
     setPreviewImageUrl(null);
+  };
+
+  const formatDate = (timestamp: VehicleEntry['arrivalTimestamp']) => {
+    if (!timestamp) return 'N/A';
+    // Firestore Timestamps have a toDate() method, legacy data might be strings
+    const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp as string);
+    return date.toLocaleString('pt-BR');
   };
   
   if (!isClient) {
@@ -327,7 +332,7 @@ export default function AguardandoLiberacaoPage() {
                     <TableCell>{vehicle.driverName}</TableCell>
                     <TableCell>{vehicle.transportCompanyName}</TableCell>
                     <TableCell>{vehicle.plate1}</TableCell>
-                    <TableCell>{new Date(vehicle.arrivalTimestamp).toLocaleString('pt-BR')}</TableCell>
+                    <TableCell>{formatDate(vehicle.arrivalTimestamp)}</TableCell>
                     <TableCell className="text-right space-x-2">
                        <Button 
                         variant="default" 
@@ -411,3 +416,5 @@ export default function AguardandoLiberacaoPage() {
     </>
   );
 }
+
+    

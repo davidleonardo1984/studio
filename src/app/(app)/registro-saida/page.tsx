@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, AlertTriangle, Search, Expand, Shrink } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore';
 
 
 const exitSchema = z.object({
@@ -103,7 +103,7 @@ export default function RegistroSaidaPage() {
       const entryDoc = querySnapshot.docs[0];
       const entry = { id: entryDoc.id, ...entryDoc.data() } as VehicleEntry;
       if (entry.status === 'entrada_liberada') {
-        const exitTimestamp = new Date().toISOString();
+        const exitTimestamp = Timestamp.fromDate(new Date());
         await updateDoc(doc(db, 'vehicleEntries', entry.id), {
           status: 'saiu',
           exitTimestamp: exitTimestamp,
@@ -112,6 +112,13 @@ export default function RegistroSaidaPage() {
       }
     }
     return null;
+  };
+  
+  const formatDate = (timestamp: VehicleEntry['arrivalTimestamp']) => {
+    if (!timestamp) return 'N/A';
+    // Firestore Timestamps have a toDate() method, legacy data might be strings
+    const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp as string);
+    return date.toLocaleString('pt-BR');
   };
 
   const onSubmit = async (data: ExitFormValues) => {
@@ -248,7 +255,7 @@ export default function RegistroSaidaPage() {
               <p><strong>Veículo:</strong> {foundEntry.plate1}</p>
               <p><strong>Motorista:</strong> {foundEntry.driverName}</p>
               <p><strong>Transportadora / Empresa:</strong> {foundEntry.transportCompanyName}</p>
-              <p><strong>Horário de Saída:</strong> {foundEntry.exitTimestamp ? new Date(foundEntry.exitTimestamp).toLocaleString('pt-BR') : 'N/A'}</p>
+              <p><strong>Horário de Saída:</strong> {formatDate(foundEntry.exitTimestamp)}</p>
             </AlertDescription>
           </Alert>
         )}
@@ -271,3 +278,5 @@ export default function RegistroSaidaPage() {
     </Card>
   );
 }
+
+    

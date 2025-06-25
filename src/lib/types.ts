@@ -1,4 +1,6 @@
 
+import type { Timestamp } from 'firebase/firestore';
+
 export type UserRole = 'admin' | 'user';
 
 export interface User {
@@ -53,9 +55,9 @@ export interface VehicleEntry {
   internalDestinationName: string;
   movementType: string; 
   observation?: string;
-  arrivalTimestamp: string; 
-  liberationTimestamp?: string;
-  exitTimestamp?: string; 
+  arrivalTimestamp: Timestamp | string; 
+  liberationTimestamp?: Timestamp | string;
+  exitTimestamp?: Timestamp | string; 
   status: EntryStatus;
   registeredBy: string; 
   liberatedBy?: string;
@@ -74,3 +76,5 @@ export interface VehicleEntryFormData {
   movementType: string;
   observation?: string;
 }
+
+    

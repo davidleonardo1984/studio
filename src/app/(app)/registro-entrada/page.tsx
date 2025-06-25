@@ -18,7 +18,7 @@ import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, Inte
 import { Save, SendToBack, Clock, CheckCircle, Search, Printer, ClipboardCopy, Loader2, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, addDoc, doc, updateDoc, where, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, doc, updateDoc, where, onSnapshot, Timestamp } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import {
   AlertDialog,
@@ -59,6 +59,12 @@ const generateBarcode = () => {
     return `${year}${month}${day}${hours}${minutes}${seconds}`;
 };
 
+const formatDateForImage = (timestamp: any) => {
+  if (!timestamp) return '-';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleString('pt-BR');
+};
+
 
 const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success: boolean; imageUrl?: string; error?: any }> => {
   const pdfContentHtml = `
@@ -72,19 +78,12 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
       <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; line-height: 1.4;">
         <div style="display: inline-block; width: 48%; margin-right: 2%; vertical-align: top;">
           <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Chegada:</p>
-          <p style="margin: 0;">${new Date(entry.arrivalTimestamp).toLocaleString('pt-BR')}</p>
+          <p style="margin: 0;">${formatDateForImage(entry.arrivalTimestamp)}</p>
         </div>
-        ${entry.liberationTimestamp ? `
         <div style="display: inline-block; width: 48%; vertical-align: top;">
           <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Liberação:</p>
-          <p style="margin: 0;">${new Date(entry.liberationTimestamp).toLocaleString('pt-BR')}</p>
+          <p style="margin: 0;">${formatDateForImage(entry.liberationTimestamp)}</p>
         </div>
-        ` : `
-        <div style="display: inline-block; width: 48%; vertical-align: top;">
-          <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Liberação:</p>
-          <p style="margin: 0;">-</p>
-        </div>
-        `}
       </div>
 
       <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
@@ -215,15 +214,13 @@ export default function RegistroEntradaPage() {
   useEffect(() => {
     if (!db) return;
     const entriesCollection = collection(db, 'vehicleEntries');
-    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'));
+    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'), orderBy('arrivalTimestamp', 'asc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const vehicles: VehicleEntry[] = [];
         querySnapshot.forEach((doc) => {
             vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
         });
-        // Sort client-side
-        vehicles.sort((a, b) => new Date(a.arrivalTimestamp).getTime() - new Date(b.arrivalTimestamp).getTime());
         setCurrentWaitingVehicles(vehicles);
     }, (error) => {
         console.error("Error fetching waiting vehicles:", error);
@@ -265,21 +262,21 @@ export default function RegistroEntradaPage() {
     }
     setIsSubmitting(true);
     
-    const currentTime = new Date().toISOString();
+    const currentTime = new Date();
     const newEntryData: Omit<VehicleEntry, 'id'> = {
         ...data,
         barcode: generateBarcode(),
-        arrivalTimestamp: currentTime,
+        arrivalTimestamp: Timestamp.fromDate(currentTime),
         status,
         registeredBy: user.login,
         ...(status === 'entrada_liberada' && {
-            liberationTimestamp: currentTime,
+            liberationTimestamp: Timestamp.fromDate(currentTime),
             liberatedBy,
         }),
     };
 
     try {
-        const docRef = await addDoc(collection(db, 'vehicleEntries'), newEntryData);
+        const docRef = await addDoc(collection(db, 'vehicleEntries'), newEntryData as any);
         const createdEntry: VehicleEntry = { ...newEntryData, id: docRef.id };
 
         if (status === 'aguardando_patio') {
@@ -319,6 +316,13 @@ export default function RegistroEntradaPage() {
     setShowAssistants(false);
     setIsSubmitting(false);
   };
+  
+  const formatDate = (timestamp: VehicleEntry['arrivalTimestamp']) => {
+    if (!timestamp) return 'N/A';
+    // Firestore Timestamps have a toDate() method, legacy data might be strings
+    const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp as string);
+    return date.toLocaleString('pt-BR');
+  };
 
   const filteredWaitingVehicles = useMemo(() => {
     if (!searchTerm) return currentWaitingVehicles;
@@ -333,14 +337,14 @@ export default function RegistroEntradaPage() {
     if (!db) return;
     const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
     const updatedData = { 
-        status: 'entrada_liberada',
-        liberationTimestamp: new Date().toISOString(), 
+        status: 'entrada_liberada' as const,
+        liberationTimestamp: Timestamp.fromDate(new Date()), 
         liberatedBy: liberatedBy?.trim() || ''
     };
 
     try {
         await updateDoc(vehicleDocRef, updatedData);
-        const updatedVehicle = { ...vehicle, ...updatedData };
+        const updatedVehicle: VehicleEntry = { ...vehicle, ...updatedData };
         toast({
             title: `Veículo ${updatedVehicle.plate1} Liberado!`,
             description: `Preparando documento para visualização...`,
@@ -397,7 +401,7 @@ export default function RegistroEntradaPage() {
         `Transportadora / Empresa: ${vehicle.transportCompanyName}`,
         `Placa 1: ${vehicle.plate1}`,
         `Observação: ${vehicle.observation || '-'}`,
-        `Data/Hora Chegada: ${new Date(vehicle.arrivalTimestamp).toLocaleString('pt-BR')}`
+        `Data/Hora Chegada: ${formatDate(vehicle.arrivalTimestamp)}`
       ].join('\n');
     }).join('\n\n---\n\n');
 
@@ -758,7 +762,7 @@ export default function RegistroEntradaPage() {
                       <TableCell>{vehicle.transportCompanyName}</TableCell>
                       <TableCell>{vehicle.plate1}</TableCell>
                       <TableCell className="max-w-xs truncate">{vehicle.observation || '-'}</TableCell>
-                      <TableCell>{new Date(vehicle.arrivalTimestamp).toLocaleString('pt-BR')}</TableCell>
+                      <TableCell>{formatDate(vehicle.arrivalTimestamp)}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
                           variant="default"
@@ -839,3 +843,5 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
+
+    
