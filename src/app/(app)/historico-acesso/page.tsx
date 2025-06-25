@@ -224,14 +224,17 @@ export default function HistoricoAcessoPage() {
         let results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
 
         // Apply other filters on the client-side for flexibility
+        if (filters.driverName.trim()) {
+            const searchTerm = filters.driverName.trim().toLowerCase();
+            results = results.filter(entry => 
+                entry.driverName.toLowerCase().includes(searchTerm) ||
+                (entry.assistant1Name && entry.assistant1Name.toLowerCase().includes(searchTerm)) ||
+                (entry.assistant2Name && entry.assistant2Name.toLowerCase().includes(searchTerm))
+            );
+        }
         if (filters.transportCompany.trim()) {
             results = results.filter(entry => 
                 entry.transportCompanyName.toLowerCase().includes(filters.transportCompany.trim().toLowerCase())
-            );
-        }
-        if (filters.driverName.trim()) {
-            results = results.filter(entry => 
-                entry.driverName.toLowerCase().includes(filters.driverName.trim().toLowerCase())
             );
         }
         if (filters.plate.trim()) {
@@ -395,6 +398,15 @@ export default function HistoricoAcessoPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            <div className="space-y-1">
+              <Label htmlFor="driverNameFilter">Nome do Motorista / Ajudante</Label>
+              <Input
+                id="driverNameFilter"
+                placeholder="FILTRAR POR NOME..."
+                value={filters.driverName}
+                onChange={(e) => setFilters(prev => ({...prev, driverName: e.target.value}))}
+              />
+            </div>
              <div className="space-y-1">
                 <Label htmlFor="transportCompanyFilter">Transportadora / Empresa</Label>
                 <div className="relative">
@@ -413,15 +425,6 @@ export default function HistoricoAcessoPage() {
                     <option key={company.id} value={company.name} />
                   ))}
                 </datalist>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="driverNameFilter">Nome do Motorista</Label>
-              <Input
-                id="driverNameFilter"
-                placeholder="FILTRAR POR NOME..."
-                value={filters.driverName}
-                onChange={(e) => setFilters(prev => ({...prev, driverName: e.target.value}))}
-              />
             </div>
             <div className="space-y-1">
               <Label htmlFor="plateFilter">Placa</Label>
