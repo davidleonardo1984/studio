@@ -151,6 +151,7 @@ export default function HistoricoAcessoPage() {
   
   const [filters, setFilters] = useState({
     transportCompany: '',
+    driverName: '',
     plate: '',
     dateRange: undefined as DateRange | undefined,
   });
@@ -226,6 +227,11 @@ export default function HistoricoAcessoPage() {
         if (filters.transportCompany.trim()) {
             results = results.filter(entry => 
                 entry.transportCompanyName.toLowerCase().includes(filters.transportCompany.trim().toLowerCase())
+            );
+        }
+        if (filters.driverName.trim()) {
+            results = results.filter(entry => 
+                entry.driverName.toLowerCase().includes(filters.driverName.trim().toLowerCase())
             );
         }
         if (filters.plate.trim()) {
@@ -327,7 +333,7 @@ export default function HistoricoAcessoPage() {
   };
 
   const resetFilters = () => {
-    setFilters({ transportCompany: '', plate: '', dateRange: undefined });
+    setFilters({ transportCompany: '', driverName: '', plate: '', dateRange: undefined });
     setFilteredEntries([]);
     setHasSearched(false);
   };
@@ -388,7 +394,7 @@ export default function HistoricoAcessoPage() {
           <CardTitle className="text-xl font-semibold text-primary">Filtros e Ações</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
              <div className="space-y-1">
                 <Label htmlFor="transportCompanyFilter">Transportadora / Empresa</Label>
                 <div className="relative">
@@ -407,6 +413,15 @@ export default function HistoricoAcessoPage() {
                     <option key={company.id} value={company.name} />
                   ))}
                 </datalist>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="driverNameFilter">Nome do Motorista</Label>
+              <Input
+                id="driverNameFilter"
+                placeholder="FILTRAR POR NOME..."
+                value={filters.driverName}
+                onChange={(e) => setFilters(prev => ({...prev, driverName: e.target.value}))}
+              />
             </div>
             <div className="space-y-1">
               <Label htmlFor="plateFilter">Placa</Label>
