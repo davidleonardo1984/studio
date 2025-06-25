@@ -6,8 +6,11 @@ import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { db, isFirebaseConfigured } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, getDoc } from 'firebase/firestore';
+
+// Hardcoded initial users, including the admin
+const mockUsers: User[] = [
+  { id: '1', name: 'Administrador', login: 'admin', password: 'Michelin', role: 'admin' },
+];
 
 interface AuthContextType {
   user: User | null;
@@ -17,7 +20,7 @@ interface AuthContextType {
   users: User[];
   addUser: (newUser: NewUser) => Promise<boolean>;
   updateUser: (updatedUser: User) => Promise<boolean>;
-  findUserByLogin: (login: string) => Promise<User | undefined>;
+  findUserByLogin: (login: string) => User | undefined;
   changePassword: (userId: string, currentPasswordInput: string, newPasswordInput: string) => Promise<{ success: boolean; message: string }>;
   deleteUser: (userId: string) => Promise<void>;
 }
@@ -27,90 +30,40 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([]); 
+  const [users, setUsers] = useState<User[]>(mockUsers); 
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    if (!isFirebaseConfigured) {
-      toast({
-        variant: 'destructive',
-        title: 'Configuração Incompleta',
-        description: 'As credenciais do Firebase não foram encontradas. Renomeie o arquivo .env para .env.local e preencha com suas chaves. Os dados não serão salvos.',
-        duration: Infinity, // Keep the toast visible
-      });
-    }
-  }, [toast]);
-  
-  const usersCollection = db ? collection(db, "users") : null;
-
-  const refreshUsers = async () => {
-    if (!usersCollection) return;
-    const querySnapshot = await getDocs(query(usersCollection, orderBy("name")));
-    const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-    setUsers(usersList);
-  };
-
-  useEffect(() => {
-    const initializeAuth = async () => {
+    const initializeAuth = () => {
         setIsLoading(true);
         try {
             const storedUser = localStorage.getItem('currentUser');
             if (storedUser) {
                 setUser(JSON.parse(storedUser));
             }
-            if (isFirebaseConfigured) {
-                await refreshUsers();
-            }
         } catch (error) {
-            console.error("Failed to initialize auth context:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Erro de Inicialização',
-                description: 'Não foi possível carregar os dados de usuário. Verifique a conexão e as regras do Firebase.',
-            });
+            console.error("Failed to initialize auth from localStorage:", error);
         } finally {
             setIsLoading(false);
         }
     };
     initializeAuth();
-     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
 
   const login = async (loginInput: string, pass: string): Promise<boolean> => {
     setIsLoading(true);
 
-    if (!usersCollection) {
-        toast({
-            variant: "destructive",
-            title: "Erro de Configuração",
-            description: "A conexão com o banco de dados não foi estabelecida."
-        });
-        setIsLoading(false);
-        return false;
-    }
+    const normalizedLogin = loginInput.toLowerCase();
+    
+    const foundUser = users.find(u => u.login.toLowerCase() === normalizedLogin && u.password === pass);
 
-    try {
-        const q = query(usersCollection, where("login", "==", loginInput.toLowerCase()), where("password", "==", pass));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            const userDoc = querySnapshot.docs[0];
-            const foundUser = { id: userDoc.id, ...userDoc.data() } as User;
-            const { password, ...userToStore } = foundUser;
-            setUser(userToStore);
-            localStorage.setItem('currentUser', JSON.stringify(userToStore));
-            setIsLoading(false);
-            return true;
-        }
-    } catch (error) {
-        console.error("Error during login:", error);
-        toast({
-            variant: "destructive",
-            title: "Erro de Login",
-            description: "Ocorreu um erro ao tentar fazer login. Verifique o console para mais detalhes."
-        });
+    if (foundUser) {
+      const { password, ...userToStore } = foundUser;
+      setUser(userToStore);
+      localStorage.setItem('currentUser', JSON.stringify(userToStore));
+      setIsLoading(false);
+      return true;
     }
     
     setUser(null);
@@ -124,71 +77,63 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/login');
   };
 
+  const findUserByLogin = (loginInput: string): User | undefined => {
+      return users.find(u => u.login.toLowerCase() === loginInput.toLowerCase());
+  };
+  
   const addUser = async (newUser: NewUser): Promise<boolean> => {
-    if (!usersCollection) return false;
-    const userExists = await findUserByLogin(newUser.login);
-    if (userExists) return false;
-    
-    await addDoc(usersCollection, newUser);
-    await refreshUsers();
+    if (findUserByLogin(newUser.login)) {
+        return false; // User already exists
+    }
+    const userWithId: User = { ...newUser, id: Date.now().toString() };
+    setUsers(prevUsers => [...prevUsers, userWithId]);
     return true;
   };
 
   const updateUser = async (updatedUser: User): Promise<boolean> => {
-    if (!db) return false;
-    const existingUserWithLogin = await findUserByLogin(updatedUser.login);
+     // Check if the new login is already taken by another user
+    const existingUserWithLogin = findUserByLogin(updatedUser.login);
     if (existingUserWithLogin && existingUserWithLogin.id !== updatedUser.id) {
-        return false; // Login already taken by another user
+        return false; 
     }
-    
-    const userDoc = doc(db, 'users', updatedUser.id);
-    await updateDoc(userDoc, updatedUser as any); 
 
-    if (user && user.id === updatedUser.id) {
+    setUsers(prevUsers => {
+      const newUsers = prevUsers.map(u => (u.id === updatedUser.id ? updatedUser : u));
+      if (user && user.id === updatedUser.id) {
         const { password, ...userToStore } = updatedUser;
         setUser(userToStore);
         localStorage.setItem('currentUser', JSON.stringify(userToStore));
-    }
-    await refreshUsers();
+      }
+      return newUsers;
+    });
     return true;
   };
 
-  const findUserByLogin = async (loginInput: string): Promise<User | undefined> => {
-    if (!usersCollection) return undefined;
-    const q = query(usersCollection, where("login", "==", loginInput.toLowerCase()));
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-        const userDoc = querySnapshot.docs[0];
-        return { id: userDoc.id, ...userDoc.data() } as User;
-    }
-    return undefined;
-  }
-
   const changePassword = async (userId: string, currentPasswordInput: string, newPasswordInput: string): Promise<{ success: boolean; message: string }> => {
-    if (!db) return { success: false, message: 'Base de dados não configurada.' };
+    let success = false;
+    let message = 'Usuário não encontrado.';
     
-    const userDocRef = doc(db, "users", userId);
-    const userDocSnap = await getDoc(userDocRef);
+    setUsers(prevUsers => {
+        const userToUpdate = prevUsers.find(u => u.id === userId);
+        if (!userToUpdate) {
+            return prevUsers;
+        }
+        if (userToUpdate.password !== currentPasswordInput) {
+            message = 'Senha atual incorreta.';
+            return prevUsers;
+        }
 
-    if (!userDocSnap.exists()) {
-      return { success: false, message: 'Usuário não encontrado.' };
-    }
+        const newUsers = prevUsers.map(u => u.id === userId ? { ...u, password: newPasswordInput } : u);
+        success = true;
+        message = 'Senha alterada com sucesso.';
+        return newUsers;
+    });
 
-    const userData = userDocSnap.data();
-
-    if (userData.password !== currentPasswordInput) {
-      return { success: false, message: 'Senha atual incorreta.' };
-    }
-    
-    await updateDoc(userDocRef, { password: newPasswordInput });
-    return { success: true, message: 'Senha alterada com sucesso.' };
+    return { success, message };
   };
 
   const deleteUser = async (userId: string): Promise<void> => {
-    if (!db) return;
-    const userDoc = doc(db, 'users', userId);
-    await deleteDoc(userDoc);
-    await refreshUsers();
+    setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
   };
 
 
