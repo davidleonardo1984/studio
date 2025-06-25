@@ -206,14 +206,10 @@ export default function HistoricoAcessoPage() {
     setHasSearched(true);
 
     try {
+        // Build the base query, always ordering by date. This is efficient.
         let q = query(collection(db, 'vehicleEntries'), orderBy('arrivalTimestamp', 'desc'));
 
-        if (filters.transportCompany.trim()) {
-            q = query(q, where('transportCompanyName', '==', filters.transportCompany.trim()));
-        }
-        if (filters.plate.trim()) {
-            q = query(q, where('plate1', '>=', filters.plate.trim().toUpperCase()), where('plate1', '<=', filters.plate.trim().toUpperCase() + '\uf8ff'));
-        }
+        // Apply date range filter on the server, as it's the most effective one.
         if (filters.dateRange?.from) {
             q = query(q, where('arrivalTimestamp', '>=', Timestamp.fromDate(filters.dateRange.from)));
         }
@@ -224,13 +220,36 @@ export default function HistoricoAcessoPage() {
         }
         
         const querySnapshot = await getDocs(q);
-        const results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
+        let results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
+
+        // Apply other filters on the client-side for flexibility
+        if (filters.transportCompany.trim()) {
+            results = results.filter(entry => 
+                entry.transportCompanyName.toLowerCase().includes(filters.transportCompany.trim().toLowerCase())
+            );
+        }
+        if (filters.plate.trim()) {
+             results = results.filter(entry => 
+                entry.plate1.toLowerCase().includes(filters.plate.trim().toLowerCase()) ||
+                entry.plate2?.toLowerCase().includes(filters.plate.trim().toLowerCase()) ||
+                entry.plate3?.toLowerCase().includes(filters.plate.trim().toLowerCase())
+            );
+        }
 
         setFilteredEntries(results);
 
     } catch (error) {
         console.error("Error searching entries:", error);
-        toast({ variant: 'destructive', title: 'Erro de Busca', description: 'Não foi possível realizar a busca no histórico.' });
+        if (error instanceof Error && error.message.includes("index")) {
+            toast({
+                variant: 'destructive',
+                title: 'Erro de Banco de Dados',
+                description: 'A consulta requer um índice. Tente usar menos filtros ou contate o suporte.',
+                duration: 8000
+            });
+        } else {
+            toast({ variant: 'destructive', title: 'Erro de Busca', description: 'Não foi possível realizar a busca no histórico.' });
+        }
     } finally {
         setIsSearching(false);
     }
