@@ -155,12 +155,18 @@ export default function AguardandoLiberacaoPage() {
     };
     setIsLoading(true);
     const entriesCollection = collection(db, 'vehicleEntries');
-    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'), orderBy('arrivalTimestamp', 'asc'));
+    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const vehicles: VehicleEntry[] = [];
       querySnapshot.forEach((doc) => {
         vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
+      });
+      // Sort client-side to avoid needing a composite index
+      vehicles.sort((a, b) => {
+        const dateA = (a.arrivalTimestamp as any)?.toDate ? (a.arrivalTimestamp as any).toDate() : new Date(a.arrivalTimestamp as string);
+        const dateB = (b.arrivalTimestamp as any)?.toDate ? (b.arrivalTimestamp as any).toDate() : new Date(b.arrivalTimestamp as string);
+        return dateA.getTime() - dateB.getTime(); // asc
       });
       setWaitingVehicles(vehicles);
       setIsLoading(false);
