@@ -10,14 +10,26 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry, TransportCompany, Driver } from '@/lib/types';
-import { Download, Printer, Search, Truck, RotateCcw, Loader2, AlertTriangle } from 'lucide-react';
+import { Download, Printer, Search, Truck, RotateCcw, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
 import type { DateRange } from "react-day-picker";
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, onSnapshot, Timestamp, writeBatch } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import { useIsClient } from '@/hooks/use-is-client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from '@/context/AuthContext';
 
 
 const formatDateForImage = (timestamp: any) => {
@@ -136,6 +148,7 @@ const escapeCsvField = (field: any): string => {
 };
 
 export default function HistoricoAcessoPage() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const isClient = useIsClient();
   
@@ -286,6 +299,57 @@ export default function HistoricoAcessoPage() {
     const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp as string);
     return date.toLocaleString('pt-BR');
   };
+
+  const handleDeleteOldEntries = async () => {
+    if (!db) {
+      toast({ variant: 'destructive', title: 'Erro de Conexão', description: 'Banco de dados não configurado.' });
+      return;
+    }
+
+    const cutOffDate = new Date();
+    cutOffDate.setDate(cutOffDate.getDate() - 365);
+    const cutOffTimestamp = Timestamp.fromDate(cutOffDate);
+
+    setIsSearching(true);
+
+    try {
+      const q = query(collection(db, 'vehicleEntries'), where('arrivalTimestamp', '<', cutOffTimestamp));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        toast({ title: 'Nenhum Registro Antigo', description: 'Não há registros com mais de 365 dias para excluir.' });
+        return;
+      }
+
+      const batchArray: ReturnType<typeof writeBatch>[] = [];
+      let currentBatch = writeBatch(db);
+      querySnapshot.docs.forEach((doc, index) => {
+        currentBatch.delete(doc.ref);
+        if ((index + 1) % 500 === 0) {
+          batchArray.push(currentBatch);
+          currentBatch = writeBatch(db);
+        }
+      });
+      batchArray.push(currentBatch);
+
+      await Promise.all(batchArray.map(batch => batch.commit()));
+
+      toast({
+        title: 'Registros Excluídos',
+        description: `${querySnapshot.size} registro(s) com mais de 365 dias foram excluídos com sucesso.`,
+        className: 'bg-green-600 text-white',
+      });
+
+      handleSearch(); // Refresh the data
+
+    } catch (error) {
+      console.error("Error deleting old entries:", error);
+      toast({ variant: 'destructive', title: 'Erro ao Excluir', description: 'Não foi possível excluir os registros antigos.' });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
 
   const handleExportToCSV = () => {
     if (filteredEntries.length === 0) {
@@ -480,7 +544,33 @@ export default function HistoricoAcessoPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-wrap gap-2 justify-end">
-          <Button onClick={handleExportToCSV} variant="default" disabled={filteredEntries.length === 0}><Download className="mr-2 h-4 w-4" /> EXPORTAR PARA CSV</Button>
+           {user?.role === 'admin' && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={isSearching}>
+                  <Trash2 className="mr-2 h-4 w-4" /> EXCLUIR REGISTROS ANTIGOS
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmar Exclusão em Massa</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Você tem certeza que deseja excluir permanentemente todos os registros de acesso com mais de 365 dias? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive hover:bg-destructive/90"
+                    onClick={handleDeleteOldEntries}
+                  >
+                    Sim, Excluir Registros
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <Button onClick={handleExportToCSV} variant="default" disabled={filteredEntries.length === 0 || isSearching}><Download className="mr-2 h-4 w-4" /> EXPORTAR PARA CSV</Button>
         </CardFooter>
       </Card>
       
