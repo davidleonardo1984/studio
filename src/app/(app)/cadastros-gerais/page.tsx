@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { Driver, TransportCompany, InternalDestination, NewDriver, NewTransportCompany, NewInternalDestination } from '@/lib/types';
-import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin, Loader2, AlertTriangle } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin, Loader2, AlertTriangle, Search } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -82,6 +82,7 @@ function PersonsSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<Driver | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const form = useForm<PersonFormData>({
     resolver: zodResolver(personSchema),
@@ -156,6 +157,15 @@ function PersonsSection() {
         toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a pessoa." });
     }
   };
+  
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return data;
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return data.filter(person => 
+      person.name.toLowerCase().includes(lowercasedTerm) ||
+      person.cpf.includes(lowercasedTerm)
+    );
+  }, [data, searchTerm]);
 
   const formatDisplayPhoneNumber = (val: string): string => {
       if (typeof val !== 'string' || !val) return "";
@@ -233,12 +243,20 @@ function PersonsSection() {
             </form>
           </Form>
         )}
+        <div className="mb-6 mt-2">
+          <Input 
+              placeholder="Pesquisar por nome ou CPF..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+          />
+        </div>
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-4 text-muted-foreground">Carregando...</p>
           </div>
-        ) : data.length > 0 ? (
+        ) : filteredData.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -247,7 +265,7 @@ function PersonsSection() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((item) => (
+              {filteredData.map((item) => (
                  <TableRow key={item.id}>
                     <TableCell>{item.name}</TableCell>
                     <TableCell>{item.cpf}</TableCell>
@@ -270,8 +288,12 @@ function PersonsSection() {
         ) : (
           <div className="text-center py-12">
             <Users className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">Nenhuma pessoa encontrada.</p>
-            <p className="text-sm text-muted-foreground mt-1">Clique em "Nova Pessoa" para começar.</p>
+            <p className="text-lg font-medium text-muted-foreground">
+              {searchTerm ? "Nenhum resultado encontrado." : "Nenhuma pessoa encontrada."}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {searchTerm ? "Tente um termo de busca diferente." : 'Clique em "Nova Pessoa" para começar.'}
+            </p>
           </div>
         )}
       </CardContent>
@@ -287,6 +309,7 @@ function TransportCompaniesSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<TransportCompany | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const form = useForm<NewTransportCompany>({
     resolver: zodResolver(transportCompanySchema),
@@ -326,6 +349,14 @@ function TransportCompaniesSection() {
       form.reset({ name: '' });
     }
   }, [editingItem, form]);
+  
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return data;
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return data.filter(company => 
+      company.name.toLowerCase().includes(lowercasedTerm)
+    );
+  }, [data, searchTerm]);
 
  const onSubmit = async (formData: NewTransportCompany) => {
     setIsSubmitting(true);
@@ -420,12 +451,20 @@ function TransportCompaniesSection() {
             </form>
           </Form>
         )}
+        <div className="mb-6 mt-2">
+            <Input 
+                placeholder="Pesquisar por nome..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+            />
+        </div>
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-4 text-muted-foreground">Carregando Transportadoras / Empresas...</p>
           </div>
-        ) : data.length > 0 ? (
+        ) : filteredData.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -434,7 +473,7 @@ function TransportCompaniesSection() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((item) => (
+              {filteredData.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell>{item.name}</TableCell>
                   <TableCell className="text-right space-x-2">
@@ -454,8 +493,12 @@ function TransportCompaniesSection() {
         ) : (
           <div className="text-center py-12">
             <Truck className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">Nenhuma Transportadora / Empresa encontrada.</p>
-            <p className="text-sm text-muted-foreground mt-1">Clique em "Nova Transportadora / Empresa" para começar.</p>
+            <p className="text-lg font-medium text-muted-foreground">
+              {searchTerm ? "Nenhum resultado encontrado." : "Nenhuma Transportadora / Empresa encontrada."}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {searchTerm ? "Tente um termo de busca diferente." : 'Clique em "Nova Transportadora / Empresa" para começar.'}
+            </p>
           </div>
         )}
       </CardContent>
@@ -471,6 +514,7 @@ function InternalDestinationsSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<InternalDestination | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const form = useForm<InternalDestinationFormData>({
     resolver: zodResolver(internalDestinationSchema),
@@ -510,6 +554,14 @@ function InternalDestinationsSection() {
       form.reset({ name: '' });
     }
   }, [editingItem, form]);
+  
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return data;
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return data.filter(destination => 
+      destination.name.toLowerCase().includes(lowercasedTerm)
+    );
+  }, [data, searchTerm]);
 
   const onSubmit = async (formData: NewInternalDestination) => {
     setIsSubmitting(true);
@@ -582,12 +634,20 @@ function InternalDestinationsSection() {
             </form>
           </Form>
         )}
+        <div className="mb-6 mt-2">
+            <Input 
+                placeholder="Pesquisar por nome..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+            />
+        </div>
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-4 text-muted-foreground">Carregando...</p>
           </div>
-        ) : data.length > 0 ? (
+        ) : filteredData.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -596,7 +656,7 @@ function InternalDestinationsSection() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((item) => (
+              {filteredData.map((item) => (
                 <TableRow key={item.id}>
                     <TableCell>{item.name}</TableCell>
                     <TableCell className="text-right space-x-2">
@@ -616,8 +676,12 @@ function InternalDestinationsSection() {
         ) : (
           <div className="text-center py-12">
             <MapPin className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">Nenhum destino encontrado.</p>
-            <p className="text-sm text-muted-foreground mt-1">Clique em "Novo Destino" para começar.</p>
+            <p className="text-lg font-medium text-muted-foreground">
+              {searchTerm ? "Nenhum resultado encontrado." : "Nenhum destino encontrado."}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {searchTerm ? "Tente um termo de busca diferente." : 'Clique em "Novo Destino" para começar.'}
+            </p>
           </div>
         )}
       </CardContent>
@@ -653,5 +717,7 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
+
+    
 
     
