@@ -40,7 +40,7 @@ type UserAccessFormData = z.infer<typeof userAccessSchema>;
 
 export default function CadastroAcessoPage() {
   const { toast } = useToast();
-  const { user, users: allUsersFromAuth, addUser, updateUser, findUserByLogin, deleteUser, isLoading: isAuthLoading } = useAuth();
+  const { user, users: allUsersFromAuth, addUser, updateUser, deleteUser, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,7 +70,7 @@ export default function CadastroAcessoPage() {
       form.reset({
         name: editingUser.name,
         login: editingUser.login,
-        password: '', // Password should be re-entered for security or handled differently
+        password: '', // Password should be re-entered for security
         role: editingUser.role,
       });
       setShowForm(true);
@@ -82,7 +82,6 @@ export default function CadastroAcessoPage() {
   const onSubmit = async (data: UserAccessFormData) => {
     setIsSubmitting(true);
     if (editingUser) {
-      // Validate password for existing user only if provided
       if (data.password && data.password.length < 6) {
          form.setError("password", {type: "manual", message: "Nova senha deve ter no mínimo 6 caracteres."});
          setIsSubmitting(false);
@@ -96,27 +95,22 @@ export default function CadastroAcessoPage() {
         role: data.role as UserRole,
       };
 
-      const success = await updateUser(updatedUserData);
-      if (success) {
+      const result = await updateUser(updatedUserData);
+      if (result.success) {
           toast({ title: 'Usuário Atualizado!', description: `Usuário ${data.login} foi atualizado.` });
       } else {
-          form.setError("login", {type: "manual", message: "Este login já está em uso por outro usuário."});
-          toast({ variant: "destructive", title: 'Erro ao Atualizar', description: `Login ${data.login} já está em uso.` });
+          toast({ variant: "destructive", title: 'Erro ao Atualizar', description: result.message || 'Não foi possível atualizar o usuário.' });
+          if (result.message?.toLowerCase().includes('login')) {
+              form.setError("login", {type: "manual", message: result.message });
+          }
           setIsSubmitting(false);
           return;
       }
       setEditingUser(null);
 
     } else {
-      // Validate password for new user
       if (!data.password || data.password.length < 6) {
         form.setError("password", {type: "manual", message: "Senha é obrigatória e deve ter no mínimo 6 caracteres."});
-        setIsSubmitting(false);
-        return;
-      }
-      if (findUserByLogin(data.login)) {
-        form.setError("login", {type: "manual", message: "Este login já está em uso."});
-        toast({ variant: 'destructive', title: 'Erro de Cadastro', description: 'Login já existe. Escolha outro.' });
         setIsSubmitting(false);
         return;
       }
@@ -127,11 +121,14 @@ export default function CadastroAcessoPage() {
         role: data.role as UserRole,
       };
       
-      const success = await addUser(newUser);
-      if(success) {
+      const result = await addUser(newUser);
+      if(result.success) {
           toast({ title: 'Usuário Cadastrado!', description: `Usuário ${data.login} foi criado com sucesso.` });
       } else {
-          toast({ variant: 'destructive', title: 'Erro de Cadastro', description: 'Login já existe. Escolha outro.' });
+          toast({ variant: 'destructive', title: 'Erro de Cadastro', description: result.message || 'Não foi possível cadastrar o usuário.' });
+          if (result.message?.toLowerCase().includes('login')) {
+              form.setError("login", {type: "manual", message: result.message });
+          }
           setIsSubmitting(false);
           return;
       }
@@ -146,13 +143,13 @@ export default function CadastroAcessoPage() {
   };
   
   const handleDeleteUser = async (userId: string) => {
-    try {
-        await deleteUser(userId);
+    const success = await deleteUser(userId);
+    if (success) {
         toast({
-        title: 'Usuário Excluído',
-        description: 'O usuário foi removido com sucesso.',
+            title: 'Usuário Excluído',
+            description: 'O usuário foi removido com sucesso.',
         });
-    } catch (error) {
+    } else {
         toast({
             variant: "destructive",
             title: 'Erro ao Excluir',
