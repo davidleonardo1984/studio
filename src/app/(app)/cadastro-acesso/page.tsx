@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Switch } from '@/components/ui/switch';
 
 
 const userAccessSchema = z.object({
@@ -34,6 +35,7 @@ const userAccessSchema = z.object({
   login: z.string().min(3, { message: 'Login é obrigatório (mín. 3 caracteres).' }),
   password: z.string().optional().refine(val => !val || val.length >= 6, { message: 'Senha deve ter no mínimo 6 caracteres se fornecida.'}),
   role: z.enum(['admin', 'user'], { required_error: 'Perfil é obrigatório.' }),
+  canViewDashboardStats: z.boolean().default(false).optional(),
 });
 
 type UserAccessFormData = z.infer<typeof userAccessSchema>;
@@ -63,8 +65,18 @@ export default function CadastroAcessoPage() {
       login: '',
       password: '',
       role: 'user',
+      canViewDashboardStats: false,
     },
   });
+
+  const { watch, setValue } = form;
+  const roleValue = watch('role');
+
+  useEffect(() => {
+      if (roleValue === 'admin') {
+          setValue('canViewDashboardStats', true);
+      }
+  }, [roleValue, setValue]);
 
   useEffect(() => {
     if (editingUser) {
@@ -73,10 +85,11 @@ export default function CadastroAcessoPage() {
         login: editingUser.login,
         password: '', // Password should be re-entered for security
         role: editingUser.role,
+        canViewDashboardStats: editingUser.canViewDashboardStats || false,
       });
       setShowForm(true);
     } else {
-        form.reset({ name: '', login: '', password: '', role: 'user' });
+        form.reset({ name: '', login: '', password: '', role: 'user', canViewDashboardStats: false });
     }
   }, [editingUser, form]);
   
@@ -104,6 +117,7 @@ export default function CadastroAcessoPage() {
         login: data.login, 
         ...(data.password && { password: data.password }), 
         role: data.role as UserRole,
+        canViewDashboardStats: data.role === 'admin' ? true : data.canViewDashboardStats,
       };
 
       const result = await updateUser(updatedUserData);
@@ -130,6 +144,7 @@ export default function CadastroAcessoPage() {
         login: data.login,
         password: data.password, 
         role: data.role as UserRole,
+        canViewDashboardStats: data.role === 'admin' ? true : data.canViewDashboardStats,
       };
       
       const result = await addUser(newUser);
@@ -145,7 +160,7 @@ export default function CadastroAcessoPage() {
       }
     }
     setShowForm(false);
-    form.reset({ name: '', login: '', password: '', role: 'user' });
+    form.reset({ name: '', login: '', password: '', role: 'user', canViewDashboardStats: false });
     setIsSubmitting(false);
   };
 
@@ -240,23 +255,48 @@ export default function CadastroAcessoPage() {
                     </FormItem>
                   )}
                 />
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                        control={form.control}
+                        name="role"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Perfil de Acesso</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value} disabled={!!editingUser && editingUser.login === 'admin'}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Selecione o perfil" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    <SelectItem value="user">Usuário</SelectItem>
+                                    <SelectItem value="admin">Administrador</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
                 <FormField
                     control={form.control}
-                    name="role"
+                    name="canViewDashboardStats"
                     render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Perfil de Acesso</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={!!editingUser && editingUser.login === 'admin'}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Selecione o perfil" /></SelectTrigger></FormControl>
-                            <SelectContent>
-                                <SelectItem value="user">Usuário</SelectItem>
-                                <SelectItem value="admin">Administrador</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card md:col-span-2">
+                            <div className="space-y-0.5">
+                                <FormLabel>Ver Estatísticas do Painel</FormLabel>
+                                <FormDescription>
+                                    Permitir que este usuário visualize os contadores de acesso no painel inicial.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    disabled={roleValue === 'admin'}
+                                    aria-label="Ver Estatísticas do Painel"
+                                />
+                            </FormControl>
                         </FormItem>
                     )}
                 />
+
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => {setShowForm(false); setEditingUser(null);}}>Cancelar</Button>
                   <Button type="submit" disabled={isSubmitting}>

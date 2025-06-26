@@ -9,6 +9,7 @@ export interface User {
   login: string;
   password?: string; // Stored in DB, but optional in frontend models
   role: UserRole;
+  canViewDashboardStats?: boolean;
 }
 
 export type NewUser = Omit<User, 'id'>;
