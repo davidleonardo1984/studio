@@ -259,7 +259,7 @@ export default function AguardandoLiberacaoPage() {
     if (!db || !user) return;
     
     // Find the driver's phone number
-    const driver = persons.find(p => p.name === vehicle.driverName);
+    const driver = persons.find(p => p.name.toLowerCase() === vehicle.driverName.toLowerCase());
     const phone = driver?.phone || ''; // Get phone or empty string
 
     try {
@@ -372,7 +372,7 @@ export default function AguardandoLiberacaoPage() {
         }
 
         const dataToCopy = filteredVehicles.map((vehicle, index) => {
-        const driver = persons.find(p => p.name === vehicle.driverName);
+        const driver = persons.find(p => p.name.toLowerCase() === vehicle.driverName.toLowerCase());
         const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
         return [
             `Ordem: ${index + 1}`,
@@ -501,7 +501,7 @@ export default function AguardandoLiberacaoPage() {
               </TableHeader>
               <TableBody>
                 {filteredVehicles.map((vehicle, index) => {
-                    const driver = persons.find(p => p.name === vehicle.driverName);
+                    const driver = persons.find(p => p.name.toLowerCase() === vehicle.driverName.toLowerCase());
                     const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
                     return (
                     <TableRow key={vehicle.id}>
