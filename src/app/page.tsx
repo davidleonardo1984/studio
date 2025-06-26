@@ -12,7 +12,11 @@ export default function HomePage() {
   useEffect(() => {
     if (!isLoading) {
       if (user) {
-        router.replace('/dashboard');
+        if (user.role === 'gate_agent') {
+          router.replace('/aguardando-liberacao');
+        } else {
+          router.replace('/dashboard');
+        }
       } else {
         router.replace('/login');
       }
