@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,14 +11,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, InternalDestination } from '@/lib/types';
-import { Save, SendToBack, Clock, CheckCircle, Search, Printer, ClipboardCopy, Loader2, AlertTriangle } from 'lucide-react';
+import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, addDoc, doc, updateDoc, where, onSnapshot, Timestamp, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, Timestamp } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import {
   AlertDialog,
@@ -167,14 +166,10 @@ export default function RegistroEntradaPage() {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAssistants, setShowAssistants] = useState(false);
-  
-  const [currentWaitingVehicles, setCurrentWaitingVehicles] = useState<VehicleEntry[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [now, setNow] = useState(new Date());
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [liberatedByName, setLiberatedByName] = useState('');
-  const [approvalContext, setApprovalContext] = useState<{ type: 'new_entry' | 'waiting_list'; vehicle?: VehicleEntry } | null>(null);
+  const [isApprovingNewEntry, setIsApprovingNewEntry] = useState(false);
 
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -207,13 +202,6 @@ export default function RegistroEntradaPage() {
   const assistant2NameValue = watch('assistant2Name');
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(new Date());
-    }, 60000); // Update every minute
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
     if (!db) {
         setDataLoading(false);
         return;
@@ -240,95 +228,44 @@ export default function RegistroEntradaPage() {
     };
     fetchData();
   }, [toast]);
-  
+
+  const checkBlockedStatus = useCallback((nameValue: string | undefined, fieldName: "driverName" | "assistant1Name" | "assistant2Name") => {
+      if (nameValue) {
+          const selectedPerson = persons.find(p => p.name.toLowerCase() === nameValue.toLowerCase());
+          if (selectedPerson?.isBlocked) {
+              toast({
+                  variant: 'destructive',
+                  title: 'ACESSO BLOQUEADO',
+                  description: `A pessoa ${selectedPerson.name} está bloqueada e não pode ser registrada na entrada.`,
+                  duration: 5000
+              });
+              setError(fieldName, { type: 'manual', message: 'Esta pessoa está bloqueada.' });
+          } else {
+              clearErrors(fieldName);
+          }
+      } else {
+          clearErrors(fieldName);
+      }
+  }, [persons, toast, setError, clearErrors]);
+
   useEffect(() => {
-    if (!db) return;
-    const entriesCollection = collection(db, 'vehicleEntries');
-    const q = query(entriesCollection, where('status', '==', 'aguardando_patio'));
+      checkBlockedStatus(driverNameValue, 'driverName');
+  }, [driverNameValue, checkBlockedStatus]);
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const vehicles: VehicleEntry[] = [];
-        querySnapshot.forEach((doc) => {
-            vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
-        });
-        // Sort client-side
-        vehicles.sort((a, b) => {
-            const dateA = (a.arrivalTimestamp as any)?.toDate ? (a.arrivalTimestamp as any).toDate() : new Date(a.arrivalTimestamp as string);
-            const dateB = (b.arrivalTimestamp as any)?.toDate ? (b.arrivalTimestamp as any).toDate() : new Date(b.arrivalTimestamp as string);
-            return dateA.getTime() - dateB.getTime();
-        });
-        setCurrentWaitingVehicles(vehicles);
-    }, (error) => {
-        console.error("Error fetching waiting vehicles:", error);
-        toast({ variant: "destructive", title: "Erro em Tempo Real", description: "Não foi possível carregar la lista de espera." });
-    });
-    
-    return () => unsubscribe();
-  }, [toast]);
-  
-    const checkBlockedStatus = useCallback((nameValue: string | undefined, fieldName: "driverName" | "assistant1Name" | "assistant2Name") => {
-        if (nameValue) {
-            const selectedPerson = persons.find(p => p.name.toLowerCase() === nameValue.toLowerCase());
-            if (selectedPerson?.isBlocked) {
-                toast({
-                    variant: 'destructive',
-                    title: 'ACESSO BLOQUEADO',
-                    description: `A pessoa ${selectedPerson.name} está bloqueada e não pode ser registrada na entrada.`,
-                    duration: 5000
-                });
-                setError(fieldName, { type: 'manual', message: 'Esta pessoa está bloqueada.' });
-            } else {
-                clearErrors(fieldName);
-            }
-        } else {
-            clearErrors(fieldName);
-        }
-    }, [persons, toast, setError, clearErrors]);
+  useEffect(() => {
+      checkBlockedStatus(assistant1NameValue, 'assistant1Name');
+  }, [assistant1NameValue, checkBlockedStatus]);
 
-    useEffect(() => {
-        checkBlockedStatus(driverNameValue, 'driverName');
-    }, [driverNameValue, checkBlockedStatus]);
-
-    useEffect(() => {
-        checkBlockedStatus(assistant1NameValue, 'assistant1Name');
-    }, [assistant1NameValue, checkBlockedStatus]);
-
-    useEffect(() => {
-        checkBlockedStatus(assistant2NameValue, 'assistant2Name');
-    }, [assistant2NameValue, checkBlockedStatus]);
+  useEffect(() => {
+      checkBlockedStatus(assistant2NameValue, 'assistant2Name');
+  }, [assistant2NameValue, checkBlockedStatus]);
 
   useEffect(() => {
     if (!isDialogOpen) {
-      setApprovalContext(null);
+      setIsApprovingNewEntry(false);
       setLiberatedByName('');
     }
   }, [isDialogOpen]);
-
-  const calculateWaitingTime = useCallback((arrivalTimestamp: VehicleEntry['arrivalTimestamp'], currentTime: Date): string => {
-    if (!arrivalTimestamp) return 'N/A';
-    const arrivalDate = (arrivalTimestamp as any).toDate ? (arrivalTimestamp as any).toDate() : new Date(arrivalTimestamp as string);
-    if (isNaN(arrivalDate.getTime())) return 'Inválido';
-
-    let diff = currentTime.getTime() - arrivalDate.getTime();
-    if (diff < 0) diff = 0;
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    diff -= days * (1000 * 60 * 60 * 24);
-
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    diff -= hours * (1000 * 60 * 60);
-
-    const mins = Math.floor(diff / (1000 * 60));
-
-    const parts = [];
-    if (days > 0) parts.push(`${days}d`);
-    if (hours > 0) parts.push(`${hours}h`);
-    if (mins > 0 || (days === 0 && hours === 0)) parts.push(`${mins}m`);
-    
-    if (parts.length === 0) return "Agora";
-
-    return parts.join(' ');
-  }, []);
 
   const handleFormSubmit = async (data: VehicleEntryFormData, status: 'aguardando_patio' | 'entrada_liberada', liberatedBy?: string) => {
     if (!user || !db) {
@@ -359,7 +296,7 @@ export default function RegistroEntradaPage() {
                 title: 'Registro Enviado para o Pátio',
                 description: `Veículo ${createdEntry.plate1} (Cód: ${createdEntry.barcode}) aguardando liberação.`,
                 className: 'bg-yellow-500 text-white',
-                icon: <Clock className="h-6 w-6 text-white" />
+                icon: <SendToBack className="h-6 w-6 text-white" />
             });
         } else { 
             toast({
@@ -391,120 +328,11 @@ export default function RegistroEntradaPage() {
     setShowAssistants(false);
     setIsSubmitting(false);
   };
-  
-  const formatDate = (timestamp: VehicleEntry['arrivalTimestamp']) => {
-    if (!timestamp) return 'N/A';
-    // Firestore Timestamps have a toDate() method, legacy data might be strings
-    const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp as string);
-    return date.toLocaleString('pt-BR');
-  };
-
-  const filteredWaitingVehicles = useMemo(() => {
-    if (!searchTerm) return currentWaitingVehicles;
-    return currentWaitingVehicles.filter(v =>
-      v.plate1.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.transportCompanyName.toLowerCase().includes(searchTerm.toLowerCase())
-    ); 
-  }, [currentWaitingVehicles, searchTerm]);
-
-  const handleApproveEntry = async (vehicle: VehicleEntry, liberatedBy?: string) => {
-    if (!db) return;
-    const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
-    const updatedData = { 
-        status: 'entrada_liberada' as const,
-        liberationTimestamp: Timestamp.fromDate(new Date()), 
-        liberatedBy: liberatedBy?.trim() || ''
-    };
-
-    try {
-        await updateDoc(vehicleDocRef, updatedData);
-
-        // After approval, delete the corresponding notification
-        const notificationsQuery = query(collection(db, 'notifications'), where('vehicleEntryId', '==', vehicle.id));
-        const notificationSnapshot = await getDocs(notificationsQuery);
-        if (!notificationSnapshot.empty) {
-            const batch = writeBatch(db);
-            notificationSnapshot.forEach(notificationDoc => {
-                batch.delete(notificationDoc.ref);
-            });
-            await batch.commit();
-        }
-
-        const updatedVehicle: VehicleEntry = { ...vehicle, ...updatedData };
-        toast({
-            title: `Veículo ${updatedVehicle.plate1} Liberado!`,
-            description: `Preparando documento para visualização...`,
-            className: 'bg-green-600 text-white',
-            icon: <CheckCircle className="h-6 w-6 text-white" />
-        });
-
-        const imageResult = await generateVehicleEntryImage(updatedVehicle);
-        
-        if (imageResult.success && imageResult.imageUrl) {
-            setPreviewImageUrl(imageResult.imageUrl);
-            setIsPreviewModalOpen(true);
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Erro no Documento',
-                description: `Falha ao gerar o documento para ${updatedVehicle.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
-            });
-        }
-    } catch (error) {
-        console.error("Error approving entry:", error);
-        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível aprovar a entrada do veículo.' });
-    }
-  };
-
-    const formatDisplayPhoneNumber = (val: string): string => {
-        if (typeof val !== 'string' || !val) return "";
-        const digits = val.replace(/\D/g, "");
-        if (digits.length === 0) return "";
-        let formatted = `(${digits.substring(0, 2)}`;
-        if (digits.length > 2) {
-            const end = digits.length === 11 ? 7 : 6;
-            formatted += `) ${digits.substring(2, end)}`;
-            if (digits.length > 6) {
-                formatted += `-${digits.substring(end, 11)}`;
-            }
-        }
-        return formatted;
-    };
-
-  const handleCopyWaitingData = async () => {
-    if (filteredWaitingVehicles.length === 0) {
-      toast({ variant: 'destructive', title: 'Nenhum dado', description: 'Não há veículos aguardando para copiar.' });
-      return;
-    }
-
-    const dataToCopy = filteredWaitingVehicles.map((vehicle, index) => {
-      const driver = persons.find(p => p.name === vehicle.driverName);
-      const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
-      return [
-        `Ordem: ${index + 1}`,
-        `Motorista: ${vehicle.driverName}`,
-        `Telefone: ${phone}`,
-        `Transportadora / Empresa: ${vehicle.transportCompanyName}`,
-        `Placa 1: ${vehicle.plate1}`,
-        `Observação: ${vehicle.observation || '-'}`,
-        `Data/Hora Chegada: ${formatDate(vehicle.arrivalTimestamp)}`
-      ].join('\n');
-    }).join('\n\n---\n\n');
-
-    try {
-      await navigator.clipboard.writeText(dataToCopy);
-      toast({ title: 'Dados Copiados!', description: 'Os dados dos veículos aguardando foram copiados.' });
-    } catch (err) {
-      console.error('Failed to copy: ', err);
-      toast({ variant: 'destructive', title: 'Erro ao Copiar', description: 'Não foi possível copiar os dados.' });
-    }
-  };
 
   const initiateNewEntryApproval = async () => {
     const isValid = await form.trigger();
     if (isValid) {
-      setApprovalContext({ type: 'new_entry' });
+      setIsApprovingNewEntry(true);
       setIsDialogOpen(true);
     } else {
       toast({ variant: 'destructive', title: 'Formulário Inválido', description: 'Por favor, corrija os erros para prosseguir.' });
@@ -512,14 +340,8 @@ export default function RegistroEntradaPage() {
   };
 
   const handleConfirmApproval = () => {
-    if (!approvalContext) return;
-
-    if (approvalContext.type === 'new_entry') {
-      handleFormSubmit(form.getValues(), 'entrada_liberada', liberatedByName);
-    } else if (approvalContext.type === 'waiting_list' && approvalContext.vehicle) {
-      handleApproveEntry(approvalContext.vehicle, liberatedByName);
-    }
-    
+    if (!isApprovingNewEntry) return;
+    handleFormSubmit(form.getValues(), 'entrada_liberada', liberatedByName);
     setIsDialogOpen(false);
   };
   
@@ -774,7 +596,7 @@ export default function RegistroEntradaPage() {
                 disabled={isSubmitting || dataLoading}
                 className="w-full sm:w-auto"
             >
-                {isSubmitting ? <Clock className="mr-2 h-4 w-4 animate-spin" /> : <SendToBack className="mr-2 h-4 w-4" /> }
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SendToBack className="mr-2 h-4 w-4" /> }
                 Aguardar no Pátio
             </Button>
             <Button
@@ -782,107 +604,10 @@ export default function RegistroEntradaPage() {
                 disabled={isSubmitting || dataLoading}
                 className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
             >
-                {isSubmitting ? <Clock className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
                 Liberar Entrada e Imprimir
             </Button>
         </CardFooter>
-      </Card>
-
-      <Card className="max-w-6xl mx-auto shadow-xl">
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex-grow">
-                <CardTitle className="text-xl font-semibold text-primary font-headline flex items-center">
-                    <Clock className="mr-3 h-7 w-7 text-accent" />
-                    Veículos Aguardando Liberação ({filteredWaitingVehicles.length})
-                </CardTitle>
-                <CardDescription>Lista de veículos no pátio que necessitam de aprovação para entrada.</CardDescription>
-            </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-                <Input
-                    id="searchWaiting"
-                    type="text"
-                    placeholder="Buscar por placa, motorista..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full sm:max-w-xs"
-                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                />
-                <Button 
-                    onClick={handleCopyWaitingData} 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full sm:w-auto"
-                    disabled={filteredWaitingVehicles.length === 0}
-                >
-                    <ClipboardCopy className="mr-2 h-4 w-4" />
-                    Copiar Dados
-                </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {filteredWaitingVehicles.length > 0 ? (
-            <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Ordem</TableHead>
-                  <TableHead>Motorista</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead>Transportadora / Empresa</TableHead>
-                  <TableHead>Placa 1</TableHead>
-                  <TableHead>Observação</TableHead>
-                  <TableHead>Data/Hora Chegada</TableHead>
-                  <TableHead>Tempo no Pátio</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredWaitingVehicles.map((vehicle, index) => {
-                  const driver = persons.find(p => p.name === vehicle.driverName);
-                  const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
-                  return (
-                    <TableRow key={vehicle.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{vehicle.driverName}</TableCell>
-                      <TableCell>{phone}</TableCell>
-                      <TableCell>{vehicle.transportCompanyName}</TableCell>
-                      <TableCell>{vehicle.plate1}</TableCell>
-                      <TableCell className="max-w-xs truncate">{vehicle.observation || '-'}</TableCell>
-                      <TableCell>{formatDate(vehicle.arrivalTimestamp)}</TableCell>
-                      <TableCell className="font-medium text-amber-700">{calculateWaitingTime(vehicle.arrivalTimestamp, now)}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => {
-                            setApprovalContext({ type: 'waiting_list', vehicle });
-                            setIsDialogOpen(true);
-                          }}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          <Printer className="mr-2 h-4 w-4" /> Liberar Entrada
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-            </div>
-          ) : (
-             <div className="text-center py-12">
-                <Clock className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />
-                <p className="text-xl font-medium text-muted-foreground">
-                    {searchTerm ? "Nenhum veículo encontrado." : "Nenhum veículo aguardando liberação."}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Veículos enviados para o pátio aparecerão aqui.
-                </p>
-             </div>
-          )}
-        </CardContent>
       </Card>
     </div>
 
@@ -890,10 +615,7 @@ export default function RegistroEntradaPage() {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {approvalContext?.type === 'new_entry' 
-              ? `Confirmar Liberação de ${form.getValues().plate1}`
-              : `Confirmar Liberação de ${approvalContext?.vehicle?.plate1}`
-            }
+            Confirmar Liberação de {form.getValues().plate1}
           </AlertDialogTitle>
           <AlertDialogDescription>
             Este campo é opcional. Pressione Enter ou clique em confirmar para prosseguir.
@@ -932,3 +654,5 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
+
+    
