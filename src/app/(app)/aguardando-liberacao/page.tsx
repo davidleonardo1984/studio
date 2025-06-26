@@ -456,16 +456,18 @@ export default function AguardandoLiberacaoPage() {
                         className="w-full sm:max-w-xs"
                         prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                     />
-                    <Button 
-                        onClick={handleCopyWaitingData} 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full sm:w-auto"
-                        disabled={filteredVehicles.length === 0}
-                    >
-                        <ClipboardCopy className="mr-2 h-4 w-4" />
-                        Copiar Dados
-                    </Button>
+                    {user?.role !== 'gate_agent' && (
+                        <Button 
+                            onClick={handleCopyWaitingData} 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full sm:w-auto"
+                            disabled={filteredVehicles.length === 0}
+                        >
+                            <ClipboardCopy className="mr-2 h-4 w-4" />
+                            Copiar Dados
+                        </Button>
+                    )}
                 </div>
             </div>
         </CardHeader>
@@ -602,3 +604,5 @@ export default function AguardandoLiberacaoPage() {
     </>
   );
 }
+
+    
