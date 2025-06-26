@@ -14,7 +14,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Home, LogIn, LogOut, Edit3, Users, History, KeyRound, ShieldCheck } from 'lucide-react';
+import { Home, LogIn, LogOut, Edit3, Users, History, KeyRound, ShieldCheck, ListChecks } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface NavItem {
@@ -28,6 +28,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Painel Inicial', icon: Home },
   { href: '/registro-entrada', label: 'Registro de Entrada', icon: LogIn },
   { href: '/registro-saida', label: 'Registro de Saída', icon: LogOut },
+  { href: '/aguardando-liberacao', label: 'Aguardando Liberação', icon: ListChecks },
   { href: '/cadastros-gerais', label: 'Cadastros Gerais', icon: Edit3 },
   { href: '/historico-acesso', label: 'Histórico de Acesso', icon: History },
   { href: '/cadastro-acesso', label: 'Cadastro de Acesso', icon: Users, adminOnly: true },
@@ -37,9 +38,12 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  const filteredNavItems = navItems.filter(item => 
-    !item.adminOnly || (item.adminOnly && user?.role === 'admin')
-  );
+  const filteredNavItems = navItems.filter(item => {
+    if (user?.role === 'gate_agent') {
+      return item.href === '/aguardando-liberacao';
+    }
+    return !item.adminOnly || (item.adminOnly && user?.role === 'admin');
+  });
 
   return (
     <Sidebar collapsible="icon" side="left" variant="sidebar">

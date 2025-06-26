@@ -34,7 +34,7 @@ const userAccessSchema = z.object({
   name: z.string().min(3, { message: 'Nome é obrigatório (mín. 3 caracteres).' }),
   login: z.string().min(3, { message: 'Login é obrigatório (mín. 3 caracteres).' }),
   password: z.string().optional().refine(val => !val || val.length >= 6, { message: 'Senha deve ter no mínimo 6 caracteres se fornecida.'}),
-  role: z.enum(['admin', 'user'], { required_error: 'Perfil é obrigatório.' }),
+  role: z.enum(['admin', 'user', 'gate_agent'], { required_error: 'Perfil é obrigatório.' }),
   canViewDashboardStats: z.boolean().default(false).optional(),
 });
 
@@ -75,6 +75,8 @@ export default function CadastroAcessoPage() {
   useEffect(() => {
       if (roleValue === 'admin') {
           setValue('canViewDashboardStats', true);
+      } else if (roleValue === 'gate_agent') {
+        setValue('canViewDashboardStats', false);
       }
   }, [roleValue, setValue]);
 
@@ -117,7 +119,7 @@ export default function CadastroAcessoPage() {
         login: data.login, 
         ...(data.password && { password: data.password }), 
         role: data.role as UserRole,
-        canViewDashboardStats: data.role === 'admin' ? true : data.canViewDashboardStats,
+        canViewDashboardStats: data.role === 'admin' ? true : data.role === 'gate_agent' ? false : data.canViewDashboardStats,
       };
 
       const result = await updateUser(updatedUserData);
@@ -144,7 +146,7 @@ export default function CadastroAcessoPage() {
         login: data.login,
         password: data.password, 
         role: data.role as UserRole,
-        canViewDashboardStats: data.role === 'admin' ? true : data.canViewDashboardStats,
+        canViewDashboardStats: data.role === 'admin' ? true : data.role === 'gate_agent' ? false : data.canViewDashboardStats,
       };
       
       const result = await addUser(newUser);
@@ -267,6 +269,7 @@ export default function CadastroAcessoPage() {
                                 <SelectContent>
                                     <SelectItem value="user">Usuário</SelectItem>
                                     <SelectItem value="admin">Administrador</SelectItem>
+                                    <SelectItem value="gate_agent">Agente de Pátio</SelectItem>
                                 </SelectContent>
                             </Select>
                             <FormMessage />
@@ -289,7 +292,7 @@ export default function CadastroAcessoPage() {
                                 <Switch
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
-                                    disabled={roleValue === 'admin'}
+                                    disabled={roleValue === 'admin' || roleValue === 'gate_agent'}
                                     aria-label="Ver Estatísticas do Painel"
                                 />
                             </FormControl>
@@ -338,34 +341,39 @@ export default function CadastroAcessoPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell className="font-medium">{u.name}</TableCell>
-                    <TableCell>{u.login}</TableCell>
-                    <TableCell><span className={`px-2 py-1 text-xs rounded-full ${u.role === 'admin' ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground'}`}>{u.role === 'admin' ? 'Admin' : 'Usuário'}</span></TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(u)} title="Editar" disabled={u.login === 'admin' && user?.login !== 'admin' /* Allow admin to edit self, but not other admins if any */}>
-                        <Edit2 className="h-4 w-4 text-blue-600" />
-                      </Button>
-                       {user?.login !== u.login && u.login !== 'admin' && ( // Prevent deleting self and the main 'admin' account
-                           <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" title="Excluir">
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o usuário {u.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteUser(u.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                       )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredUsers.map((u) => {
+                  const roleLabel = u.role === 'admin' ? 'Admin' : u.role === 'gate_agent' ? 'Agente de Pátio' : 'Usuário';
+                  const roleClass = u.role === 'admin' ? 'bg-accent text-accent-foreground' : u.role === 'gate_agent' ? 'bg-muted text-muted-foreground' : 'bg-secondary text-secondary-foreground';
+                  
+                  return (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.name}</TableCell>
+                      <TableCell>{u.login}</TableCell>
+                      <TableCell><span className={`px-2 py-1 text-xs rounded-full ${roleClass}`}>{roleLabel}</span></TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(u)} title="Editar" disabled={u.login === 'admin' && user?.login !== 'admin' /* Allow admin to edit self, but not other admins if any */}>
+                          <Edit2 className="h-4 w-4 text-blue-600" />
+                        </Button>
+                        {user?.login !== u.login && u.login !== 'admin' && ( // Prevent deleting self and the main 'admin' account
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" title="Excluir">
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o usuário {u.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteUser(u.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : (

@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -12,12 +12,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function AuthenticatedLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (isLoading) return;
+    if (!user) {
       router.replace('/login');
+      return;
     }
-  }, [user, isLoading, router]);
+
+    if (user.role === 'gate_agent') {
+      const allowedPaths = ['/aguardando-liberacao', '/mudar-senha'];
+      if (!allowedPaths.includes(pathname)) {
+        router.replace('/aguardando-liberacao');
+      }
+    }
+  }, [user, isLoading, router, pathname]);
 
   if (isLoading || !user) {
     // Show a full-page loading skeleton or a simpler loading state

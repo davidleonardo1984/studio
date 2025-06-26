@@ -61,6 +61,8 @@ export function AppHeader() {
     return name.substring(0, 2).toUpperCase();
   };
 
+  const roleText = user?.role === 'admin' ? 'Administrador' : user?.role === 'gate_agent' ? 'Agente de Pátio' : 'Usuário';
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 shadow-sm backdrop-blur-md sm:px-6">
       <div className="flex items-center gap-4">
@@ -96,7 +98,7 @@ export function AppHeader() {
                 </Avatar>
                 <div className="hidden flex-col items-start md:flex">
                   <span className="text-sm font-medium">{user.name}</span>
-                  <span className="text-xs text-muted-foreground">{user.role === 'admin' ? 'Administrador' : 'Usuário'}</span>
+                  <span className="text-xs text-muted-foreground">{roleText}</span>
                 </div>
                 <ChevronDown className="ml-1 h-4 w-4 opacity-50 hidden md:block" />
               </Button>

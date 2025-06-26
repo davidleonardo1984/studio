@@ -26,6 +26,7 @@ import { useIsClient } from '@/hooks/use-is-client';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, Timestamp } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useAuth } from '@/context/AuthContext';
 
 
 const formatDateForImage = (timestamp: any) => {
@@ -133,6 +134,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
 
 export default function AguardandoLiberacaoPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [waitingVehicles, setWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -378,6 +380,7 @@ export default function AguardandoLiberacaoPage() {
                     <TableCell>{formatDate(vehicle.arrivalTimestamp)}</TableCell>
                     <TableCell className="font-medium text-amber-700">{calculateWaitingTime(vehicle.arrivalTimestamp, now)}</TableCell>
                     <TableCell className="text-right space-x-2">
+                      {user?.role !== 'gate_agent' && (
                        <Button 
                         variant="default" 
                         size="sm" 
@@ -389,6 +392,7 @@ export default function AguardandoLiberacaoPage() {
                       >
                         <CheckCircle className="mr-2 h-4 w-4" /> Liberar Entrada
                       </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
