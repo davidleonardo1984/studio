@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -38,16 +37,19 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-    // The login function in AuthContext now handles case-sensitivity for 'admin'
-    const success = await login(data.login, data.password);
+    const loggedInUser = await login(data.login, data.password);
     setIsLoading(false);
 
-    if (success) {
+    if (loggedInUser) {
       toast({
         title: 'Login bem-sucedido!',
-        description: 'Redirecionando para o painel...',
+        description: 'Redirecionando...',
       });
-      router.push('/dashboard');
+      if (loggedInUser.role === 'gate_agent') {
+        router.push('/aguardando-liberacao');
+      } else {
+        router.push('/dashboard');
+      }
     } else {
       toast({
         variant: 'destructive',

@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { User, UserRole, NewUser } from '@/lib/types';
@@ -12,7 +11,7 @@ import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, o
 
 interface AuthContextType {
   user: User | null;
-  login: (login: string, pass: string) => Promise<boolean>;
+  login: (login: string, pass: string) => Promise<User | null>;
   logout: () => void;
   isLoading: boolean;
   users: User[];
@@ -84,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [toast]);
 
 
-  const login = async (loginInput: string, pass: string): Promise<boolean> => {
+  const login = async (loginInput: string, pass: string): Promise<User | null> => {
     setIsLoading(true);
     try {
         const normalizedLogin = loginInput.toLowerCase();
@@ -93,18 +92,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (foundUser) {
             const { password, ...userToStore } = foundUser;
-            setUser(userToStore);
+            setUser(userToStore as User);
             localStorage.setItem('currentUser', JSON.stringify(userToStore));
-            return true;
+            return userToStore as User;
         }
 
         setUser(null);
-        return false;
+        return null;
 
     } catch(error) {
         console.error("Login error:", error);
         toast({ variant: 'destructive', title: 'Erro de Login', description: 'Ocorreu um erro ao tentar fazer login.' });
-        return false;
+        return null;
     } finally {
         setIsLoading(false);
     }
