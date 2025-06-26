@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 
 // Schemas for forms
@@ -36,6 +38,7 @@ const personSchema = z.object({
   cpf: z.string().length(11, 'CPF deve ter 11 dígitos.').regex(/^\d+$/, 'CPF deve conter apenas números.'),
   cnh: z.string().optional(),
   phone: z.string().optional(),
+  isBlocked: z.boolean().default(false).optional(),
 });
 type PersonFormData = z.infer<typeof personSchema>;
 
@@ -86,7 +89,7 @@ function PersonsSection() {
 
   const form = useForm<PersonFormData>({
     resolver: zodResolver(personSchema),
-    defaultValues: { name: '', cpf: '', cnh: '', phone: '' },
+    defaultValues: { name: '', cpf: '', cnh: '', phone: '', isBlocked: false },
   });
   
   if (!db) {
@@ -116,10 +119,10 @@ function PersonsSection() {
 
   useEffect(() => {
     if (editingItem) {
-      form.reset({ name: editingItem.name, cpf: editingItem.cpf, cnh: editingItem.cnh, phone: editingItem.phone });
+      form.reset({ name: editingItem.name, cpf: editingItem.cpf, cnh: editingItem.cnh, phone: editingItem.phone, isBlocked: editingItem.isBlocked || false });
       setShowForm(true);
     } else {
-      form.reset({ name: '', cpf: '', cnh: '', phone: '' });
+      form.reset({ name: '', cpf: '', cnh: '', phone: '', isBlocked: false });
     }
   }, [editingItem, form]);
 
@@ -211,7 +214,7 @@ function PersonsSection() {
   };
 
   const formFields = (form: any) => (
-     <>
+     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} maxLength={11} /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -234,7 +237,28 @@ function PersonsSection() {
           </FormItem>
         )}
       />
-    </>
+      <FormField
+        control={form.control}
+        name="isBlocked"
+        render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card md:col-span-2">
+                <div className="space-y-0.5">
+                    <FormLabel>Bloquear Acesso</FormLabel>
+                    <FormDescription>
+                        Impedir que esta pessoa seja registrada em novas entradas na portaria.
+                    </FormDescription>
+                </div>
+                <FormControl>
+                    <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        aria-label="Bloquear Acesso"
+                    />
+                </FormControl>
+            </FormItem>
+        )}
+        />
+    </div>
   );
 
   return (
@@ -262,7 +286,7 @@ function PersonsSection() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
               {formFields(form)}
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -292,13 +316,21 @@ function PersonsSection() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Status</TableHead>
                 <TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>CNH</TableHead><TableHead>Telefone</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredData.map((item) => (
-                 <TableRow key={item.id}>
+                 <TableRow key={item.id} className={item.isBlocked ? "bg-destructive/10 hover:bg-destructive/20" : ""}>
+                    <TableCell>
+                        {item.isBlocked ? (
+                            <Badge variant="destructive">BLOQUEADO</Badge>
+                        ) : (
+                            <Badge variant="secondary">ATIVO</Badge>
+                        )}
+                    </TableCell>
                     <TableCell>{item.name}</TableCell>
                     <TableCell>{item.cpf}</TableCell>
                     <TableCell>{item.cnh || 'N/A'}</TableCell>

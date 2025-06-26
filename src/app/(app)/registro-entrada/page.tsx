@@ -183,6 +183,28 @@ export default function RegistroEntradaPage() {
   const [persons, setPersons] = useState<Driver[]>([]);
   const [internalDestinations, setInternalDestinations] = useState<InternalDestination[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  
+  const form = useForm<VehicleEntryFormData>({
+    resolver: zodResolver(entrySchema),
+    mode: "onBlur",
+    defaultValues: {
+      driverName: '',
+      assistant1Name: '',
+      assistant2Name: '',
+      transportCompanyName: '',
+      plate1: '',
+      plate2: '',
+      plate3: '',
+      internalDestinationName: '',
+      movementType: '', 
+      observation: '',
+    },
+  });
+
+  const { watch, setError, clearErrors } = form;
+  const driverNameValue = watch('driverName');
+  const assistant1NameValue = watch('assistant1Name');
+  const assistant2NameValue = watch('assistant2Name');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -243,6 +265,37 @@ export default function RegistroEntradaPage() {
     
     return () => unsubscribe();
   }, [toast]);
+  
+    const checkBlockedStatus = useCallback((nameValue: string | undefined, fieldName: "driverName" | "assistant1Name" | "assistant2Name") => {
+        if (nameValue) {
+            const selectedPerson = persons.find(p => p.name.toLowerCase() === nameValue.toLowerCase());
+            if (selectedPerson?.isBlocked) {
+                toast({
+                    variant: 'destructive',
+                    title: 'ACESSO BLOQUEADO',
+                    description: `A pessoa ${selectedPerson.name} está bloqueada e não pode ser registrada na entrada.`,
+                    duration: 5000
+                });
+                setError(fieldName, { type: 'manual', message: 'Esta pessoa está bloqueada.' });
+            } else {
+                clearErrors(fieldName);
+            }
+        } else {
+            clearErrors(fieldName);
+        }
+    }, [persons, toast, setError, clearErrors]);
+
+    useEffect(() => {
+        checkBlockedStatus(driverNameValue, 'driverName');
+    }, [driverNameValue, checkBlockedStatus]);
+
+    useEffect(() => {
+        checkBlockedStatus(assistant1NameValue, 'assistant1Name');
+    }, [assistant1NameValue, checkBlockedStatus]);
+
+    useEffect(() => {
+        checkBlockedStatus(assistant2NameValue, 'assistant2Name');
+    }, [assistant2NameValue, checkBlockedStatus]);
 
   useEffect(() => {
     if (!isDialogOpen) {
@@ -276,23 +329,6 @@ export default function RegistroEntradaPage() {
 
     return parts.join(' ');
   }, []);
-
-  const form = useForm<VehicleEntryFormData>({
-    resolver: zodResolver(entrySchema),
-    mode: "onBlur",
-    defaultValues: {
-      driverName: '',
-      assistant1Name: '',
-      assistant2Name: '',
-      transportCompanyName: '',
-      plate1: '',
-      plate2: '',
-      plate3: '',
-      internalDestinationName: '',
-      movementType: '', 
-      observation: '',
-    },
-  });
 
   const handleFormSubmit = async (data: VehicleEntryFormData, status: 'aguardando_patio' | 'entrada_liberada', liberatedBy?: string) => {
     if (!user || !db) {
@@ -884,5 +920,3 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
-
-    

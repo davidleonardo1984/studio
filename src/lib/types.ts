@@ -19,6 +19,7 @@ export interface Driver {
   cpf: string;
   cnh?: string;
   phone?: string;
+  isBlocked?: boolean;
 }
 
 export type NewDriver = Omit<Driver, 'id'>;
