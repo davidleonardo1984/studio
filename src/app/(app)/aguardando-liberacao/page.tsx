@@ -257,12 +257,18 @@ export default function AguardandoLiberacaoPage() {
   
   const handleNotify = async (vehicle: VehicleEntry) => {
     if (!db || !user) return;
+    
+    // Find the driver's phone number
+    const driver = persons.find(p => p.name === vehicle.driverName);
+    const phone = driver?.phone || ''; // Get phone or empty string
+
     try {
       // Create notification
       await addDoc(collection(db, 'notifications'), {
         vehicleEntryId: vehicle.id,
         plate1: vehicle.plate1,
         driverName: vehicle.driverName,
+        driverPhone: phone,
         createdAt: Timestamp.now(),
         createdBy: user.login,
       });
@@ -604,5 +610,3 @@ export default function AguardandoLiberacaoPage() {
     </>
   );
 }
-
-    

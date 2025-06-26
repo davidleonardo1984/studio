@@ -85,6 +85,7 @@ export interface AppNotification {
   vehicleEntryId: string;
   plate1: string;
   driverName: string;
+  driverPhone?: string;
   createdAt: Timestamp;
   createdBy: string; 
 }
