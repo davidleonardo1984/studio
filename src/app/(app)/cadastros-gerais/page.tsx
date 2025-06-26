@@ -179,7 +179,7 @@ function PersonsSection() {
   };
   
   const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return data;
+    if (!searchTerm.trim()) return [];
     const lowercasedTerm = searchTerm.toLowerCase();
     return data.filter(person => 
       person.name.toLowerCase().includes(lowercasedTerm) ||
@@ -278,6 +278,16 @@ function PersonsSection() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-4 text-muted-foreground">Carregando...</p>
           </div>
+        ) : !searchTerm.trim() ? (
+          <div className="text-center py-12">
+            <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
+            <p className="text-lg font-medium text-muted-foreground">
+              Utilize a busca para consultar os cadastros.
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Digite um nome ou CPF para exibir os resultados.
+            </p>
+          </div>
         ) : filteredData.length > 0 ? (
           <Table>
             <TableHeader>
@@ -311,10 +321,10 @@ function PersonsSection() {
           <div className="text-center py-12">
             <Users className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
             <p className="text-lg font-medium text-muted-foreground">
-              {searchTerm ? "Nenhum resultado encontrado." : "Nenhuma pessoa encontrada."}
+              Nenhum resultado encontrado.
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              {searchTerm ? "Tente um termo de busca diferente." : 'Clique em "Nova Pessoa" para começar.'}
+              Tente um termo de busca diferente ou clique em "Nova Pessoa" para cadastrar.
             </p>
           </div>
         )}
@@ -373,7 +383,7 @@ function TransportCompaniesSection() {
   }, [editingItem, form]);
   
   const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return data;
+    if (!searchTerm.trim()) return [];
     const lowercasedTerm = searchTerm.toLowerCase();
     return data.filter(company => 
       company.name.toLowerCase().includes(lowercasedTerm)
@@ -483,6 +493,16 @@ function TransportCompaniesSection() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-4 text-muted-foreground">Carregando Transportadoras / Empresas...</p>
           </div>
+        ) : !searchTerm.trim() ? (
+          <div className="text-center py-12">
+            <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
+            <p className="text-lg font-medium text-muted-foreground">
+              Utilize a busca para consultar os cadastros.
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Digite o nome de uma transportadora para exibir.
+            </p>
+          </div>
         ) : filteredData.length > 0 ? (
           <Table>
             <TableHeader>
@@ -513,10 +533,10 @@ function TransportCompaniesSection() {
           <div className="text-center py-12">
             <Truck className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
             <p className="text-lg font-medium text-muted-foreground">
-              {searchTerm ? "Nenhum resultado encontrado." : "Nenhuma Transportadora / Empresa encontrada."}
+              Nenhum resultado encontrado.
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              {searchTerm ? "Tente um termo de busca diferente." : 'Clique em "Nova Transportadora / Empresa" para começar.'}
+              Tente um termo de busca diferente ou clique em "Nova Transportadora / Empresa" para cadastrar.
             </p>
           </div>
         )}
@@ -575,7 +595,7 @@ function InternalDestinationsSection() {
   }, [editingItem, form]);
   
   const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return data;
+    if (!searchTerm.trim()) return [];
     const lowercasedTerm = searchTerm.toLowerCase();
     return data.filter(destination => 
       destination.name.toLowerCase().includes(lowercasedTerm)
@@ -680,6 +700,16 @@ function InternalDestinationsSection() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-4 text-muted-foreground">Carregando...</p>
           </div>
+        ) : !searchTerm.trim() ? (
+          <div className="text-center py-12">
+            <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
+            <p className="text-lg font-medium text-muted-foreground">
+              Utilize a busca para consultar os cadastros.
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Digite o nome de um destino para exibir.
+            </p>
+          </div>
         ) : filteredData.length > 0 ? (
           <Table>
             <TableHeader>
@@ -710,10 +740,10 @@ function InternalDestinationsSection() {
           <div className="text-center py-12">
             <MapPin className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
             <p className="text-lg font-medium text-muted-foreground">
-              {searchTerm ? "Nenhum resultado encontrado." : "Nenhum destino encontrado."}
+              Nenhum resultado encontrado.
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              {searchTerm ? "Tente um termo de busca diferente." : 'Clique em "Novo Destino" para começar.'}
+              Tente um termo de busca diferente ou clique em "Novo Destino" para cadastrar.
             </p>
           </div>
         )}
@@ -750,7 +780,3 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
-
-    
-
-    
