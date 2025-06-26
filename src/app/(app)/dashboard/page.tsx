@@ -36,7 +36,6 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, descripti
 // Stats Section Component
 function DashboardStats() {
     const [stats, setStats] = useState({
-        total: 0,
         today: 0,
         thisMonth: 0,
         thisYear: 0,
@@ -91,7 +90,6 @@ function DashboardStats() {
                 const dailyAvg = (entries.length / daysDiff).toFixed(2);
 
                 setStats({
-                    total: entries.length,
                     today: todayEntries.length,
                     thisMonth: thisMonthEntries.length,
                     thisYear: thisYearEntries.length,
@@ -116,8 +114,8 @@ function DashboardStats() {
 
     if (isLoading) {
         return (
-            <div className="mb-12 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-                {[...Array(5)].map((_, i) => (
+            <div className="mb-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {[...Array(4)].map((_, i) => (
                     <Card key={i}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <div className="h-4 w-24 bg-muted rounded" />
@@ -151,12 +149,11 @@ function DashboardStats() {
     return (
         <div className="mb-12">
             <h2 className="text-2xl font-bold tracking-tight text-primary mb-4">Estatísticas de Acesso</h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <StatCard title="Entradas Hoje" value={stats.today} icon={Calendar} description="Registros desde à meia-noite" />
                 <StatCard title="Entradas no Mês" value={stats.thisMonth} icon={CalendarDays} description={`Total para ${now.toLocaleString('pt-BR', { month: 'long' })}`} />
                 <StatCard title="Entradas no Ano" value={stats.thisYear} icon={TrendingUp} description={`Total de registros em ${now.getFullYear()}`} />
                 <StatCard title="Média Diária" value={stats.dailyAvg} icon={Sigma} description="Média de entradas por dia" />
-                <StatCard title="Total de Entradas" value={stats.total} icon={History} description="Desde o início dos registros" />
             </div>
         </div>
     );
