@@ -514,7 +514,7 @@ export default function AguardandoLiberacaoPage() {
                                 disabled={!!vehicle.notified}
                             >
                                 <Bell className="mr-2 h-4 w-4" />
-                                {vehicle.notified ? 'Notificado' : 'Notificar para liberação'}
+                                {vehicle.notified ? 'Notificado' : 'Notificar Liberação'}
                             </Button>
                         )}
                         {user?.role !== 'gate_agent' && (
