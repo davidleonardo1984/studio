@@ -63,6 +63,7 @@ export interface VehicleEntry {
   status: EntryStatus;
   registeredBy: string; 
   liberatedBy?: string;
+  notified?: boolean;
 }
 
 
@@ -79,4 +80,11 @@ export interface VehicleEntryFormData {
   observation?: string;
 }
 
-    
+export interface AppNotification {
+  id: string;
+  vehicleEntryId: string;
+  plate1: string;
+  driverName: string;
+  createdAt: Timestamp;
+  createdBy: string; 
+}

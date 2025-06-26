@@ -18,7 +18,7 @@ import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, Inte
 import { Save, SendToBack, Clock, CheckCircle, Search, Printer, ClipboardCopy, Loader2, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, addDoc, doc, updateDoc, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, doc, updateDoc, where, onSnapshot, Timestamp, writeBatch } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import {
   AlertDialog,
@@ -419,6 +419,18 @@ export default function RegistroEntradaPage() {
 
     try {
         await updateDoc(vehicleDocRef, updatedData);
+
+        // After approval, delete the corresponding notification
+        const notificationsQuery = query(collection(db, 'notifications'), where('vehicleEntryId', '==', vehicle.id));
+        const notificationSnapshot = await getDocs(notificationsQuery);
+        if (!notificationSnapshot.empty) {
+            const batch = writeBatch(db);
+            notificationSnapshot.forEach(notificationDoc => {
+                batch.delete(notificationDoc.ref);
+            });
+            await batch.commit();
+        }
+
         const updatedVehicle: VehicleEntry = { ...vehicle, ...updatedData };
         toast({
             title: `Veículo ${updatedVehicle.plate1} Liberado!`,

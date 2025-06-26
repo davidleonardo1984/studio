@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +13,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import {
   Tooltip,
@@ -19,14 +21,36 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { LogOut, ChevronDown, AlignLeft, KeyRound, Expand, Shrink } from 'lucide-react';
+import { LogOut, ChevronDown, AlignLeft, KeyRound, Expand, Shrink, Bell, AlertCircle } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
+import { db } from '@/lib/firebase';
+import type { AppNotification } from '@/lib/types';
+import { collection, query, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export function AppHeader() {
   const { user, logout } = useAuth();
   const { toggleSidebar, isMobile } = useSidebar();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+
+  useEffect(() => {
+    if (!db || !user || user.role === 'gate_agent') return;
+
+    const notificationsQuery = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
+    
+    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+      const fetchedNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppNotification));
+      setNotifications(fetchedNotifications);
+    }, (error) => {
+      console.error("Error fetching notifications:", error);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -43,7 +67,6 @@ export function AppHeader() {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(err => {
         console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-        // Optionally, inform the user that fullscreen failed e.g. via a toast
       });
     } else {
       if (document.exitFullscreen) {
@@ -62,6 +85,53 @@ export function AppHeader() {
   };
 
   const roleText = user?.role === 'admin' ? 'Administrador' : user?.role === 'gate_agent' ? 'Agente de Pátio' : 'Usuário';
+
+  const NotificationBell = () => (
+    <DropdownMenu>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                {notifications.length > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center">{notifications.length}</Badge>
+                )}
+                <span className="sr-only">Notificações</span>
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Notificações</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <DropdownMenuContent className="w-80" align="end">
+        <DropdownMenuLabel>Notificações de Liberação</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {notifications.length > 0 ? (
+          <DropdownMenuGroup>
+            {notifications.map(notif => (
+              <Link key={notif.id} href="/aguardando-liberacao" passHref>
+                <DropdownMenuItem className="flex-col items-start gap-1">
+                  <p className="font-semibold">Placa {notif.plate1}</p>
+                  <p className="text-xs text-muted-foreground">Motorista: {notif.driverName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNow((notif.createdAt as Timestamp).toDate(), { addSuffix: true, locale: ptBR })}
+                  </p>
+                </DropdownMenuItem>
+              </Link>
+            ))}
+          </DropdownMenuGroup>
+        ) : (
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            Nenhuma notificação pendente.
+          </div>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 shadow-sm backdrop-blur-md sm:px-6">
@@ -87,6 +157,8 @@ export function AppHeader() {
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+        
+        {user && user.role !== 'gate_agent' && <NotificationBell />}
 
         {user && (
           <DropdownMenu>

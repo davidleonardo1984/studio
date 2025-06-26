@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry, Driver } from '@/lib/types';
-import { CheckCircle, Clock, Search, Loader2, AlertTriangle, ClipboardCopy } from 'lucide-react';
+import { CheckCircle, Clock, Search, Loader2, AlertTriangle, ClipboardCopy, Bell } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
@@ -24,7 +24,7 @@ import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import html2canvas from 'html2canvas';
 import { useIsClient } from '@/hooks/use-is-client';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, Timestamp, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, Timestamp, getDocs, addDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/context/AuthContext';
 
@@ -254,6 +254,33 @@ export default function AguardandoLiberacaoPage() {
       v.transportCompanyName.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [waitingVehicles, searchTerm]);
+  
+  const handleNotify = async (vehicle: VehicleEntry) => {
+    if (!db || !user) return;
+    try {
+      // Create notification
+      await addDoc(collection(db, 'notifications'), {
+        vehicleEntryId: vehicle.id,
+        plate1: vehicle.plate1,
+        driverName: vehicle.driverName,
+        createdAt: Timestamp.now(),
+        createdBy: user.login,
+      });
+
+      // Mark vehicle as notified
+      const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
+      await updateDoc(vehicleDocRef, { notified: true });
+
+      toast({
+        title: 'Notificação Enviada!',
+        description: `Os administradores foram notificados sobre o veículo ${vehicle.plate1}.`,
+      });
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível enviar a notificação." });
+    }
+  };
+
 
   const handleApproveEntry = async (vehicle: VehicleEntry, liberatedBy?: string) => {
     if (!db) return;
@@ -267,6 +294,17 @@ export default function AguardandoLiberacaoPage() {
     try {
         await updateDoc(vehicleDocRef, updatedVehicleData);
         
+        // After approval, delete the corresponding notification
+        const notificationsQuery = query(collection(db, 'notifications'), where('vehicleEntryId', '==', vehicle.id));
+        const notificationSnapshot = await getDocs(notificationsQuery);
+        if (!notificationSnapshot.empty) {
+            const batch = writeBatch(db);
+            notificationSnapshot.forEach(notificationDoc => {
+                batch.delete(notificationDoc.ref);
+            });
+            await batch.commit();
+        }
+
         const updatedVehicle: VehicleEntry = { ...vehicle, ...updatedVehicleData };
 
         toast({
@@ -468,6 +506,17 @@ export default function AguardandoLiberacaoPage() {
                         <TableCell>{formatDate(vehicle.arrivalTimestamp)}</TableCell>
                         <TableCell className="font-medium text-amber-700">{calculateWaitingTime(vehicle.arrivalTimestamp, now)}</TableCell>
                         <TableCell className="text-right space-x-2">
+                        {user?.role === 'gate_agent' && (
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleNotify(vehicle)}
+                                disabled={!!vehicle.notified}
+                            >
+                                <Bell className="mr-2 h-4 w-4" />
+                                {vehicle.notified ? 'Notificado' : 'Notificar'}
+                            </Button>
+                        )}
                         {user?.role !== 'gate_agent' && (
                         <Button 
                             variant="default" 
