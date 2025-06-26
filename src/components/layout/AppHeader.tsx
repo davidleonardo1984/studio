@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -315,40 +315,55 @@ export function AppHeader() {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <DropdownMenuContent className="w-80" align="end">
-        <DropdownMenuLabel>Notificações de Liberação</DropdownMenuLabel>
-        <DropdownMenuSeparator />
+      <DropdownMenuContent className="w-96 p-0" align="end">
+        <DropdownMenuLabel className="p-3 pb-2">Notificações de Liberação</DropdownMenuLabel>
+        <DropdownMenuSeparator className="my-0"/>
         {notifications.length > 0 ? (
-          <DropdownMenuGroup>
-            {notifications.map(notif => (
-              <DropdownMenuItem key={notif.id} onSelect={(e) => e.preventDefault()} className="flex-col items-start gap-2">
-                <Link href="/aguardando-liberacao" passHref className="w-full no-underline text-current">
-                  <div className="hover:bg-accent -m-1 p-1 rounded-sm">
-                    <p className="font-semibold">Placa {notif.plate1}</p>
-                    <p className="text-xs text-muted-foreground">Motorista: {notif.driverName}</p>
-                     {notif.driverPhone && <p className="text-xs text-muted-foreground">Telefone: {formatDisplayPhoneNumber(notif.driverPhone)}</p>}
-                    <p className="text-xs text-muted-foreground">
+          <DropdownMenuGroup className="p-0">
+            {notifications.map((notif, index) => (
+              <Fragment key={notif.id}>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex-col items-start gap-1 p-3 cursor-default focus:bg-accent/50">
+                  <div className="flex justify-between w-full items-start">
+                    <div className="flex items-start gap-3">
+                        <div className="mt-1">
+                            <AlertCircle className="h-5 w-5 text-amber-500" />
+                        </div>
+                        <div>
+                            <p className="font-semibold text-sm">Placa {notif.plate1}</p>
+                            <p className="text-xs text-muted-foreground">{notif.driverName}</p>
+                             {notif.driverPhone && <p className="text-xs text-muted-foreground">Telefone: {formatDisplayPhoneNumber(notif.driverPhone)}</p>}
+                        </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground whitespace-nowrap pl-2">
                       {formatDistanceToNow((notif.createdAt as Timestamp).toDate(), { addSuffix: true, locale: ptBR })}
                     </p>
                   </div>
-                </Link>
-                <Button 
-                    size="sm" 
-                    className="w-full bg-green-600 hover:bg-green-700 text-white" 
-                    onClick={() => {
-                        setSelectedNotification(notif);
-                        setIsDialogOpen(true);
-                    }}
-                >
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Liberar
-                </Button>
-              </DropdownMenuItem>
+                  
+                  <div className="w-full flex justify-end mt-2">
+                      <Button 
+                          size="sm" 
+                          className="bg-green-600 hover:bg-green-700 text-white h-8" 
+                          onClick={() => {
+                              setSelectedNotification(notif);
+                              setIsDialogOpen(true);
+                          }}
+                      >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Liberar Entrada
+                      </Button>
+                  </div>
+                </DropdownMenuItem>
+                {index < notifications.length - 1 && <DropdownMenuSeparator className="my-0" />}
+              </Fragment>
             ))}
           </DropdownMenuGroup>
         ) : (
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            Nenhuma notificação pendente.
+          <div className="p-4 py-6 text-center text-sm text-muted-foreground">
+            <Bell className="mx-auto h-10 w-10 text-muted-foreground/30 mb-3" />
+            <p className="font-semibold text-base text-foreground">Tudo em ordem!</p>
+            <p className="text-xs mt-1">
+              Não há notificações de liberação pendentes no momento.
+            </p>
           </div>
         )}
       </DropdownMenuContent>
