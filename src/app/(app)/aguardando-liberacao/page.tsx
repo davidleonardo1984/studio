@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import type { VehicleEntry } from '@/lib/types';
-import { CheckCircle, Clock, Search, Loader2, AlertTriangle } from 'lucide-react';
+import type { VehicleEntry, Driver } from '@/lib/types';
+import { CheckCircle, Clock, Search, Loader2, AlertTriangle, ClipboardCopy } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
@@ -24,7 +24,7 @@ import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import html2canvas from 'html2canvas';
 import { useIsClient } from '@/hooks/use-is-client';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, Timestamp, getDocs } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/context/AuthContext';
 
@@ -136,6 +136,7 @@ export default function AguardandoLiberacaoPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [waitingVehicles, setWaitingVehicles] = useState<VehicleEntry[]>([]);
+  const [persons, setPersons] = useState<Driver[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -158,6 +159,25 @@ export default function AguardandoLiberacaoPage() {
 
     return () => clearInterval(timer);
   }, []);
+
+  // Fetch persons data for phone numbers
+  useEffect(() => {
+    if (!db) {
+        setIsLoading(false);
+        return;
+    }
+    const fetchPersons = async () => {
+        try {
+            const personsPromise = getDocs(query(collection(db, 'persons'), orderBy("name")));
+            const [personsSnap] = await Promise.all([personsPromise]);
+            setPersons(personsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Driver)));
+        } catch (error) {
+            console.error("Failed to fetch persons:", error);
+            toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar os dados de cadastro." });
+        }
+    };
+    fetchPersons();
+  }, [toast]);
 
   // Real-time listener for waiting vehicles
   useEffect(() => {
@@ -227,11 +247,13 @@ export default function AguardandoLiberacaoPage() {
   }, []);
 
 
-  const filteredVehicles = waitingVehicles.filter(v =>
-    v.plate1.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.transportCompanyName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredVehicles = useMemo(() => {
+    return waitingVehicles.filter(v =>
+      v.plate1.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.transportCompanyName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [waitingVehicles, searchTerm]);
 
   const handleApproveEntry = async (vehicle: VehicleEntry, liberatedBy?: string) => {
     if (!db) return;
@@ -284,6 +306,50 @@ export default function AguardandoLiberacaoPage() {
     return date.toLocaleString('pt-BR');
   };
   
+    const formatDisplayPhoneNumber = (val: string): string => {
+        if (typeof val !== 'string' || !val) return "";
+        const digits = val.replace(/\D/g, "");
+        if (digits.length === 0) return "";
+        let formatted = `(${digits.substring(0, 2)}`;
+        if (digits.length > 2) {
+            const end = digits.length === 11 ? 7 : 6;
+            formatted += `) ${digits.substring(2, end)}`;
+            if (digits.length > 6) {
+                formatted += `-${digits.substring(end, 11)}`;
+            }
+        }
+        return formatted;
+    };
+
+    const handleCopyWaitingData = async () => {
+        if (filteredVehicles.length === 0) {
+        toast({ variant: 'destructive', title: 'Nenhum dado', description: 'Não há veículos aguardando para copiar.' });
+        return;
+        }
+
+        const dataToCopy = filteredVehicles.map((vehicle, index) => {
+        const driver = persons.find(p => p.name === vehicle.driverName);
+        const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
+        return [
+            `Ordem: ${index + 1}`,
+            `Motorista: ${vehicle.driverName}`,
+            `Telefone: ${phone}`,
+            `Transportadora / Empresa: ${vehicle.transportCompanyName}`,
+            `Placa 1: ${vehicle.plate1}`,
+            `Observação: ${vehicle.observation || '-'}`,
+            `Data/Hora Chegada: ${formatDate(vehicle.arrivalTimestamp)}`
+        ].join('\n');
+        }).join('\n\n---\n\n');
+
+        try {
+        await navigator.clipboard.writeText(dataToCopy);
+        toast({ title: 'Dados Copiados!', description: 'Os dados dos veículos aguardando foram copiados.' });
+        } catch (err) {
+        console.error('Failed to copy: ', err);
+        toast({ variant: 'destructive', title: 'Erro ao Copiar', description: 'Não foi possível copiar os dados.' });
+        }
+    };
+
   if (!isClient) {
     return (
       <div className="container mx-auto py-8">
@@ -334,21 +400,36 @@ export default function AguardandoLiberacaoPage() {
             </h1>
             <p className="text-muted-foreground">Lista de veículos no pátio que necessitam de aprovação para entrada.</p>
         </div>
-         <div className="mt-4 sm:mt-0 w-full sm:w-auto max-w-xs">
-            <Input 
-                type="text"
-                placeholder="Buscar por placa, motorista..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-            />
-        </div>
       </div>
 
       <Card className="shadow-xl">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold text-primary">Lista de Espera ({filteredVehicles.length})</CardTitle>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex-grow">
+                    <CardTitle className="text-xl font-semibold text-primary">Lista de Espera ({filteredVehicles.length})</CardTitle>
+                </div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+                    <Input
+                        id="searchWaiting"
+                        type="text"
+                        placeholder="Buscar por placa, motorista..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full sm:max-w-xs"
+                        prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                    />
+                    <Button 
+                        onClick={handleCopyWaitingData} 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full sm:w-auto"
+                        disabled={filteredVehicles.length === 0}
+                    >
+                        <ClipboardCopy className="mr-2 h-4 w-4" />
+                        Copiar Dados
+                    </Button>
+                </div>
+            </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -361,41 +442,49 @@ export default function AguardandoLiberacaoPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID/Código</TableHead>
+                  <TableHead>Ordem</TableHead>
                   <TableHead>Motorista</TableHead>
-                  <TableHead>Transportadora / Empresas</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Transportadora / Empresa</TableHead>
                   <TableHead>Placa 1</TableHead>
+                  <TableHead>Observação</TableHead>
                   <TableHead>Data/Hora Chegada</TableHead>
                   <TableHead>Tempo no Pátio</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredVehicles.map((vehicle) => (
-                  <TableRow key={vehicle.id}>
-                    <TableCell className="font-mono text-xs">{vehicle.barcode}</TableCell>
-                    <TableCell>{vehicle.driverName}</TableCell>
-                    <TableCell>{vehicle.transportCompanyName}</TableCell>
-                    <TableCell>{vehicle.plate1}</TableCell>
-                    <TableCell>{formatDate(vehicle.arrivalTimestamp)}</TableCell>
-                    <TableCell className="font-medium text-amber-700">{calculateWaitingTime(vehicle.arrivalTimestamp, now)}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      {user?.role !== 'gate_agent' && (
-                       <Button 
-                        variant="default" 
-                        size="sm" 
-                        onClick={() => {
-                          setSelectedVehicle(vehicle);
-                          setIsDialogOpen(true);
-                        }}
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        <CheckCircle className="mr-2 h-4 w-4" /> Liberar Entrada
-                      </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredVehicles.map((vehicle, index) => {
+                    const driver = persons.find(p => p.name === vehicle.driverName);
+                    const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
+                    return (
+                    <TableRow key={vehicle.id}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{vehicle.driverName}</TableCell>
+                        <TableCell>{phone}</TableCell>
+                        <TableCell>{vehicle.transportCompanyName}</TableCell>
+                        <TableCell>{vehicle.plate1}</TableCell>
+                        <TableCell className="max-w-xs truncate">{vehicle.observation || '-'}</TableCell>
+                        <TableCell>{formatDate(vehicle.arrivalTimestamp)}</TableCell>
+                        <TableCell className="font-medium text-amber-700">{calculateWaitingTime(vehicle.arrivalTimestamp, now)}</TableCell>
+                        <TableCell className="text-right space-x-2">
+                        {user?.role !== 'gate_agent' && (
+                        <Button 
+                            variant="default" 
+                            size="sm" 
+                            onClick={() => {
+                            setSelectedVehicle(vehicle);
+                            setIsDialogOpen(true);
+                            }}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            <CheckCircle className="mr-2 h-4 w-4" /> Liberar Entrada
+                        </Button>
+                        )}
+                        </TableCell>
+                    </TableRow>
+                    );
+                })}
               </TableBody>
             </Table>
             </div>
