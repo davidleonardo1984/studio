@@ -276,8 +276,8 @@ function PersonsSection() {
                 prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                 className="w-full sm:w-auto"
             />
-            <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }} className="shrink-0">
-              <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Pessoa'}
+            <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0" disabled={showForm}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Nova Pessoa
             </Button>
         </div>
       </CardHeader>
@@ -499,8 +499,8 @@ function TransportCompaniesSection() {
                 prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                 className="w-full sm:w-auto"
             />
-            <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }} className="shrink-0">
-              <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Nova Transportadora / Empresa'}
+            <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0" disabled={showForm}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Nova Transportadora / Empresa
             </Button>
         </div>
       </CardHeader>
@@ -706,8 +706,8 @@ function InternalDestinationsSection() {
                 prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                 className="w-full sm:w-auto"
             />
-            <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(!showForm); }} className="shrink-0">
-              <PlusCircle className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar' : 'Novo Destino'}
+            <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0" disabled={showForm}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Novo Destino
             </Button>
         </div>
       </CardHeader>
