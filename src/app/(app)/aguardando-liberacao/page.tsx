@@ -134,14 +134,14 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
 
 
 const colorPalette = [
-  'bg-sky-100/50',
-  'bg-emerald-100/50',
-  'bg-amber-100/50',
-  'bg-fuchsia-100/50',
-  'bg-rose-100/50',
-  'bg-indigo-100/50',
-  'bg-teal-100/50',
-  'bg-lime-100/50',
+  'bg-sky-100',
+  'bg-emerald-100',
+  'bg-amber-100',
+  'bg-fuchsia-100',
+  'bg-rose-100',
+  'bg-indigo-100',
+  'bg-teal-100',
+  'bg-lime-100',
 ];
 
 export default function AguardandoLiberacaoPage() {
@@ -634,5 +634,7 @@ export default function AguardandoLiberacaoPage() {
     </>
   );
 }
+
+    
 
     
