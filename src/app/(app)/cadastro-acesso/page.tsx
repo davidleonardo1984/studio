@@ -35,7 +35,7 @@ const userAccessSchema = z.object({
   login: z.string().min(3, { message: 'Login é obrigatório (mín. 3 caracteres).' }),
   password: z.string().optional().refine(val => !val || val.length >= 6, { message: 'Senha deve ter no mínimo 6 caracteres se fornecida.'}),
   role: z.enum(['admin', 'user', 'gate_agent'], { required_error: 'Perfil é obrigatório.' }),
-  canViewDashboardStats: z.boolean().default(false).optional(),
+  canViewDashboardStats: z.boolean().default(true).optional(),
 });
 
 type UserAccessFormData = z.infer<typeof userAccessSchema>;
@@ -65,7 +65,7 @@ export default function CadastroAcessoPage() {
       login: '',
       password: '',
       role: 'user',
-      canViewDashboardStats: false,
+      canViewDashboardStats: true,
     },
   });
 
@@ -91,7 +91,7 @@ export default function CadastroAcessoPage() {
       });
       setShowForm(true);
     } else {
-        form.reset({ name: '', login: '', password: '', role: 'user', canViewDashboardStats: false });
+        form.reset({ name: '', login: '', password: '', role: 'user', canViewDashboardStats: true });
     }
   }, [editingUser, form]);
   
@@ -162,7 +162,7 @@ export default function CadastroAcessoPage() {
       }
     }
     setShowForm(false);
-    form.reset({ name: '', login: '', password: '', role: 'user', canViewDashboardStats: false });
+    form.reset({ name: '', login: '', password: '', role: 'user', canViewDashboardStats: true });
     setIsSubmitting(false);
   };
 
@@ -384,3 +384,5 @@ export default function CadastroAcessoPage() {
     </div>
   );
 }
+
+    
