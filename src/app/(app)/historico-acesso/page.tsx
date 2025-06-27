@@ -624,6 +624,8 @@ export default function HistoricoAcessoPage() {
                         <TableHead>MOTORISTA</TableHead>
                         <TableHead>TRANSPORTADORA / EMPRESA</TableHead>
                         <TableHead>PLACA 1</TableHead>
+                        <TableHead>PLACA 2</TableHead>
+                        <TableHead>PLACA 3</TableHead>
                         <TableHead>CHEGADA</TableHead>
                         <TableHead>LIBERAÇÃO</TableHead>
                         <TableHead>SAÍDA</TableHead>
@@ -640,6 +642,8 @@ export default function HistoricoAcessoPage() {
                           <TableCell>{entry.driverName}</TableCell>
                           <TableCell>{entry.transportCompanyName}</TableCell>
                           <TableCell>{entry.plate1}</TableCell>
+                          <TableCell>{entry.plate2 || '-'}</TableCell>
+                          <TableCell>{entry.plate3 || '-'}</TableCell>
                           <TableCell>{formatDate(entry.arrivalTimestamp)}</TableCell>
                           <TableCell>{formatDate(entry.liberationTimestamp)}</TableCell>
                           <TableCell>{formatDate(entry.exitTimestamp)}</TableCell>
@@ -742,5 +746,3 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
-
-    
