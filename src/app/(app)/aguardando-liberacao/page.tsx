@@ -27,6 +27,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, Timestamp, getDocs, addDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/context/AuthContext';
+import { cn } from '@/lib/utils';
 
 
 const formatDateForImage = (timestamp: any) => {
@@ -131,6 +132,17 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
   }
 };
 
+
+const colorPalette = [
+  'bg-sky-100/50',
+  'bg-emerald-100/50',
+  'bg-amber-100/50',
+  'bg-fuchsia-100/50',
+  'bg-rose-100/50',
+  'bg-indigo-100/50',
+  'bg-teal-100/50',
+  'bg-lime-100/50',
+];
 
 export default function AguardandoLiberacaoPage() {
   const { toast } = useToast();
@@ -254,6 +266,15 @@ export default function AguardandoLiberacaoPage() {
       v.transportCompanyName.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [waitingVehicles, searchTerm]);
+  
+  const companyColorMap = useMemo(() => {
+    const uniqueCompanies = [...new Set(waitingVehicles.map(v => v.transportCompanyName))];
+    const map = new Map<string, string>();
+    uniqueCompanies.forEach((company, index) => {
+      map.set(company, colorPalette[index % colorPalette.length]);
+    });
+    return map;
+  }, [waitingVehicles]);
   
   const handleNotify = async (vehicle: VehicleEntry) => {
     if (!db || !user) return;
@@ -505,8 +526,9 @@ export default function AguardandoLiberacaoPage() {
                 {filteredVehicles.map((vehicle, index) => {
                     const driver = persons.find(p => p.name.toLowerCase() === vehicle.driverName.toLowerCase());
                     const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
+                    const rowColorClass = companyColorMap.get(vehicle.transportCompanyName);
                     return (
-                    <TableRow key={vehicle.id}>
+                    <TableRow key={vehicle.id} className={cn(rowColorClass)}>
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>{vehicle.driverName}</TableCell>
                         <TableCell>{phone}</TableCell>
@@ -612,3 +634,5 @@ export default function AguardandoLiberacaoPage() {
     </>
   );
 }
+
+    
