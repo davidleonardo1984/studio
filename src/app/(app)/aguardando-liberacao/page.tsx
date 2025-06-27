@@ -134,14 +134,14 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
 
 
 const colorPalette = [
-  'bg-sky-100',
-  'bg-emerald-100',
-  'bg-amber-100',
-  'bg-fuchsia-100',
-  'bg-rose-100',
-  'bg-indigo-100',
-  'bg-teal-100',
-  'bg-lime-100',
+  { bg: 'bg-sky-100', text: 'text-sky-800' },
+  { bg: 'bg-emerald-100', text: 'text-emerald-800' },
+  { bg: 'bg-amber-100', text: 'text-amber-800' },
+  { bg: 'bg-fuchsia-100', text: 'text-fuchsia-800' },
+  { bg: 'bg-rose-100', text: 'text-rose-800' },
+  { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+  { bg: 'bg-teal-100', text: 'text-teal-800' },
+  { bg: 'bg-lime-100', text: 'text-lime-800' },
 ];
 
 export default function AguardandoLiberacaoPage() {
@@ -269,7 +269,7 @@ export default function AguardandoLiberacaoPage() {
   
   const companyColorMap = useMemo(() => {
     const uniqueCompanies = [...new Set(waitingVehicles.map(v => v.transportCompanyName))];
-    const map = new Map<string, string>();
+    const map = new Map<string, { bg: string, text: string }>();
     uniqueCompanies.forEach((company, index) => {
       map.set(company, colorPalette[index % colorPalette.length]);
     });
@@ -526,13 +526,21 @@ export default function AguardandoLiberacaoPage() {
                 {filteredVehicles.map((vehicle, index) => {
                     const driver = persons.find(p => p.name.toLowerCase() === vehicle.driverName.toLowerCase());
                     const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
-                    const rowColorClass = companyColorMap.get(vehicle.transportCompanyName);
+                    const companyColors = companyColorMap.get(vehicle.transportCompanyName);
                     return (
-                    <TableRow key={vehicle.id} className={cn(rowColorClass)}>
+                    <TableRow key={vehicle.id}>
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>{vehicle.driverName}</TableCell>
                         <TableCell>{phone}</TableCell>
-                        <TableCell>{vehicle.transportCompanyName}</TableCell>
+                        <TableCell>
+                            <span className={cn(
+                                'inline-block px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap',
+                                companyColors?.bg,
+                                companyColors?.text
+                            )}>
+                                {vehicle.transportCompanyName}
+                            </span>
+                        </TableCell>
                         <TableCell>{vehicle.plate1}</TableCell>
                         <TableCell className="max-w-xs truncate">{vehicle.observation || '-'}</TableCell>
                         <TableCell>{formatDate(vehicle.arrivalTimestamp)}</TableCell>
