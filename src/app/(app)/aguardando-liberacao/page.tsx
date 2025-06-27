@@ -267,6 +267,8 @@ export default function AguardandoLiberacaoPage() {
       await addDoc(collection(db, 'notifications'), {
         vehicleEntryId: vehicle.id,
         plate1: vehicle.plate1,
+        plate2: vehicle.plate2 || '',
+        plate3: vehicle.plate3 || '',
         driverName: vehicle.driverName,
         driverPhone: phone,
         createdAt: Timestamp.now(),

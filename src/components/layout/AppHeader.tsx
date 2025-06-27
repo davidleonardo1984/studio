@@ -329,7 +329,7 @@ export function AppHeader() {
                             <AlertCircle className="h-5 w-5 text-amber-500" />
                         </div>
                         <div>
-                            <p className="font-semibold text-sm">Placa {notif.plate1}</p>
+                            <p className="font-semibold text-sm">Placa(s): {[notif.plate1, notif.plate2, notif.plate3].filter(Boolean).join(' / ')}</p>
                             <p className="text-xs text-muted-foreground">{notif.driverName}</p>
                              {notif.driverPhone && <p className="text-xs text-muted-foreground">Telefone: {formatDisplayPhoneNumber(notif.driverPhone)}</p>}
                         </div>
@@ -444,7 +444,7 @@ export function AppHeader() {
       <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Liberação de {selectedNotification?.plate1}</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar Liberação de {[selectedNotification?.plate1, selectedNotification?.plate2, selectedNotification?.plate3].filter(Boolean).join(' / ')}</AlertDialogTitle>
             <AlertDialogDescription>
               Este campo é opcional. Pressione Enter ou clique em confirmar para prosseguir.
             </AlertDialogDescription>
