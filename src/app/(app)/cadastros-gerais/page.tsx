@@ -276,22 +276,25 @@ function PersonsSection() {
                 prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                 className="w-full sm:w-auto"
             />
-            <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0" disabled={showForm}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Nova Pessoa
-            </Button>
+             {!showForm ? (
+                <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Nova Pessoa
+                </Button>
+              ) : (
+                <>
+                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
+                  <Button type="submit" form="person-form" size="sm" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
+                  </Button>
+                </>
+              )}
         </div>
       </CardHeader>
       <CardContent>
         {showForm && (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
-                </Button>
-              </div>
+            <form id="person-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
               {formFields(form)}
             </form>
           </Form>
@@ -499,22 +502,25 @@ function TransportCompaniesSection() {
                 prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                 className="w-full sm:w-auto"
             />
-            <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0" disabled={showForm}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Nova Transportadora / Empresa
-            </Button>
+             {!showForm ? (
+                <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Nova Transportadora / Empresa
+                </Button>
+              ) : (
+                <>
+                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
+                  <Button type="submit" form="company-form" size="sm" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
+                  </Button>
+                </>
+              )}
         </div>
       </CardHeader>
       <CardContent>
         {showForm && (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
-                </Button>
-              </div>
+            <form id="company-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
               {formFields(form)}
             </form>
           </Form>
@@ -706,22 +712,25 @@ function InternalDestinationsSection() {
                 prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                 className="w-full sm:w-auto"
             />
-            <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0" disabled={showForm}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Novo Destino
-            </Button>
+            {!showForm ? (
+                <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Novo Destino
+                </Button>
+            ) : (
+                <>
+                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
+                  <Button type="submit" form="destination-form" size="sm" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
+                  </Button>
+                </>
+            )}
         </div>
       </CardHeader>
       <CardContent>
         {showForm && (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
-                </Button>
-              </div>
+            <form id="destination-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
               {formFields(form)}
             </form>
           </Form>
