@@ -285,14 +285,14 @@ function PersonsSection() {
         {showForm && (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
-              {formFields(form)}
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
                 </Button>
               </div>
+              {formFields(form)}
             </form>
           </Form>
         )}
@@ -508,7 +508,6 @@ function TransportCompaniesSection() {
         {showForm && (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
-              {formFields(form)}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
                 <Button type="submit" disabled={isSubmitting}>
@@ -516,6 +515,7 @@ function TransportCompaniesSection() {
                   {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
                 </Button>
               </div>
+              {formFields(form)}
             </form>
           </Form>
         )}
@@ -715,7 +715,6 @@ function InternalDestinationsSection() {
         {showForm && (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
-              {formFields(form)}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
                 <Button type="submit" disabled={isSubmitting}>
@@ -723,6 +722,7 @@ function InternalDestinationsSection() {
                   {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
                 </Button>
               </div>
+              {formFields(form)}
             </form>
           </Form>
         )}
