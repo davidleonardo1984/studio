@@ -269,13 +269,15 @@ function PersonsSection() {
           <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes</CardTitle>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Input 
-                placeholder="Pesquisar por nome ou CPF..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                className="w-full sm:w-auto"
-            />
+            {!showForm && (
+                <Input 
+                    placeholder="Pesquisar por nome ou CPF..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                    className="w-full sm:w-auto"
+                />
+            )}
              {!showForm ? (
                 <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
                   <PlusCircle className="mr-2 h-4 w-4" /> Nova Pessoa
@@ -495,13 +497,15 @@ function TransportCompaniesSection() {
           <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras / Empresas</CardTitle>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Input 
-                placeholder="Pesquisar por nome..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                className="w-full sm:w-auto"
-            />
+            {!showForm && (
+                <Input 
+                    placeholder="Pesquisar por nome..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                    className="w-full sm:w-auto"
+                />
+            )}
              {!showForm ? (
                 <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
                   <PlusCircle className="mr-2 h-4 w-4" /> Nova Transportadora / Empresa
@@ -705,13 +709,15 @@ function InternalDestinationsSection() {
           <CardTitle className="text-xl font-semibold text-primary font-headline">Destinos Internos</CardTitle>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Input 
-                placeholder="Pesquisar por nome..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                className="w-full sm:w-auto"
-            />
+            {!showForm && (
+                <Input 
+                    placeholder="Pesquisar por nome..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                    className="w-full sm:w-auto"
+                />
+            )}
             {!showForm ? (
                 <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
                   <PlusCircle className="mr-2 h-4 w-4" /> Novo Destino

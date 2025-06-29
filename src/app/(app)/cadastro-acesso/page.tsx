@@ -323,14 +323,16 @@ export default function CadastroAcessoPage() {
           <CardTitle className="text-xl font-semibold text-primary">Usuários Cadastrados</CardTitle>
         </CardHeader>
         <CardContent>
-           <div className="mb-6 mt-2">
-            <Input 
-                placeholder="Pesquisar por nome ou login..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-            />
-          </div>
+           {!showForm && (
+            <div className="mb-6 mt-2">
+                <Input 
+                    placeholder="Pesquisar por nome ou login..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                />
+            </div>
+           )}
           {isAuthLoading ? (
             <div className="flex justify-center py-4">
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -389,7 +391,3 @@ export default function CadastroAcessoPage() {
     </div>
   );
 }
-
-    
-
-    
