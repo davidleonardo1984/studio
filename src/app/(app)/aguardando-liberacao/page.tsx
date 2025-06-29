@@ -319,6 +319,7 @@ export default function AguardandoLiberacaoPage() {
         plate2: vehicle.plate2 || '',
         plate3: vehicle.plate3 || '',
         driverName: vehicle.driverName,
+        transportCompanyName: vehicle.transportCompanyName,
         driverPhone: phone,
         createdAt: Timestamp.now(),
         createdBy: user.login,

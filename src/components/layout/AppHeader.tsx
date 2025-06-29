@@ -337,6 +337,7 @@ export function AppHeader() {
                         <div>
                             <p className="font-semibold text-sm">Placa(s): {[notif.plate1, notif.plate2, notif.plate3].filter(Boolean).join(' / ')}</p>
                             <p className="text-xs text-muted-foreground">{notif.driverName}</p>
+                            <p className="text-xs text-muted-foreground">{notif.transportCompanyName}</p>
                              {notif.driverPhone && <p className="text-xs text-muted-foreground">Telefone: {formatDisplayPhoneNumber(notif.driverPhone)}</p>}
                         </div>
                     </div>
