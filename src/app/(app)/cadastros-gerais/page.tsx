@@ -252,6 +252,7 @@ function PersonsSection() {
                     <Switch
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        disabled={!editingItem}
                         aria-label="Bloquear Acesso"
                     />
                 </FormControl>
@@ -318,42 +319,44 @@ function PersonsSection() {
                 </p>
               </div>
             ) : filteredData.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>CNH</TableHead><TableHead>Telefone</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.map((item) => (
-                     <TableRow key={item.id} className={item.isBlocked ? "bg-destructive/10 hover:bg-destructive/20" : ""}>
-                        <TableCell>
-                            {item.isBlocked ? (
-                                <Badge variant="destructive">BLOQUEADO</Badge>
-                            ) : (
-                                <Badge variant="secondary">ATIVO</Badge>
-                            )}
-                        </TableCell>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>{item.cpf}</TableCell>
-                        <TableCell>{item.cnh || 'N/A'}</TableCell>
-                        <TableCell>{item.phone ? formatDisplayPhoneNumber(item.phone) : 'N/A'}</TableCell>
-                        <TableCell className="text-right space-x-2">
-                            <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); }}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
-                            <AlertDialog>
-                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
-                            </AlertDialogContent>
-                            </AlertDialog>
-                        </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>CNH</TableHead><TableHead>Telefone</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredData.map((item) => (
+                      <TableRow key={item.id} className={item.isBlocked ? "bg-destructive/10 hover:bg-destructive/20" : ""}>
+                          <TableCell>
+                              {item.isBlocked ? (
+                                  <Badge variant="destructive">BLOQUEADO</Badge>
+                              ) : (
+                                  <Badge variant="secondary">ATIVO</Badge>
+                              )}
+                          </TableCell>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.cpf}</TableCell>
+                          <TableCell>{item.cnh || 'N/A'}</TableCell>
+                          <TableCell>{item.phone ? formatDisplayPhoneNumber(item.phone) : 'N/A'}</TableCell>
+                          <TableCell className="text-right space-x-2">
+                              <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); }}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
+                              <AlertDialog>
+                              <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                                  <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
+                              </AlertDialogContent>
+                              </AlertDialog>
+                          </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <div className="text-center py-12">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
@@ -548,31 +551,33 @@ function TransportCompaniesSection() {
                 </p>
               </div>
             ) : filteredData.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.name}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredData.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                              <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <div className="text-center py-12">
                 <Truck className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
@@ -762,31 +767,33 @@ function InternalDestinationsSection() {
                 </p>
               </div>
             ) : filteredData.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.map((item) => (
-                    <TableRow key={item.id}>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell className="text-right space-x-2">
-                            <Button variant="ghost" size="icon" onClick={() => setEditingItem(item)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
-                            <AlertDialog>
-                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
-                            </AlertDialogContent>
-                            </AlertDialog>
-                        </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredData.map((item) => (
+                      <TableRow key={item.id}>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell className="text-right space-x-2">
+                              <Button variant="ghost" size="icon" onClick={() => setEditingItem(item)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
+                              <AlertDialog>
+                              <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                                  <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
+                              </AlertDialogContent>
+                              </AlertDialog>
+                          </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <div className="text-center py-12">
                 <MapPin className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
@@ -811,11 +818,14 @@ export default function CadastrosGeraisPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-primary font-headline">Cadastros Gerais</h1>
-        <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras / empresas e destinos internos.</p>
-      </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div>
+                <h1 className="text-3xl font-bold text-primary font-headline">Cadastros Gerais</h1>
+                <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras / empresas e destinos internos.</p>
+            </div>
+        </div>
+
         <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 mb-6">
           <TabsTrigger value="persons" className="flex items-center gap-2"><Users className="h-4 w-4" /> Motoristas e Ajudantes</TabsTrigger>
           <TabsTrigger value="transportCompanies" className="flex items-center gap-2"><Truck className="h-4 w-4" />Transportadoras / Empresas</TabsTrigger>
