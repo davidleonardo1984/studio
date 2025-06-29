@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -163,6 +163,15 @@ export default function AguardandoLiberacaoPage() {
   const isClient = useIsClient();
   const [now, setNow] = useState(new Date());
 
+  // State for release notification banner
+  const [releasedVehicleInfo, setReleasedVehicleInfo] = useState<string | null>(null);
+  const waitingVehiclesRef = useRef<VehicleEntry[]>([]);
+
+  useEffect(() => {
+    // Keep a ref to the previous state to compare when the list updates
+    waitingVehiclesRef.current = waitingVehicles;
+  }, [waitingVehicles]);
+
   useEffect(() => {
     // Update the current time every minute to refresh the "time in yard" display
     const timer = setInterval(() => {
@@ -202,17 +211,32 @@ export default function AguardandoLiberacaoPage() {
     const q = query(entriesCollection, where('status', '==', 'aguardando_patio'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const vehicles: VehicleEntry[] = [];
+      const newVehicles: VehicleEntry[] = [];
       querySnapshot.forEach((doc) => {
-        vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
+        newVehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
       });
       // Sort client-side to avoid needing a composite index
-      vehicles.sort((a, b) => {
+      newVehicles.sort((a, b) => {
         const dateA = (a.arrivalTimestamp as any)?.toDate ? (a.arrivalTimestamp as any).toDate() : new Date(a.arrivalTimestamp as string);
         const dateB = (b.arrivalTimestamp as any)?.toDate ? (b.arrivalTimestamp as any).toDate() : new Date(b.arrivalTimestamp as string);
         return dateA.getTime() - dateB.getTime(); // asc
       });
-      setWaitingVehicles(vehicles);
+
+      // Check if any vehicles were removed from the list (i.e., released)
+      if (waitingVehiclesRef.current.length > 0) {
+        const released = waitingVehiclesRef.current.filter(
+          oldVehicle => !newVehicles.some(newVehicle => newVehicle.id === oldVehicle.id)
+        );
+        if (released.length > 0) {
+          const releasedPlates = released.map(v => v.plate1).join(', ');
+          const info = `Veículo(s) de placa(s) ${releasedPlates} foi/foram liberado(s) para entrada.`;
+          setReleasedVehicleInfo(info);
+          // Hide the notification banner after 6 seconds
+          setTimeout(() => setReleasedVehicleInfo(null), 6000);
+        }
+      }
+
+      setWaitingVehicles(newVehicles);
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching waiting vehicles:", error);
@@ -459,6 +483,15 @@ export default function AguardandoLiberacaoPage() {
   return (
     <>
     <div className="container mx-auto py-8">
+       {releasedVehicleInfo && (
+          <Alert className="mb-6 bg-green-100 border-green-400 text-green-700 animate-in fade-in-50 slide-in-from-top-10 duration-500">
+              <CheckCircle className="h-5 w-5" />
+              <AlertTitle className="font-bold">Entrada Liberada!</AlertTitle>
+              <AlertDescription>
+                  {releasedVehicleInfo}
+              </AlertDescription>
+          </Alert>
+      )}
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
             <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
@@ -642,7 +675,5 @@ export default function AguardandoLiberacaoPage() {
     </>
   );
 }
-
-    
 
     
