@@ -288,21 +288,19 @@ function PersonsSection() {
               </>
             ) : (
                 <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Nova Pessoa
+                  <PlusCircle className="mr-2 h-4 w-4" /> Cadastrar Pessoa
                 </Button>
             )}
         </div>
       </CardHeader>
       <CardContent>
-        {showForm && (
+        {showForm ? (
           <Form {...form}>
             <form id="person-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
               {formFields(form)}
             </form>
           </Form>
-        )}
-        
-        {!showForm && (
+        ) : (
           <>
             {isLoading ? (
               <div className="flex justify-center items-center py-12">
@@ -363,7 +361,7 @@ function PersonsSection() {
                   Nenhum resultado encontrado.
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Tente um termo de busca diferente ou clique em "Nova Pessoa" para cadastrar.
+                  Tente um termo de busca diferente ou clique em "Cadastrar Pessoa" para cadastrar.
                 </p>
               </div>
             )}
@@ -520,21 +518,19 @@ function TransportCompaniesSection() {
               </>
             ) : (
                 <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Nova Transportadora / Empresa
+                  <PlusCircle className="mr-2 h-4 w-4" /> Cadastrar Transportadora / Empresa
                 </Button>
             )}
         </div>
       </CardHeader>
       <CardContent>
-        {showForm && (
+        {showForm ? (
           <Form {...form}>
             <form id="company-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
               {formFields(form)}
             </form>
           </Form>
-        )}
-        
-        {!showForm && (
+        ) : (
           <>
             {isLoading ? (
               <div className="flex justify-center items-center py-12">
@@ -584,7 +580,7 @@ function TransportCompaniesSection() {
                   Nenhum resultado encontrado.
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Tente um termo de busca diferente ou clique em "Nova Transportadora / Empresa" para cadastrar.
+                  Tente um termo de busca diferente ou clique em "Cadastrar Transportadora / Empresa" para cadastrar.
                 </p>
               </div>
             )}
@@ -736,21 +732,19 @@ function InternalDestinationsSection() {
               </>
             ) : (
                 <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Novo Destino
+                  <PlusCircle className="mr-2 h-4 w-4" /> Cadastrar Destino
                 </Button>
             )}
         </div>
       </CardHeader>
       <CardContent>
-        {showForm && (
+        {showForm ? (
           <Form {...form}>
             <form id="destination-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
               {formFields(form)}
             </form>
           </Form>
-        )}
-        
-        {!showForm && (
+        ) : (
           <>
             {isLoading ? (
               <div className="flex justify-center items-center py-12">
@@ -800,7 +794,7 @@ function InternalDestinationsSection() {
                   Nenhum resultado encontrado.
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Tente um termo de busca diferente ou clique em "Novo Destino" para cadastrar.
+                  Tente um termo de busca diferente ou clique em "Cadastrar Destino" para cadastrar.
                 </p>
               </div>
             )}
@@ -813,13 +807,15 @@ function InternalDestinationsSection() {
 
 
 export default function CadastrosGeraisPage() {
+  const [activeTab, setActiveTab] = useState("persons");
+
   return (
     <div className="container mx-auto py-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-primary font-headline">Cadastros Gerais</h1>
         <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras / empresas e destinos internos.</p>
       </div>
-      <Tabs defaultValue="persons" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 mb-6">
           <TabsTrigger value="persons" className="flex items-center gap-2"><Users className="h-4 w-4" /> Motoristas e Ajudantes</TabsTrigger>
           <TabsTrigger value="transportCompanies" className="flex items-center gap-2"><Truck className="h-4 w-4" />Transportadoras / Empresas</TabsTrigger>

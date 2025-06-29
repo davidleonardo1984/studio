@@ -225,7 +225,7 @@ export default function CadastroAcessoPage() {
               </>
           ) : (
               <Button size="sm" onClick={() => { setEditingUser(null); setShowForm(true); }}>
-                  <UserPlus className="mr-2 h-4 w-4" /> Novo Usuário
+                  <UserPlus className="mr-2 h-4 w-4" /> Cadastrar Usuario
               </Button>
           )}
         </div>
