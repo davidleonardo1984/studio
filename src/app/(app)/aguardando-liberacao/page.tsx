@@ -328,6 +328,12 @@ export default function AguardandoLiberacaoPage() {
       const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
       await updateDoc(vehicleDocRef, { notified: true });
 
+      // Notify other tabs
+      localStorage.setItem('gateNotification', JSON.stringify({ 
+          plate1: vehicle.plate1, 
+          timestamp: Date.now() 
+      }));
+
       toast({
         title: 'Notificação Enviada!',
         description: `Os administradores foram notificados sobre o veículo ${vehicle.plate1}.`,
