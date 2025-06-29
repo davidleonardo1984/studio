@@ -212,7 +212,7 @@ export default function CadastroAcessoPage() {
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
             <h1 className="text-3xl font-bold text-primary font-headline">Gerenciamento de Acesso</h1>
-            <p className="text-muted-foreground">Adicione, edite ou visualize usuários do sistema.</p>
+            <p className="text-muted-foreground">{showForm ? (editingUser ? 'Altere os dados do usuário abaixo.' : 'Adicione um novo usuário ao sistema.') : 'Adicione, edite ou visualize usuários do sistema.'}</p>
         </div>
         <div className="flex items-center gap-2 mt-4 sm:mt-0">
           {showForm ? (
@@ -318,77 +318,77 @@ export default function CadastroAcessoPage() {
         </Card>
       )}
 
-      <Card className="shadow-lg">
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
-            <CardTitle className="text-xl font-semibold text-primary">Usuários Cadastrados ({filteredUsers.length})</CardTitle>
-            {!showForm && (
-                <Input 
-                    placeholder="Pesquisar por nome ou login..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                    className="w-full sm:max-w-xs"
-                />
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isAuthLoading ? (
-            <div className="flex justify-center py-4">
-                <Loader2 className="h-6 w-6 animate-spin" />
+      {!showForm && (
+        <Card className="shadow-lg">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+              <CardTitle className="text-xl font-semibold text-primary">Usuários Cadastrados ({filteredUsers.length})</CardTitle>
+              <Input 
+                  placeholder="Pesquisar por nome ou login..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                  className="w-full sm:max-w-xs"
+              />
             </div>
-          ) : filteredUsers.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Login</TableHead>
-                  <TableHead>Perfil</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((u) => {
-                  const roleLabel = u.role === 'admin' ? 'Admin' : u.role === 'gate_agent' ? 'Agente de Pátio' : 'Usuário';
-                  const roleClass = u.role === 'admin' ? 'bg-accent text-accent-foreground' : u.role === 'gate_agent' ? 'bg-muted text-muted-foreground' : 'bg-secondary text-secondary-foreground';
-                  
-                  return (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.name}</TableCell>
-                      <TableCell>{u.login}</TableCell>
-                      <TableCell><span className={`px-2 py-1 text-xs rounded-full ${roleClass}`}>{roleLabel}</span></TableCell>
-                      <TableCell className="text-right space-x-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(u)} title="Editar" disabled={u.login === 'admin' && user?.login !== 'admin' /* Allow admin to edit self, but not other admins if any */}>
-                          <Edit2 className="h-4 w-4 text-blue-600" />
-                        </Button>
-                        {user?.login !== u.login && u.login !== 'admin' && ( // Prevent deleting self and the main 'admin' account
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" title="Excluir">
-                                      <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                  <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o usuário {u.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteUser(u.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
-                                  </AlertDialogFooter>
-                              </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-muted-foreground text-center py-4">{searchTerm ? "Nenhum usuário encontrado com os termos da busca." : "Nenhum usuário cadastrado."}</p>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            {isAuthLoading ? (
+              <div className="flex justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : filteredUsers.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Login</TableHead>
+                    <TableHead>Perfil</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((u) => {
+                    const roleLabel = u.role === 'admin' ? 'Admin' : u.role === 'gate_agent' ? 'Agente de Pátio' : 'Usuário';
+                    const roleClass = u.role === 'admin' ? 'bg-accent text-accent-foreground' : u.role === 'gate_agent' ? 'bg-muted text-muted-foreground' : 'bg-secondary text-secondary-foreground';
+                    
+                    return (
+                      <TableRow key={u.id}>
+                        <TableCell className="font-medium">{u.name}</TableCell>
+                        <TableCell>{u.login}</TableCell>
+                        <TableCell><span className={`px-2 py-1 text-xs rounded-full ${roleClass}`}>{roleLabel}</span></TableCell>
+                        <TableCell className="text-right space-x-1">
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(u)} title="Editar" disabled={u.login === 'admin' && user?.login !== 'admin' /* Allow admin to edit self, but not other admins if any */}>
+                            <Edit2 className="h-4 w-4 text-blue-600" />
+                          </Button>
+                          {user?.login !== u.login && u.login !== 'admin' && ( // Prevent deleting self and the main 'admin' account
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" title="Excluir">
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o usuário {u.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteUser(u.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">{searchTerm ? "Nenhum usuário encontrado com os termos da busca." : "Nenhum usuário cadastrado."}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
