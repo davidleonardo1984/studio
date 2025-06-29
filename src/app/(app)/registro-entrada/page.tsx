@@ -196,11 +196,6 @@ export default function RegistroEntradaPage() {
     },
   });
 
-  const { watch, setError, clearErrors } = form;
-  const driverNameValue = watch('driverName');
-  const assistant1NameValue = watch('assistant1Name');
-  const assistant2NameValue = watch('assistant2Name');
-
   useEffect(() => {
     if (!db) {
         setDataLoading(false);
@@ -228,37 +223,6 @@ export default function RegistroEntradaPage() {
     };
     fetchData();
   }, [toast]);
-
-  const checkBlockedStatus = useCallback((nameValue: string | undefined, fieldName: "driverName" | "assistant1Name" | "assistant2Name") => {
-      if (nameValue) {
-          const selectedPerson = persons.find(p => p.name.toLowerCase() === nameValue.toLowerCase());
-          if (selectedPerson?.isBlocked) {
-              toast({
-                  variant: 'destructive',
-                  title: 'ACESSO BLOQUEADO',
-                  description: `A pessoa ${selectedPerson.name} está bloqueada e não pode ser registrada na entrada.`,
-                  duration: 5000
-              });
-              setError(fieldName, { type: 'manual', message: 'Esta pessoa está bloqueada.' });
-          } else {
-              clearErrors(fieldName);
-          }
-      } else {
-          clearErrors(fieldName);
-      }
-  }, [persons, toast, setError, clearErrors]);
-
-  useEffect(() => {
-      checkBlockedStatus(driverNameValue, 'driverName');
-  }, [driverNameValue, checkBlockedStatus]);
-
-  useEffect(() => {
-      checkBlockedStatus(assistant1NameValue, 'assistant1Name');
-  }, [assistant1NameValue, checkBlockedStatus]);
-
-  useEffect(() => {
-      checkBlockedStatus(assistant2NameValue, 'assistant2Name');
-  }, [assistant2NameValue, checkBlockedStatus]);
 
   useEffect(() => {
     if (!isDialogOpen) {
@@ -396,19 +360,20 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nome do Motorista</FormLabel>
-                       <FormControl>
-                        <Input
-                          placeholder={dataLoading ? "CARREGANDO..." : "Digite ou selecione o motorista"}
-                          {...field}
-                          list="driver-list"
-                          disabled={dataLoading}
-                        />
-                      </FormControl>
-                      <datalist id="driver-list">
-                        {persons.map((person) => (
-                          <option key={person.id} value={person.name} />
-                        ))}
-                      </datalist>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={dataLoading}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={dataLoading ? "CARREGANDO..." : "Selecione o motorista"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {persons.filter(p => !p.isBlocked).map((person) => (
+                            <SelectItem key={person.id} value={person.name}>
+                              {person.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -419,22 +384,20 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Transportadora / Empresa</FormLabel>
-                       <FormControl>
-                        <div className="relative">
-                          <Input
-                            placeholder={dataLoading ? "CARREGANDO..." : "Digite ou selecione a Transportadora / Empresa"}
-                            {...field}
-                            list="transport-company-list"
-                            disabled={dataLoading}
-                          />
-                           {dataLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
-                        </div>
-                      </FormControl>
-                      <datalist id="transport-company-list">
-                        {transportCompanies.map((company) => (
-                          <option key={company.id} value={company.name} />
-                        ))}
-                      </datalist>
+                       <Select onValueChange={field.onChange} value={field.value} disabled={dataLoading}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={dataLoading ? "CARREGANDO..." : "Selecione a Transportadora / Empresa"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {transportCompanies.map((company) => (
+                            <SelectItem key={company.id} value={company.name}>
+                              {company.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -453,20 +416,21 @@ export default function RegistroEntradaPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ajudante 1 (Opcional)</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={dataLoading ? "CARREGANDO..." : "Digite ou selecione o ajudante 1"}
-                            {...field}
-                            value={field.value ?? ''}
-                            list="assistant-list"
-                            disabled={dataLoading}
-                          />
-                        </FormControl>
-                        <datalist id="assistant-list">
-                          {persons.map((person) => (
-                            <option key={person.id} value={person.name} />
-                          ))}
-                        </datalist>
+                        <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={dataLoading}>
+                           <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={dataLoading ? "CARREGANDO..." : "Selecione o ajudante 1"} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Nenhum</SelectItem>
+                            {persons.filter(p => !p.isBlocked).map((person) => (
+                              <SelectItem key={person.id} value={person.name}>
+                                {person.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -477,15 +441,21 @@ export default function RegistroEntradaPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ajudante 2 (Opcional)</FormLabel>
-                         <FormControl>
-                          <Input
-                            placeholder={dataLoading ? "CARREGANDO..." : "Digite ou selecione o ajudante 2"}
-                            {...field}
-                            value={field.value ?? ''}
-                            list="assistant-list"
-                            disabled={dataLoading}
-                          />
-                        </FormControl>
+                         <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={dataLoading}>
+                           <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={dataLoading ? "CARREGANDO..." : "Selecione o ajudante 2"} />
+                            </SelectTrigger>
+                          </FormControl>
+                           <SelectContent>
+                            <SelectItem value="">Nenhum</SelectItem>
+                            {persons.filter(p => !p.isBlocked).map((person) => (
+                              <SelectItem key={person.id} value={person.name}>
+                                {person.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                          <FormMessage />
                       </FormItem>
                     )}
@@ -536,19 +506,20 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Destino Interno</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={dataLoading ? "CARREGANDO..." : "Digite ou selecione o destino"}
-                          {...field}
-                          list="destination-list"
-                          disabled={dataLoading}
-                        />
-                      </FormControl>
-                      <datalist id="destination-list">
-                        {internalDestinations.map((dest) => (
-                          <option key={dest.id} value={dest.name} />
-                        ))}
-                      </datalist>
+                       <Select onValueChange={field.onChange} value={field.value} disabled={dataLoading}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={dataLoading ? "CARREGANDO..." : "Selecione o destino"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {internalDestinations.map((dest) => (
+                            <SelectItem key={dest.id} value={dest.name}>
+                              {dest.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
