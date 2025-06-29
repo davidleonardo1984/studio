@@ -76,7 +76,7 @@ export default function AuthenticatedLayout({ children }: { children: ReactNode 
       <SidebarInset className="flex flex-col">
         <AppHeader />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-background">
-            {notificationBanner && (
+            {notificationBanner && user?.role !== 'gate_agent' && (
               <Alert className="bg-amber-100 border-amber-400 text-amber-800 mb-6 animate-in fade-in-50">
                   <BellRing className="h-5 w-5 text-amber-600" />
                   <AlertTitle>Nova Solicitação de Liberação</AlertTitle>
