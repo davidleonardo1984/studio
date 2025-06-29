@@ -214,9 +214,21 @@ export default function CadastroAcessoPage() {
             <h1 className="text-3xl font-bold text-primary font-headline">Gerenciamento de Acesso</h1>
             <p className="text-muted-foreground">Adicione, edite ou visualize usuários do sistema.</p>
         </div>
-        <Button size="sm" onClick={() => { setEditingUser(null); setShowForm(!showForm); }} className="mt-4 sm:mt-0">
-          <UserPlus className="mr-2 h-4 w-4" /> {showForm ? 'Cancelar Cadastro' : 'Novo Usuário'}
-        </Button>
+        <div className="flex items-center gap-2 mt-4 sm:mt-0">
+          {showForm ? (
+              <>
+                  <Button variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingUser(null); }}>Cancelar</Button>
+                  <Button size="sm" type="submit" form="user-access-form" disabled={isSubmitting}>
+                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {editingUser ? 'Salvar Alterações' : 'Cadastrar Usuário'}
+                  </Button>
+              </>
+          ) : (
+              <Button size="sm" onClick={() => { setEditingUser(null); setShowForm(true); }}>
+                  <UserPlus className="mr-2 h-4 w-4" /> Novo Usuário
+              </Button>
+          )}
+        </div>
       </div>
 
       {showForm && (
@@ -227,7 +239,7 @@ export default function CadastroAcessoPage() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form id="user-access-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Maria Souza" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="login" render={({ field }) => ( <FormItem><FormLabel>Login de Acesso</FormLabel><FormControl><Input placeholder="Ex: maria.souza" {...field} disabled={!!editingUser && editingUser.login === 'admin'} noAutoUppercase={true} /></FormControl><FormMessage /></FormItem>)} />
@@ -300,13 +312,6 @@ export default function CadastroAcessoPage() {
                     )}
                 />
 
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => {setShowForm(false); setEditingUser(null);}}>Cancelar</Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {editingUser ? 'Salvar Alterações' : 'Cadastrar Usuário'}
-                  </Button>
-                </div>
               </form>
             </Form>
           </CardContent>
@@ -384,5 +389,7 @@ export default function CadastroAcessoPage() {
     </div>
   );
 }
+
+    
 
     
