@@ -302,68 +302,72 @@ function PersonsSection() {
           </Form>
         )}
         
-        {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-4 text-muted-foreground">Carregando...</p>
-          </div>
-        ) : !searchTerm.trim() ? (
-          <div className="text-center py-12">
-            <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">
-              Utilize a busca para consultar os cadastros.
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Digite um nome ou CPF para exibir os resultados.
-            </p>
-          </div>
-        ) : filteredData.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Status</TableHead>
-                <TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>CNH</TableHead><TableHead>Telefone</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.map((item) => (
-                 <TableRow key={item.id} className={item.isBlocked ? "bg-destructive/10 hover:bg-destructive/20" : ""}>
-                    <TableCell>
-                        {item.isBlocked ? (
-                            <Badge variant="destructive">BLOQUEADO</Badge>
-                        ) : (
-                            <Badge variant="secondary">ATIVO</Badge>
-                        )}
-                    </TableCell>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell>{item.cpf}</TableCell>
-                    <TableCell>{item.cnh || 'N/A'}</TableCell>
-                    <TableCell>{item.phone ? formatDisplayPhoneNumber(item.phone) : 'N/A'}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); }}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
-                        <AlertDialog>
-                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
-                        </AlertDialogContent>
-                        </AlertDialog>
-                    </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <div className="text-center py-12">
-            <Users className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">
-              Nenhum resultado encontrado.
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Tente um termo de busca diferente ou clique em "Nova Pessoa" para cadastrar.
-            </p>
-          </div>
+        {!showForm && (
+          <>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="ml-4 text-muted-foreground">Carregando...</p>
+              </div>
+            ) : !searchTerm.trim() ? (
+              <div className="text-center py-12">
+                <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
+                <p className="text-lg font-medium text-muted-foreground">
+                  Utilize a busca para consultar os cadastros.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Digite um nome ou CPF para exibir os resultados.
+                </p>
+              </div>
+            ) : filteredData.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>CNH</TableHead><TableHead>Telefone</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredData.map((item) => (
+                     <TableRow key={item.id} className={item.isBlocked ? "bg-destructive/10 hover:bg-destructive/20" : ""}>
+                        <TableCell>
+                            {item.isBlocked ? (
+                                <Badge variant="destructive">BLOQUEADO</Badge>
+                            ) : (
+                                <Badge variant="secondary">ATIVO</Badge>
+                            )}
+                        </TableCell>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell>{item.cpf}</TableCell>
+                        <TableCell>{item.cnh || 'N/A'}</TableCell>
+                        <TableCell>{item.phone ? formatDisplayPhoneNumber(item.phone) : 'N/A'}</TableCell>
+                        <TableCell className="text-right space-x-2">
+                            <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); }}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
+                            <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
+                            </AlertDialogContent>
+                            </AlertDialog>
+                        </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-12">
+                <Users className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
+                <p className="text-lg font-medium text-muted-foreground">
+                  Nenhum resultado encontrado.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Tente um termo de busca diferente ou clique em "Nova Pessoa" para cadastrar.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
@@ -530,57 +534,61 @@ function TransportCompaniesSection() {
           </Form>
         )}
         
-        {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-4 text-muted-foreground">Carregando Transportadoras / Empresas...</p>
-          </div>
-        ) : !searchTerm.trim() ? (
-          <div className="text-center py-12">
-            <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">
-              Utilize a busca para consultar os cadastros.
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Digite o nome de uma transportadora para exibir.
-            </p>
-          </div>
-        ) : filteredData.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                        <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <div className="text-center py-12">
-            <Truck className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">
-              Nenhum resultado encontrado.
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Tente um termo de busca diferente ou clique em "Nova Transportadora / Empresa" para cadastrar.
-            </p>
-          </div>
+        {!showForm && (
+          <>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="ml-4 text-muted-foreground">Carregando Transportadoras / Empresas...</p>
+              </div>
+            ) : !searchTerm.trim() ? (
+              <div className="text-center py-12">
+                <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
+                <p className="text-lg font-medium text-muted-foreground">
+                  Utilize a busca para consultar os cadastros.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Digite o nome de uma transportadora para exibir.
+                </p>
+              </div>
+            ) : filteredData.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredData.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-12">
+                <Truck className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
+                <p className="text-lg font-medium text-muted-foreground">
+                  Nenhum resultado encontrado.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Tente um termo de busca diferente ou clique em "Nova Transportadora / Empresa" para cadastrar.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
@@ -742,57 +750,61 @@ function InternalDestinationsSection() {
           </Form>
         )}
         
-        {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-4 text-muted-foreground">Carregando...</p>
-          </div>
-        ) : !searchTerm.trim() ? (
-          <div className="text-center py-12">
-            <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">
-              Utilize a busca para consultar os cadastros.
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Digite o nome de um destino para exibir.
-            </p>
-          </div>
-        ) : filteredData.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.map((item) => (
-                <TableRow key={item.id}>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="icon" onClick={() => setEditingItem(item)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
-                        <AlertDialog>
-                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
-                        </AlertDialogContent>
-                        </AlertDialog>
-                    </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <div className="text-center py-12">
-            <MapPin className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">
-              Nenhum resultado encontrado.
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Tente um termo de busca diferente ou clique em "Novo Destino" para cadastrar.
-            </p>
-          </div>
+        {!showForm && (
+          <>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="ml-4 text-muted-foreground">Carregando...</p>
+              </div>
+            ) : !searchTerm.trim() ? (
+              <div className="text-center py-12">
+                <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
+                <p className="text-lg font-medium text-muted-foreground">
+                  Utilize a busca para consultar os cadastros.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Digite o nome de um destino para exibir.
+                </p>
+              </div>
+            ) : filteredData.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredData.map((item) => (
+                    <TableRow key={item.id}>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell className="text-right space-x-2">
+                            <Button variant="ghost" size="icon" onClick={() => setEditingItem(item)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
+                            <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir {item.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter>
+                            </AlertDialogContent>
+                            </AlertDialog>
+                        </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-12">
+                <MapPin className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
+                <p className="text-lg font-medium text-muted-foreground">
+                  Nenhum resultado encontrado.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Tente um termo de busca diferente ou clique em "Novo Destino" para cadastrar.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
