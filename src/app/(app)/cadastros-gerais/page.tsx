@@ -269,7 +269,16 @@ function PersonsSection() {
           <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes</CardTitle>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-            {!showForm && (
+            {showForm ? (
+              <>
+                <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
+                <Button type="submit" form="person-form" size="sm" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
+                </Button>
+              </>
+            ) : (
+              <>
                 <Input 
                     placeholder="Pesquisar por nome ou CPF..."
                     value={searchTerm}
@@ -277,20 +286,11 @@ function PersonsSection() {
                     prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                     className="w-full sm:w-auto"
                 />
-            )}
-             {!showForm ? (
                 <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
                   <PlusCircle className="mr-2 h-4 w-4" /> Nova Pessoa
                 </Button>
-              ) : (
-                <>
-                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
-                  <Button type="submit" form="person-form" size="sm" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
-                  </Button>
-                </>
-              )}
+              </>
+            )}
         </div>
       </CardHeader>
       <CardContent>
@@ -497,7 +497,16 @@ function TransportCompaniesSection() {
           <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras / Empresas</CardTitle>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-            {!showForm && (
+            {showForm ? (
+              <>
+                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
+                  <Button type="submit" form="company-form" size="sm" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
+                  </Button>
+              </>
+            ) : (
+              <>
                 <Input 
                     placeholder="Pesquisar por nome..."
                     value={searchTerm}
@@ -505,20 +514,11 @@ function TransportCompaniesSection() {
                     prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                     className="w-full sm:w-auto"
                 />
-            )}
-             {!showForm ? (
                 <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
                   <PlusCircle className="mr-2 h-4 w-4" /> Nova Transportadora / Empresa
                 </Button>
-              ) : (
-                <>
-                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
-                  <Button type="submit" form="company-form" size="sm" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
-                  </Button>
-                </>
-              )}
+              </>
+            )}
         </div>
       </CardHeader>
       <CardContent>
@@ -709,7 +709,16 @@ function InternalDestinationsSection() {
           <CardTitle className="text-xl font-semibold text-primary font-headline">Destinos Internos</CardTitle>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-            {!showForm && (
+            {showForm ? (
+              <>
+                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
+                  <Button type="submit" form="destination-form" size="sm" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
+                  </Button>
+              </>
+            ) : (
+              <>
                 <Input 
                     placeholder="Pesquisar por nome..."
                     value={searchTerm}
@@ -717,19 +726,10 @@ function InternalDestinationsSection() {
                     prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                     className="w-full sm:w-auto"
                 />
-            )}
-            {!showForm ? (
                 <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
                   <PlusCircle className="mr-2 h-4 w-4" /> Novo Destino
                 </Button>
-            ) : (
-                <>
-                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
-                  <Button type="submit" form="destination-form" size="sm" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
-                  </Button>
-                </>
+              </>
             )}
         </div>
       </CardHeader>

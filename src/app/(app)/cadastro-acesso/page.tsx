@@ -320,19 +320,20 @@ export default function CadastroAcessoPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold text-primary">Usuários Cadastrados</CardTitle>
-        </CardHeader>
-        <CardContent>
-           {!showForm && (
-            <div className="mb-6 mt-2">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+            <CardTitle className="text-xl font-semibold text-primary">Usuários Cadastrados ({filteredUsers.length})</CardTitle>
+            {!showForm && (
                 <Input 
                     placeholder="Pesquisar por nome ou login..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                    className="w-full sm:max-w-xs"
                 />
-            </div>
-           )}
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
           {isAuthLoading ? (
             <div className="flex justify-center py-4">
                 <Loader2 className="h-6 w-6 animate-spin" />
