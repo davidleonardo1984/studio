@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry, Driver } from '@/lib/types';
-import { CheckCircle, Clock, Search, Loader2, AlertTriangle, ClipboardCopy, Bell } from 'lucide-react';
+import { CheckCircle, Clock, Search, Loader2, AlertTriangle, ClipboardCopy, Bell, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
@@ -166,31 +166,6 @@ export default function AguardandoLiberacaoPage() {
   // State for liberation banner
   const [liberationBanner, setLiberationBanner] = useState<string | null>(null);
 
-  // Listener for cross-tab liberation notifications
-  useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'lastLiberatedVehicle' && event.newValue) {
-        try {
-          const { plate1, timestamp } = JSON.parse(event.newValue);
-          // Check timestamp to avoid showing stale notifications on page load
-          if (Date.now() - timestamp < 5000) { 
-            setLiberationBanner(`Veículo ${plate1} foi liberado com sucesso!`);
-            setTimeout(() => {
-              setLiberationBanner(null);
-            }, 10000); // Hide after 10 seconds
-          }
-        } catch (e) {
-            console.error("Failed to parse storage event", e)
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
   useEffect(() => {
     // Update the current time every minute to refresh the "time in yard" display
     const timer = setInterval(() => {
@@ -307,12 +282,10 @@ export default function AguardandoLiberacaoPage() {
   const handleNotify = async (vehicle: VehicleEntry) => {
     if (!db || !user) return;
     
-    // Find the driver's phone number
     const driver = persons.find(p => p.name.toLowerCase() === vehicle.driverName.toLowerCase());
-    const phone = driver?.phone || ''; // Get phone or empty string
+    const phone = driver?.phone || '';
 
     try {
-      // Create notification
       await addDoc(collection(db, 'notifications'), {
         vehicleEntryId: vehicle.id,
         plate1: vehicle.plate1,
@@ -326,7 +299,6 @@ export default function AguardandoLiberacaoPage() {
         createdBy: user.login,
       });
 
-      // Mark vehicle as notified
       const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
       await updateDoc(vehicleDocRef, { notified: true });
 
@@ -349,7 +321,6 @@ export default function AguardandoLiberacaoPage() {
     try {
         await updateDoc(vehicleDocRef, updatedVehicleData);
         
-        // After approval, delete the corresponding notification
         const notificationsQuery = query(collection(db, 'notifications'), where('vehicleEntryId', '==', vehicle.id));
         const notificationSnapshot = await getDocs(notificationsQuery);
         if (!notificationSnapshot.empty) {
@@ -362,9 +333,12 @@ export default function AguardandoLiberacaoPage() {
 
         const updatedVehicle: VehicleEntry = { ...vehicle, ...updatedVehicleData };
         
-        // Show banner on current page
-        setLiberationBanner(`Veículo ${updatedVehicle.plate1} foi liberado com sucesso!`);
-        setTimeout(() => setLiberationBanner(null), 10000); // 10 seconds
+        // This is a cross-tab communication mechanism.
+        // It helps update other open tabs immediately after liberation.
+        localStorage.setItem('lastLiberatedVehicle', JSON.stringify({
+            plate1: updatedVehicle.plate1,
+            timestamp: Date.now()
+        }));
 
         toast({
             title: `Veículo ${updatedVehicle.plate1} Liberado!`,
@@ -398,7 +372,6 @@ export default function AguardandoLiberacaoPage() {
 
   const formatDate = (timestamp: VehicleEntry['arrivalTimestamp']) => {
     if (!timestamp) return 'N/A';
-    // Firestore Timestamps have a toDate() method, legacy data might be strings
     const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp as string);
     return date.toLocaleString('pt-BR');
   };
@@ -432,6 +405,7 @@ export default function AguardandoLiberacaoPage() {
             `Motorista: ${vehicle.driverName}`,
             `Telefone: ${phone}`,
             `Transportadora / Empresa: ${vehicle.transportCompanyName}`,
+            `Destino Interno: ${vehicle.internalDestinationName}`,
             `Placa 1: ${vehicle.plate1}`,
             `Observação: ${vehicle.observation || '-'}`,
             `Data/Hora Chegada: ${formatDate(vehicle.arrivalTimestamp)}`
@@ -552,6 +526,7 @@ export default function AguardandoLiberacaoPage() {
                   <TableHead>Motorista</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>Transportadora / Empresa</TableHead>
+                  <TableHead>Destino Interno</TableHead>
                   <TableHead>Placa 1</TableHead>
                   <TableHead>Observação</TableHead>
                   <TableHead>Data/Hora Chegada</TableHead>
@@ -578,6 +553,7 @@ export default function AguardandoLiberacaoPage() {
                                 {vehicle.transportCompanyName}
                             </span>
                         </TableCell>
+                        <TableCell>{vehicle.internalDestinationName}</TableCell>
                         <TableCell>{vehicle.plate1}</TableCell>
                         <TableCell className="max-w-xs truncate">{vehicle.observation || '-'}</TableCell>
                         <TableCell>{formatDate(vehicle.arrivalTimestamp)}</TableCell>
@@ -661,7 +637,6 @@ export default function AguardandoLiberacaoPage() {
             onClick={() => {
               if (selectedVehicle) {
                 handleApproveEntry(selectedVehicle, liberatedByName);
-                setIsDialogOpen(false);
               }
             }}
           >
