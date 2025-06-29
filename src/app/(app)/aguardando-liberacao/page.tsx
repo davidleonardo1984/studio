@@ -574,7 +574,7 @@ export default function AguardandoLiberacaoPage() {
                     const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
                     const companyColors = companyColorMap.get(vehicle.transportCompanyName);
                     return (
-                    <TableRow key={vehicle.id} className={cn(!!vehicle.notified && 'bg-amber-100')}>
+                    <TableRow key={vehicle.id} className={cn(!!vehicle.notified && user?.role !== 'gate_agent' && 'bg-amber-100')}>
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>{vehicle.driverName}</TableCell>
                         <TableCell>{phone}</TableCell>
