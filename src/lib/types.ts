@@ -88,6 +88,7 @@ export interface AppNotification {
   plate3?: string;
   driverName: string;
   transportCompanyName: string;
+  internalDestinationName: string;
   driverPhone?: string;
   createdAt: Timestamp;
   createdBy: string; 
