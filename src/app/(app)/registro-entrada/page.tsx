@@ -189,7 +189,7 @@ export default function RegistroEntradaPage() {
                 return !person?.isBlocked;
             }, { message: "Este motorista está com acesso bloqueado." }),
 
-        assistant1Name: z.string().optional().transform(val => val === '' ? undefined : val)
+        assistant1Name: z.string().optional()
             .refine(val => !val || personMap.has(val.toLowerCase()), { message: "Ajudante 1 não cadastrado." })
             .refine(val => {
                 if (!val) return true;
@@ -197,7 +197,7 @@ export default function RegistroEntradaPage() {
                 return !person?.isBlocked;
             }, { message: "Ajudante 1 está com acesso bloqueado." }),
         
-        assistant2Name: z.string().optional().transform(val => val === '' ? undefined : val)
+        assistant2Name: z.string().optional()
             .refine(val => !val || personMap.has(val.toLowerCase()), { message: "Ajudante 2 não cadastrado." })
             .refine(val => {
                 if (!val) return true;
