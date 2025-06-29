@@ -163,6 +163,34 @@ export default function AguardandoLiberacaoPage() {
   const isClient = useIsClient();
   const [now, setNow] = useState(new Date());
 
+  // State for liberation banner
+  const [liberationBanner, setLiberationBanner] = useState<string | null>(null);
+
+  // Listener for cross-tab liberation notifications
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'lastLiberatedVehicle' && event.newValue) {
+        try {
+          const { plate1, timestamp } = JSON.parse(event.newValue);
+          // Check timestamp to avoid showing stale notifications on page load
+          if (Date.now() - timestamp < 5000) { 
+            setLiberationBanner(`Veículo ${plate1} foi liberado com sucesso!`);
+            setTimeout(() => {
+              setLiberationBanner(null);
+            }, 10000); // Hide after 10 seconds
+          }
+        } catch (e) {
+            console.error("Failed to parse storage event", e)
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
   useEffect(() => {
     // Update the current time every minute to refresh the "time in yard" display
     const timer = setInterval(() => {
@@ -335,6 +363,10 @@ export default function AguardandoLiberacaoPage() {
         }
 
         const updatedVehicle: VehicleEntry = { ...vehicle, ...updatedVehicleData };
+        
+        // Show banner on current page
+        setLiberationBanner(`Veículo ${updatedVehicle.plate1} foi liberado com sucesso!`);
+        setTimeout(() => setLiberationBanner(null), 10000); // 10 seconds
 
         toast({
             title: `Veículo ${updatedVehicle.plate1} Liberado!`,
@@ -459,6 +491,13 @@ export default function AguardandoLiberacaoPage() {
   return (
     <>
     <div className="container mx-auto py-8">
+      {liberationBanner && (
+          <Alert className="bg-green-100 border-green-400 text-green-800 mb-6 animate-in fade-in-50">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <AlertTitle>Liberação Confirmada</AlertTitle>
+              <AlertDescription>{liberationBanner}</AlertDescription>
+          </Alert>
+      )}
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
             <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
@@ -528,7 +567,7 @@ export default function AguardandoLiberacaoPage() {
                     const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
                     const companyColors = companyColorMap.get(vehicle.transportCompanyName);
                     return (
-                    <TableRow key={vehicle.id}>
+                    <TableRow key={vehicle.id} className={cn(!!vehicle.notified && 'bg-amber-100')}>
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>{vehicle.driverName}</TableCell>
                         <TableCell>{phone}</TableCell>
@@ -642,7 +681,3 @@ export default function AguardandoLiberacaoPage() {
     </>
   );
 }
-
-    
-
-    

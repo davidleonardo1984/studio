@@ -269,6 +269,12 @@ export function AppHeader() {
             className: 'bg-green-600 text-white',
             icon: <CheckCircle className="h-6 w-6 text-white" />
         });
+        
+        // Set item in localStorage to notify other tabs/windows
+        localStorage.setItem('lastLiberatedVehicle', JSON.stringify({ 
+            plate1: updatedVehicle.plate1, 
+            timestamp: Date.now() 
+        }));
 
         const imageResult = await generateVehicleEntryImage(updatedVehicle);
 
