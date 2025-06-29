@@ -269,6 +269,15 @@ function PersonsSection() {
           <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes</CardTitle>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
+            {!showForm && (
+                <Input 
+                    placeholder="Pesquisar por nome ou CPF..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                    className="w-full sm:w-auto"
+                />
+            )}
             {showForm ? (
               <>
                 <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
@@ -278,18 +287,9 @@ function PersonsSection() {
                 </Button>
               </>
             ) : (
-              <>
-                <Input 
-                    placeholder="Pesquisar por nome ou CPF..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                    className="w-full sm:w-auto"
-                />
                 <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
                   <PlusCircle className="mr-2 h-4 w-4" /> Nova Pessoa
                 </Button>
-              </>
             )}
         </div>
       </CardHeader>
@@ -497,6 +497,15 @@ function TransportCompaniesSection() {
           <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras / Empresas</CardTitle>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
+            {!showForm && (
+                <Input 
+                    placeholder="Pesquisar por nome..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                    className="w-full sm:w-auto"
+                />
+            )}
             {showForm ? (
               <>
                   <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
@@ -506,18 +515,9 @@ function TransportCompaniesSection() {
                   </Button>
               </>
             ) : (
-              <>
-                <Input 
-                    placeholder="Pesquisar por nome..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                    className="w-full sm:w-auto"
-                />
                 <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
                   <PlusCircle className="mr-2 h-4 w-4" /> Nova Transportadora / Empresa
                 </Button>
-              </>
             )}
         </div>
       </CardHeader>
@@ -709,6 +709,15 @@ function InternalDestinationsSection() {
           <CardTitle className="text-xl font-semibold text-primary font-headline">Destinos Internos</CardTitle>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
+            {!showForm && (
+                <Input 
+                    placeholder="Pesquisar por nome..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                    className="w-full sm:w-auto"
+                />
+            )}
             {showForm ? (
               <>
                   <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
@@ -718,18 +727,9 @@ function InternalDestinationsSection() {
                   </Button>
               </>
             ) : (
-              <>
-                <Input 
-                    placeholder="Pesquisar por nome..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                    className="w-full sm:w-auto"
-                />
                 <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
                   <PlusCircle className="mr-2 h-4 w-4" /> Novo Destino
                 </Button>
-              </>
             )}
         </div>
       </CardHeader>
