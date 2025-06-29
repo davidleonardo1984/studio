@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -174,6 +174,7 @@ export function AppHeader() {
 
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const isInitialNotificationsLoad = useRef(true);
 
   useEffect(() => {
     if (!db || !user || user.role === 'gate_agent') return;
@@ -181,14 +182,33 @@ export function AppHeader() {
     const notificationsQuery = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
     
     const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+      
+      if (!isInitialNotificationsLoad.current) {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+                const newNotif = change.doc.data() as AppNotification;
+                toast({
+                    title: "Nova Solicitação de Liberação",
+                    description: `Veículo ${newNotif.plate1} (${newNotif.transportCompanyName}) aguarda aprovação.`,
+                    duration: 10000,
+                });
+            }
+        });
+      }
+
       const fetchedNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppNotification));
       setNotifications(fetchedNotifications);
+
+      if (isInitialNotificationsLoad.current) {
+        isInitialNotificationsLoad.current = false;
+      }
+
     }, (error) => {
       console.error("Error fetching notifications:", error);
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, toast]);
 
 
   useEffect(() => {
