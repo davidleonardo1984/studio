@@ -163,7 +163,7 @@ const formatDisplayPhoneNumber = (val: string): string => {
 
 export function AppHeader() {
   const { user, logout } = useAuth();
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
   const { toggleSidebar, isMobile } = useSidebar();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -174,6 +174,7 @@ export function AppHeader() {
 
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const notificationToastMap = useRef(new Map<string, string>());
   const isInitialNotificationsLoad = useRef(true);
 
   useEffect(() => {
@@ -186,12 +187,21 @@ export function AppHeader() {
       if (!isInitialNotificationsLoad.current) {
         snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
-                const newNotif = change.doc.data() as AppNotification;
-                toast({
+                const newNotif = { id: change.doc.id, ...change.doc.data() } as AppNotification;
+                const { id: toastId } = toast({
                     title: "Nova Solicitação de Liberação",
                     description: `Veículo ${newNotif.plate1} (${newNotif.transportCompanyName}) aguarda aprovação.`,
-                    duration: 10000,
+                    duration: 60000,
                 });
+                notificationToastMap.current.set(newNotif.id, toastId);
+            }
+            if (change.type === "removed") {
+                const notificationId = change.doc.id;
+                const toastId = notificationToastMap.current.get(notificationId);
+                if (toastId) {
+                    dismiss(toastId);
+                    notificationToastMap.current.delete(notificationId);
+                }
             }
         });
       }
@@ -208,7 +218,7 @@ export function AppHeader() {
     });
 
     return () => unsubscribe();
-  }, [user, toast]);
+  }, [user, toast, dismiss]);
 
 
   useEffect(() => {
