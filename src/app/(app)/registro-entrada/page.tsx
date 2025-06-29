@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -34,18 +34,15 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
-const entrySchema = z.object({
-  driverName: z.string().min(1, { message: 'Nome do motorista é obrigatório.' }),
-  assistant1Name: z.string().optional(),
-  assistant2Name: z.string().optional(),
-  transportCompanyName: z.string().min(1, { message: 'Transportadora / Empresa é obrigatória.' }),
+// Base schema for fields that don't depend on fetched data
+const baseSchema = z.object({
   plate1: z.string().min(7, { message: 'Placa 1 é obrigatória (mín. 7 caracteres).' }).max(8),
   plate2: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 2 inválida (mín. 7 caracteres)."}),
   plate3: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 3 inválida (mín. 7 caracteres)."}),
-  internalDestinationName: z.string().min(1, { message: 'Destino interno é obrigatório.' }),
   movementType: z.string().min(1, { message: 'Tipo de movimentação é obrigatório.' }),
   observation: z.string().max(500, { message: 'Observação muito longa (máx. 500 caracteres).' }).optional(),
 });
+
 
 const generateBarcode = () => {
     const now = new Date();
@@ -179,6 +176,42 @@ export default function RegistroEntradaPage() {
   const [internalDestinations, setInternalDestinations] = useState<InternalDestination[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   
+  const entrySchema = useMemo(() => {
+    const personMap = new Map(persons.map(p => [p.name.toLowerCase(), p]));
+    const companySet = new Set(transportCompanies.map(c => c.name.toLowerCase()));
+    const destinationSet = new Set(internalDestinations.map(d => d.name.toLowerCase()));
+
+    return baseSchema.extend({
+        driverName: z.string().min(1, { message: 'Nome do motorista é obrigatório.' })
+            .refine(val => personMap.has(val.toLowerCase()), { message: "Motorista não cadastrado." })
+            .refine(val => {
+                const person = personMap.get(val.toLowerCase());
+                return !person?.isBlocked;
+            }, { message: "Este motorista está com acesso bloqueado." }),
+
+        assistant1Name: z.string().optional().transform(val => val === '' ? undefined : val)
+            .refine(val => !val || personMap.has(val.toLowerCase()), { message: "Ajudante 1 não cadastrado." })
+            .refine(val => {
+                if (!val) return true;
+                const person = personMap.get(val.toLowerCase());
+                return !person?.isBlocked;
+            }, { message: "Ajudante 1 está com acesso bloqueado." }),
+        
+        assistant2Name: z.string().optional().transform(val => val === '' ? undefined : val)
+            .refine(val => !val || personMap.has(val.toLowerCase()), { message: "Ajudante 2 não cadastrado." })
+            .refine(val => {
+                if (!val) return true;
+                const person = personMap.get(val.toLowerCase());
+                return !person?.isBlocked;
+            }, { message: "Ajudante 2 está com acesso bloqueado." }),
+
+        transportCompanyName: z.string().min(1, { message: 'Transportadora / Empresa é obrigatória.' }).refine(val => companySet.has(val.toLowerCase()), { message: "Transportadora / Empresa não cadastrada." }),
+        
+        internalDestinationName: z.string().min(1, { message: 'Destino interno é obrigatório.' }).refine(val => destinationSet.has(val.toLowerCase()), { message: "Destino interno não cadastrado." }),
+    });
+  }, [persons, transportCompanies, internalDestinations]);
+
+
   const form = useForm<VehicleEntryFormData>({
     resolver: zodResolver(entrySchema),
     mode: "onBlur",
@@ -354,26 +387,25 @@ export default function RegistroEntradaPage() {
           <Form {...form}>
             <form className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
+                 <FormField
                   control={form.control}
                   name="driverName"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nome do Motorista</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={dataLoading}>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={dataLoading ? "CARREGANDO..." : "Selecione o motorista"} />
-                          </SelectTrigger>
+                            <Input
+                                placeholder={dataLoading ? "CARREGANDO..." : "Digite o nome do motorista"}
+                                {...field}
+                                disabled={dataLoading}
+                                list="driver-list"
+                            />
                         </FormControl>
-                        <SelectContent>
-                          {persons.filter(p => !p.isBlocked).map((person) => (
-                            <SelectItem key={person.id} value={person.name}>
-                              {person.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <datalist id="driver-list">
+                            {persons.map((person) => (
+                                <option key={person.id} value={person.name} />
+                            ))}
+                        </datalist>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -384,20 +416,19 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Transportadora / Empresa</FormLabel>
-                       <Select onValueChange={field.onChange} value={field.value} disabled={dataLoading}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={dataLoading ? "CARREGANDO..." : "Selecione a Transportadora / Empresa"} />
-                          </SelectTrigger>
+                       <FormControl>
+                            <Input
+                                placeholder={dataLoading ? "CARREGANDO..." : "Digite o nome da Transportadora / Empresa"}
+                                {...field}
+                                disabled={dataLoading}
+                                list="company-list"
+                            />
                         </FormControl>
-                        <SelectContent>
-                          {transportCompanies.map((company) => (
-                            <SelectItem key={company.id} value={company.name}>
-                              {company.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <datalist id="company-list">
+                            {transportCompanies.map((company) => (
+                                <option key={company.id} value={company.name} />
+                            ))}
+                        </datalist>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -416,21 +447,15 @@ export default function RegistroEntradaPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ajudante 1 (Opcional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={dataLoading}>
-                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={dataLoading ? "CARREGANDO..." : "Selecione o ajudante 1"} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="">Nenhum</SelectItem>
-                            {persons.filter(p => !p.isBlocked).map((person) => (
-                              <SelectItem key={person.id} value={person.name}>
-                                {person.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                            <Input
+                                placeholder={dataLoading ? "CARREGANDO..." : "Digite o nome do ajudante 1"}
+                                {...field}
+                                value={field.value ?? ''}
+                                disabled={dataLoading}
+                                list="assistant-list"
+                            />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -441,25 +466,24 @@ export default function RegistroEntradaPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ajudante 2 (Opcional)</FormLabel>
-                         <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={dataLoading}>
-                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={dataLoading ? "CARREGANDO..." : "Selecione o ajudante 2"} />
-                            </SelectTrigger>
-                          </FormControl>
-                           <SelectContent>
-                            <SelectItem value="">Nenhum</SelectItem>
-                            {persons.filter(p => !p.isBlocked).map((person) => (
-                              <SelectItem key={person.id} value={person.name}>
-                                {person.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                         <FormControl>
+                            <Input
+                                placeholder={dataLoading ? "CARREGANDO..." : "Digite o nome do ajudante 2"}
+                                {...field}
+                                value={field.value ?? ''}
+                                disabled={dataLoading}
+                                list="assistant-list"
+                            />
+                        </FormControl>
                          <FormMessage />
                       </FormItem>
                     )}
                   />
+                  <datalist id="assistant-list">
+                        {persons.map((person) => (
+                            <option key={person.id} value={person.name} />
+                        ))}
+                    </datalist>
                 </div>
               )}
 
@@ -506,20 +530,19 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Destino Interno</FormLabel>
-                       <Select onValueChange={field.onChange} value={field.value} disabled={dataLoading}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={dataLoading ? "CARREGANDO..." : "Selecione o destino"} />
-                          </SelectTrigger>
+                       <FormControl>
+                            <Input
+                                placeholder={dataLoading ? "CARREGANDO..." : "Digite o destino interno"}
+                                {...field}
+                                disabled={dataLoading}
+                                list="destination-list"
+                            />
                         </FormControl>
-                        <SelectContent>
-                          {internalDestinations.map((dest) => (
-                            <SelectItem key={dest.id} value={dest.name}>
-                              {dest.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <datalist id="destination-list">
+                            {internalDestinations.map((dest) => (
+                                <option key={dest.id} value={dest.name} />
+                            ))}
+                        </datalist>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -625,5 +648,3 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
-
-    
