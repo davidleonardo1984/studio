@@ -190,7 +190,7 @@ export function AppHeader() {
                 toast({
                     title: "Nova Solicitação de Liberação",
                     description: `Veículo ${newNotif.plate1} (${newNotif.transportCompanyName}) aguarda aprovação.`,
-                    duration: 20000,
+                    duration: 60000,
                 });
             }
         });
