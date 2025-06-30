@@ -192,7 +192,7 @@ export default function RegistroSaidaPage() {
         </h1>
       )}
       <Card className={cn(
-          "max-w-lg mx-auto shadow-xl w-full",
+          "max-w-lg mx-auto shadow-xl",
           isFocusMode && "bg-transparent border-0 shadow-none"
       )}>
         <CardHeader>
