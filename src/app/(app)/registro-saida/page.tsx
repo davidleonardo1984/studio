@@ -191,11 +191,12 @@ export default function RegistroSaidaPage() {
         </h1>
       )}
       <Card className={cn(
-          "mx-auto shadow-xl w-full max-w-lg"
+          "mx-auto shadow-xl w-full",
+          isFocusMode ? "" : "max-w-lg"
       )}>
         <CardHeader>
           <div className="flex justify-between items-center">
-              <div>
+              <div className={cn(isFocusMode && 'hidden')}>
                 <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Saída de Veículo</CardTitle>
                 <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
               </div>
