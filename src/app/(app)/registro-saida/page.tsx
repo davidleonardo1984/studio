@@ -181,22 +181,26 @@ export default function RegistroSaidaPage() {
     <div className={`container mx-auto py-8 ${isFocusMode ? 'flex flex-1 flex-col p-4 justify-center' : ''}`}>
       <div className="max-w-6xl mx-auto space-y-8 w-full">
         <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
-              <LogOut className="mr-3 h-8 w-8 text-accent" />
-              Registro de Saída de Veículo
-            </h1>
-            <p className="text-muted-foreground">
-              Insira o código de barras para registrar a saída.
-            </p>
-          </div>
-          <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
-            {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
-            <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
-          </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
+                <LogOut className="mr-3 h-8 w-8 text-accent" />
+                Registro de Saída de Veículo
+              </h1>
+              <p className="text-muted-foreground">
+                Insira o código de barras para registrar a saída.
+              </p>
+            </div>
+            <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
+              {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
+              <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
+            </Button>
         </div>
+
         <Card className="w-full shadow-xl">
-          <CardContent className="pt-6">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
+          </CardHeader>
+          <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
