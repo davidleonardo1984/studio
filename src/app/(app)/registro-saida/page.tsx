@@ -182,14 +182,17 @@ export default function RegistroSaidaPage() {
     <div className={cn("flex flex-1 p-4", isFocusMode ? "flex-col" : "items-center justify-center")}>
         {isFocusMode && (
             <div className="w-full max-w-6xl flex-shrink-0">
-                <h1 className="text-3xl font-bold text-primary font-headline">Registro de Saída</h1>
+                <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
+                    <LogOut className="mr-3 h-8 w-8 text-accent" />
+                    Registro de Saída
+                </h1>
             </div>
         )}
 
         <div className={cn("flex-grow flex items-center justify-center w-full", isFocusMode && "py-4")}>
-            <Card className="mx-auto shadow-xl w-full max-w-6xl">
+            <Card className="w-full max-w-6xl shadow-xl">
                 <CardHeader>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-start sm:items-center">
                         <div>
                             <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Saída de Veículo</CardTitle>
                             <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
@@ -274,10 +277,10 @@ export default function RegistroSaidaPage() {
 
         {isFocusMode && (
             <div className="w-full max-w-6xl text-center flex-shrink-0">
-                <p className="text-sm">
-                    <span className="font-bold text-destructive">Atenção: Caso o código de barras não seja lido automaticamente.</span>
-                    <span className="text-foreground"> Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.</span>
-                </p>
+                <div className="text-sm">
+                    <p className="font-bold text-destructive">Atenção: Caso o código de barras não seja lido automaticamente.</p>
+                    <p className="text-foreground">Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.</p>
+                </div>
             </div>
         )}
     </div>
