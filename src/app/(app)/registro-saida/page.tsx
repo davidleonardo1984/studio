@@ -262,7 +262,7 @@ export default function RegistroSaidaPage() {
               <AlertTitle>Código Não Encontrado</AlertTitle>
               <AlertDescription>
                 O código de barras informado não corresponde a nenhum veículo com entrada liberada na fábrica. Por favor, verifique o código e tente novamente.
-              </Aler_Description>
+              </AlertDescription>
             </Alert>
           )}
         </CardContent>
