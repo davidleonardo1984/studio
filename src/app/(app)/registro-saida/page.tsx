@@ -182,10 +182,7 @@ export default function RegistroSaidaPage() {
     <div className={cn("flex flex-1 p-4", isFocusMode ? "flex-col items-center" : "items-center justify-center")}>
         {isFocusMode && (
             <div className="w-full max-w-6xl flex-shrink-0 px-4">
-                <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
-                    <LogOut className="mr-3 h-8 w-8 text-accent" />
-                    Registro de Saída
-                </h1>
+                
             </div>
         )}
 
@@ -193,9 +190,12 @@ export default function RegistroSaidaPage() {
             <Card className="w-full max-w-6xl shadow-xl">
                 <CardHeader>
                     <div className="flex justify-between items-start sm:items-center">
-                        <div>
-                            <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Saída de Veículo</CardTitle>
-                            <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
+                        <div className="flex items-center">
+                            <LogOut className="mr-3 h-8 w-8 text-accent" />
+                            <div>
+                                <h1 className="text-3xl font-bold text-primary font-headline">Registro de Saída de Veículo</h1>
+                                <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
+                            </div>
                         </div>
                         <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
                             {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}

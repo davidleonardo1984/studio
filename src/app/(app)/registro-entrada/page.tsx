@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, InternalDestination } from '@/lib/types';
-import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle } from 'lucide-react';
+import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy, addDoc, Timestamp } from 'firebase/firestore';
@@ -380,8 +380,13 @@ export default function RegistroEntradaPage() {
     <div className="container mx-auto py-8 space-y-8">
       <Card className="max-w-6xl mx-auto shadow-xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Nova Entrada</CardTitle>
-          <CardDescription>Preencha os dados abaixo para registrar la entrada de um veículo.</CardDescription>
+          <div className="flex items-center">
+            <LogIn className="mr-3 h-8 w-8 text-accent" />
+            <div>
+              <h1 className="text-3xl font-bold text-primary font-headline">Registro de Nova Entrada</h1>
+              <p className="text-muted-foreground">Preencha os dados abaixo para registrar a entrada de um veículo.</p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Form {...form}>
