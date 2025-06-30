@@ -182,7 +182,7 @@ export default function RegistroSaidaPage() {
     <div className={cn(
       "flex flex-1",
       isFocusMode 
-        ? "flex-col items-center justify-center gap-6 p-6"
+        ? "flex-col items-start justify-between p-6"
         : "items-center justify-center p-4"
     )}>
       {isFocusMode && (
@@ -191,7 +191,10 @@ export default function RegistroSaidaPage() {
               Registro de Saída
           </h1>
       )}
-      <Card className="max-w-6xl mx-auto shadow-xl w-full">
+      <Card className={cn(
+          "max-w-6xl mx-auto shadow-xl w-full",
+          isFocusMode && "self-center"
+      )}>
         <CardHeader>
           <div className="flex justify-between items-center">
               <div className={cn(isFocusMode && "invisible")}>
@@ -279,15 +282,15 @@ export default function RegistroSaidaPage() {
             </p>
         </CardFooter>
       </Card>
-        {isFocusMode && (
-            <div className="text-center text-muted-foreground max-w-3xl">
-                <p className="font-bold text-destructive">Atenção: Caso o código de barras não seja lido automaticamente.</p>
-                <p className="text-sm mt-2">
-                  Por favor, verifique se o código está legível e tente novamente.
-                  Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.
-                </p>
-            </div>
-        )}
+      {isFocusMode && (
+          <div className="text-center text-muted-foreground max-w-3xl self-center">
+              <p className="font-bold text-destructive">Atenção: Caso o código de barras não seja lido automaticamente.</p>
+              <p className="text-sm mt-2">
+                Por favor, verifique se o código está legível e tente novamente.
+                Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.
+              </p>
+          </div>
+      )}
     </div>
   );
 }
