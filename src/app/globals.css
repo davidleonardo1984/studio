@@ -106,8 +106,8 @@ body.focus-mode .flex.flex-col > .flex-1.overflow-y-auto {
     align-items: center;
     justify-content: center;
     padding: 1rem;
-    border-width: 2px;
-    border-color: black;
+    border-width: 1px;
+    border-color: #d1d5db;
     border-radius: var(--radius);
     margin: 1rem;
     height: calc(100svh - 2rem);
