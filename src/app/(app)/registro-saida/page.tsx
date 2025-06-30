@@ -195,10 +195,10 @@ export default function RegistroSaidaPage() {
         </Button>
       </div>
       <Card className="w-full max-w-6xl mx-auto shadow-xl">
-        <CardHeader>
+        <CardHeader className="p-4">
           <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent className="p-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -244,27 +244,31 @@ export default function RegistroSaidaPage() {
             </form>
           </Form>
 
-          {foundEntry && (
-            <Alert variant="default" className="mt-6 bg-green-50 border-green-300">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <AlertTitle className="text-green-700 font-semibold">Saída Confirmada!</AlertTitle>
-              <AlertDescription className="text-green-600">
-                <p><strong>Veículo:</strong> {foundEntry.plate1}</p>
-                <p><strong>Motorista:</strong> {foundEntry.driverName}</p>
-                <p><strong>Transportadora / Empresa:</strong> {foundEntry.transportCompanyName}</p>
-                <p><strong>Horário de Saída:</strong> {formatDate(foundEntry.exitTimestamp)}</p>
-              </AlertDescription>
-            </Alert>
-          )}
+          {(foundEntry || entryNotFound) && (
+            <div className="mt-4">
+              {foundEntry && (
+                <Alert variant="default" className="bg-green-50 border-green-300">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <AlertTitle className="text-green-700 font-semibold">Saída Confirmada!</AlertTitle>
+                  <AlertDescription className="text-green-600">
+                    <p><strong>Veículo:</strong> {foundEntry.plate1}</p>
+                    <p><strong>Motorista:</strong> {foundEntry.driverName}</p>
+                    <p><strong>Transportadora / Empresa:</strong> {foundEntry.transportCompanyName}</p>
+                    <p><strong>Horário de Saída:</strong> {formatDate(foundEntry.exitTimestamp)}</p>
+                  </AlertDescription>
+                </Alert>
+              )}
 
-          {entryNotFound && (
-            <Alert variant="destructive" className="mt-6">
-              <AlertTriangle className="h-5 w-5" />
-              <AlertTitle>Código Não Encontrado</AlertTitle>
-              <AlertDescription>
-                O código de barras informado não corresponde a nenhum veículo com entrada liberada na fábrica. Por favor, verifique o código e tente novamente.
-              </AlertDescription>
-            </Alert>
+              {entryNotFound && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  <AlertTitle>Código Não Encontrado</AlertTitle>
+                  <AlertDescription>
+                    O código de barras informado não corresponde a nenhum veículo com entrada liberada na fábrica. Por favor, verifique o código e tente novamente.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
