@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -179,109 +179,97 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <div className={cn("flex flex-1 p-4", isFocusMode ? "flex-col" : "items-center justify-center")}>
-        {isFocusMode && (
-            <div className="w-full max-w-6xl flex-shrink-0 px-4">
-                <div className="p-4">
-                    <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
-                        <LogOut className="mr-3 h-8 w-8 text-accent" />
-                        Registro de Saída
-                    </h1>
-                </div>
-            </div>
-        )}
-
-        <div className={cn("flex-grow flex items-center justify-center w-full", isFocusMode && "py-4")}>
-            <Card className="w-full max-w-6xl shadow-xl">
-                <CardHeader>
-                    <div className="flex justify-between items-start sm:items-center">
-                        <div className="flex items-center">
-                            <LogOut className="mr-3 h-8 w-8 text-accent" />
-                            <div>
-                                <h1 className="text-3xl font-bold text-primary font-headline">Registro de Saída de Veículo</h1>
-                                <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
-                            </div>
-                        </div>
-                        <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
-                            {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
-                            <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
-                        </Button>
+    <div className={cn("flex flex-1 flex-col p-4 justify-center")}>
+        <div className="w-full max-w-6xl mx-auto">
+            <div className="flex justify-between items-start sm:items-center mb-6">
+                <div className="flex items-center">
+                    <LogOut className="mr-3 h-8 w-8 text-accent" />
+                    <div>
+                        <h1 className="text-3xl font-bold text-primary font-headline">Registro de Saída de Veículo</h1>
+                        <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
                     </div>
-                </CardHeader>
-                <CardContent>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <FormField
-                            control={form.control}
-                            name="barcode"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Código de Barras</FormLabel>
-                                <FormControl>
-                                <div className="flex">
-                                    <Input
-                                    {...field}
-                                    ref={(e) => {
-                                        field.ref(e);
-                                        barcodeRef.current = e;
-                                    }}
-                                    placeholder="Leia o código de barras aqui"
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            if (!isProcessing) {
-                                                form.handleSubmit(onSubmit)();
-                                            }
-                                        }
-                                    }}
-                                    className="rounded-r-none"
-                                    noAutoUppercase={true}
-                                    />
-                                    <Button type="submit" className="rounded-l-none" disabled={isProcessing}>
-                                    {isProcessing ? (
-                                        <Search className="h-4 w-4 animate-pulse" />
-                                    ) : (
-                                        <Search className="h-4 w-4" />
-                                    )}
-                                    <span className="sr-only">Buscar</span>
-                                    </Button>
-                                </div>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                        </form>
-                    </Form>
-
-                    {foundEntry && (
-                        <Alert variant="default" className="mt-6 bg-green-50 border-green-300">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <AlertTitle className="text-green-700 font-semibold">Saída Confirmada!</AlertTitle>
-                        <AlertDescription className="text-green-600">
-                            <p><strong>Veículo:</strong> {foundEntry.plate1}</p>
-                            <p><strong>Motorista:</strong> {foundEntry.driverName}</p>
-                            <p><strong>Transportadora / Empresa:</strong> {foundEntry.transportCompanyName}</p>
-                            <p><strong>Horário de Saída:</strong> {formatDate(foundEntry.exitTimestamp)}</p>
-                        </AlertDescription>
-                        </Alert>
-                    )}
-
-                    {entryNotFound && (
-                        <Alert variant="destructive" className="mt-6">
-                        <AlertTriangle className="h-5 w-5" />
-                        <AlertTitle>Código Não Encontrado</AlertTitle>
-                        <AlertDescription>
-                            O código de barras informado não corresponde a nenhum veículo com entrada liberada na fábrica. Por favor, verifique o código e tente novamente.
-                        </AlertDescription>
-                        </Alert>
-                    )}
-                </CardContent>
-            </Card>
+                </div>
+                <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
+                    {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
+                    <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
+                </Button>
+            </div>
         </div>
+      
+        <Card className="w-full max-w-6xl mx-auto shadow-xl">
+            <CardContent className="pt-6">
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <FormField
+                        control={form.control}
+                        name="barcode"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Código de Barras</FormLabel>
+                            <FormControl>
+                            <div className="flex">
+                                <Input
+                                {...field}
+                                ref={(e) => {
+                                    field.ref(e);
+                                    barcodeRef.current = e;
+                                }}
+                                placeholder="Leia o código de barras aqui"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        if (!isProcessing) {
+                                            form.handleSubmit(onSubmit)();
+                                        }
+                                    }
+                                }}
+                                className="rounded-r-none"
+                                noAutoUppercase={true}
+                                />
+                                <Button type="submit" className="rounded-l-none" disabled={isProcessing}>
+                                {isProcessing ? (
+                                    <Search className="h-4 w-4 animate-pulse" />
+                                ) : (
+                                    <Search className="h-4 w-4" />
+                                )}
+                                <span className="sr-only">Buscar</span>
+                                </Button>
+                            </div>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    </form>
+                </Form>
 
+                {foundEntry && (
+                    <Alert variant="default" className="mt-6 bg-green-50 border-green-300">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <AlertTitle className="text-green-700 font-semibold">Saída Confirmada!</AlertTitle>
+                    <AlertDescription className="text-green-600">
+                        <p><strong>Veículo:</strong> {foundEntry.plate1}</p>
+                        <p><strong>Motorista:</strong> {foundEntry.driverName}</p>
+                        <p><strong>Transportadora / Empresa:</strong> {foundEntry.transportCompanyName}</p>
+                        <p><strong>Horário de Saída:</strong> {formatDate(foundEntry.exitTimestamp)}</p>
+                    </AlertDescription>
+                    </Alert>
+                )}
+
+                {entryNotFound && (
+                    <Alert variant="destructive" className="mt-6">
+                    <AlertTriangle className="h-5 w-5" />
+                    <AlertTitle>Código Não Encontrado</AlertTitle>
+                    <AlertDescription>
+                        O código de barras informado não corresponde a nenhum veículo com entrada liberada na fábrica. Por favor, verifique o código e tente novamente.
+                    </AlertDescription>
+                    </Alert>
+                )}
+            </CardContent>
+        </Card>
+      
         {isFocusMode && (
-            <div className="w-full max-w-6xl text-center flex-shrink-0 px-4">
+            <div className="w-full max-w-6xl mx-auto text-center flex-shrink-0 px-4 pt-8">
                 <div className="text-base">
                     <p className="font-bold text-destructive">Atenção: Caso o código de barras não seja lido automaticamente.</p>
                     <p className="text-foreground">Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.</p>
