@@ -378,17 +378,15 @@ export default function RegistroEntradaPage() {
   return (
     <>
     <div className="container mx-auto py-8 space-y-8">
+      <div className="flex items-center">
+        <LogIn className="mr-3 h-8 w-8 text-accent" />
+        <div>
+          <h1 className="text-3xl font-bold text-primary font-headline">Registro de Nova Entrada</h1>
+          <p className="text-muted-foreground">Preencha os dados abaixo para registrar a entrada de um veículo.</p>
+        </div>
+      </div>
       <Card className="max-w-6xl mx-auto shadow-xl">
-        <CardHeader>
-          <div className="flex items-center">
-            <LogIn className="mr-3 h-8 w-8 text-accent" />
-            <div>
-              <h1 className="text-3xl font-bold text-primary font-headline">Registro de Nova Entrada</h1>
-              <p className="text-muted-foreground">Preencha os dados abaixo para registrar a entrada de um veículo.</p>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Form {...form}>
             <form className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
