@@ -179,7 +179,7 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <div className={cn("flex flex-1 p-4", isFocusMode ? "flex-col" : "items-center justify-center")}>
+    <div className={cn("flex flex-1 p-4", isFocusMode ? "flex-col items-center" : "items-center justify-center")}>
         {isFocusMode && (
             <div className="w-full max-w-6xl flex-shrink-0">
                 <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
