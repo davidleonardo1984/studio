@@ -195,7 +195,7 @@ export default function RegistroSaidaPage() {
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -271,13 +271,16 @@ export default function RegistroSaidaPage() {
       </Card>
       
       {isFocusMode && (
-        <div className="w-full px-4 text-center mt-8">
-            <p className="font-bold text-destructive text-base">Atenção: Caso o código de barras não seja lido automaticamente.</p>
-            <p className="text-foreground text-base mt-1">Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.</p>
+        <div className="w-full max-w-6xl mx-auto mt-8">
+            <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle className="font-bold">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
+                <AlertDescription>
+                Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o o número abaixo do código de barra ou informe à equipe vigilância.
+                </AlertDescription>
+            </Alert>
         </div>
       )}
     </div>
   );
 }
-
-    
