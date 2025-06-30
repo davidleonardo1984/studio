@@ -178,27 +178,25 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className={`container mx-auto py-8 ${isFocusMode ? 'flex flex-1 flex-col p-4 justify-center' : ''}`}>
+      <div className="max-w-6xl mx-auto space-y-8 w-full">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
+              <LogOut className="mr-3 h-8 w-8 text-accent" />
+              Registro de Saída de Veículo
+            </h1>
+            <p className="text-muted-foreground">
+              Insira o código de barras para registrar a saída.
+            </p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
+            {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
+            <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
+          </Button>
+        </div>
         <Card className="w-full shadow-xl">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-3xl font-bold text-primary font-headline flex items-center">
-                  <LogOut className="mr-3 h-8 w-8 text-accent" />
-                  Registro de Saída
-                </CardTitle>
-                <CardDescription>
-                  Insira o código de barras para registrar a saída.
-                </CardDescription>
-              </div>
-              <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
-                {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
-                <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
@@ -269,10 +267,12 @@ export default function RegistroSaidaPage() {
           </CardContent>
         </Card>
         
-        <div className="w-full px-4 text-center">
-            <p className="font-bold text-destructive text-base">Atenção: Caso o código de barras não seja lido automaticamente.</p>
-            <p className="text-foreground text-base mt-1">Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.</p>
-        </div>
+        {isFocusMode && (
+          <div className="w-full px-4 text-center">
+              <p className="font-bold text-destructive text-base">Atenção: Caso o código de barras não seja lido automaticamente.</p>
+              <p className="text-foreground text-base mt-1">Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.</p>
+          </div>
+        )}
       </div>
     </div>
   );
