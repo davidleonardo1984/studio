@@ -182,7 +182,7 @@ export default function RegistroSaidaPage() {
     <div className={cn(
       "flex flex-1",
       isFocusMode 
-        ? "flex-col items-start justify-between p-6"
+        ? "flex-col items-center justify-between p-6"
         : "items-center justify-center p-4"
     )}>
       {isFocusMode && (
@@ -192,8 +192,7 @@ export default function RegistroSaidaPage() {
           </h1>
       )}
       <Card className={cn(
-          "max-w-6xl mx-auto shadow-xl w-full",
-          isFocusMode && "self-center"
+          "max-w-6xl mx-auto shadow-xl w-full"
       )}>
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -272,25 +271,4 @@ export default function RegistroSaidaPage() {
               <AlertTitle>Código Não Encontrado</AlertTitle>
               <AlertDescription>
                 O código de barras informado não corresponde a nenhum veículo com entrada liberada na fábrica. Por favor, verifique o código e tente novamente.
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-        <CardFooter>
-            <p className="text-xs text-muted-foreground text-center w-full">
-                O sistema buscará automaticamente após a leitura do código de 14 dígitos.
-            </p>
-        </CardFooter>
-      </Card>
-      {isFocusMode && (
-          <div className="text-center text-muted-foreground max-w-3xl self-center">
-              <p className="font-bold text-destructive">Atenção: Caso o código de barras não seja lido automaticamente.</p>
-              <p className="text-sm mt-2">
-                Por favor, verifique se o código está legível e tente novamente.
-                Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.
-              </p>
-          </div>
-      )}
-    </div>
-  );
-}
+              </Aler
