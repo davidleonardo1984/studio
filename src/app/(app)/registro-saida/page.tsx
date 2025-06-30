@@ -182,7 +182,12 @@ export default function RegistroSaidaPage() {
     <div className={cn("flex flex-1 p-4", isFocusMode ? "flex-col items-center" : "items-center justify-center")}>
         {isFocusMode && (
             <div className="w-full max-w-6xl flex-shrink-0 px-4">
-                
+                <div className="p-4">
+                    <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
+                        <LogOut className="mr-3 h-8 w-8 text-accent" />
+                        Registro de Saída
+                    </h1>
+                </div>
             </div>
         )}
 
