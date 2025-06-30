@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -188,18 +189,14 @@ export default function RegistroSaidaPage() {
             Insira o código de barras para registrar a saída.
           </p>
         </div>
+        <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
+          {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
+          <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
+        </Button>
       </div>
       <Card className="w-full max-w-lg mx-auto shadow-xl">
         <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
-            </div>
-            <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
-              {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
-              <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
-            </Button>
-          </div>
+          <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           <Form {...form}>
