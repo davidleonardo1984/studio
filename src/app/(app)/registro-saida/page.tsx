@@ -276,7 +276,7 @@ export default function RegistroSaidaPage() {
       {isFocusMode && (
         <div className="w-full px-4 text-center mt-8">
             <p className="font-bold text-destructive text-base">Atenção: Caso o código de barras não seja lido automaticamente.</p>
-            <p className="text-foreground text-base mt-1">Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando número abaixo do código de barra ou informe à equipe vigilância.</p>
+            <p className="text-foreground text-base mt-1">Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando número abaixo código de barra ou informe à equipe vigilância.</p>
         </div>
       )}
     </div>
