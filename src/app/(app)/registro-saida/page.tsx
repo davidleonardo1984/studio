@@ -179,28 +179,26 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <div className={cn("flex flex-1 flex-col p-4 justify-center")}>
-        <div className="w-full max-w-6xl mx-auto">
-            <div className={cn("flex justify-between items-start sm:items-center mb-6", isFocusMode && 'hidden')}>
-                <div className="flex items-center">
-                    <LogOut className="mr-3 h-8 w-8 text-accent" />
-                    <div>
-                        <h1 className="text-3xl font-bold text-primary font-headline">Registro de Saída de Veículo</h1>
-                        <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
-                    </div>
-                </div>
-                <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
-                    {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
-                    <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
-                </Button>
-            </div>
-        </div>
-      
+    <div className="flex flex-1 flex-col p-4 justify-center">
         <Card className="w-full max-w-6xl mx-auto shadow-xl">
-            <CardHeader className={cn(isFocusMode && 'hidden')}>
-                <CardTitle>Registro de Saída</CardTitle>
+            <CardHeader>
+                <div className="flex justify-between items-center">
+                    <CardTitle>
+                        <div className="flex items-center gap-3">
+                            <LogOut className="h-8 w-8 text-accent" />
+                            <span className="text-3xl font-bold text-primary font-headline">Registro de Saída de Veículo</span>
+                        </div>
+                    </CardTitle>
+                    <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
+                        {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
+                        <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
+                    </Button>
+                </div>
+                <CardDescription>
+                    Insira o código de barras para registrar a saída.
+                </CardDescription>
             </CardHeader>
-            <CardContent className={cn(isFocusMode && 'pt-6')}>
+            <CardContent>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     <FormField
@@ -270,21 +268,10 @@ export default function RegistroSaidaPage() {
                 )}
             </CardContent>
         </Card>
-      
-        {isFocusMode && (
-            <div className="w-full max-w-6xl mx-auto flex-shrink-0">
-                <div className="flex justify-between items-start sm:items-center mb-6 px-4">
-                    <div className="flex items-center">
-                        <LogOut className="mr-3 h-8 w-8 text-accent" />
-                        <h1 className="text-3xl font-bold text-primary font-headline">Registro de Saída</h1>
-                    </div>
-                </div>
-                <div className="text-center px-4 pt-8">
-                    <p className="font-bold text-destructive text-base">Atenção: Caso o código de barras não seja lido automaticamente.</p>
-                    <p className="text-foreground text-base">Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.</p>
-                </div>
-            </div>
-        )}
+        <div className="w-full max-w-6xl mx-auto text-center mt-8 px-4">
+            <p className="font-bold text-destructive text-base">Atenção: Caso o código de barras não seja lido automaticamente.</p>
+            <p className="text-foreground text-base mt-1">Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.</p>
+        </div>
     </div>
   );
 }
