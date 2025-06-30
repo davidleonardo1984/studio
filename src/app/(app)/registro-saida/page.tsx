@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -10,10 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, AlertTriangle, Search, Expand, Shrink } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Search, Expand, Shrink, LogOut } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 
 const exitSchema = z.object({
@@ -177,11 +179,22 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <div className="flex items-center justify-center flex-1">
+    <div className={cn(
+      "flex flex-1",
+      isFocusMode 
+        ? "flex-col items-center justify-center gap-6 p-6"
+        : "items-center justify-center p-4"
+    )}>
+      {isFocusMode && (
+          <h1 className="text-3xl font-bold text-primary font-headline flex items-center gap-3">
+              <LogOut className="h-8 w-8 text-accent"/>
+              Registro de Saída
+          </h1>
+      )}
       <Card className="max-w-6xl mx-auto shadow-xl w-full">
         <CardHeader>
           <div className="flex justify-between items-center">
-              <div className="flex-grow">
+              <div className={cn(isFocusMode && "invisible")}>
                 <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Saída de Veículo</CardTitle>
                 <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
               </div>
@@ -266,6 +279,15 @@ export default function RegistroSaidaPage() {
             </p>
         </CardFooter>
       </Card>
+        {isFocusMode && (
+            <div className="text-center text-muted-foreground max-w-3xl">
+                <p className="font-bold text-destructive">Atenção: Caso o código de barras não seja lido automaticamente.</p>
+                <p className="text-sm mt-2">
+                  Por favor, verifique se o código está legível e tente novamente.
+                  Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.
+                </p>
+            </div>
+        )}
     </div>
   );
 }
