@@ -91,3 +91,20 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom styles for focus mode */
+body.focus-mode .group\/sidebar-wrapper > div[data-state] {
+    display: none;
+}
+
+body.focus-mode header {
+    display: none;
+}
+
+body.focus-mode .flex.flex-col > .flex-1.overflow-y-auto {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}

@@ -29,8 +29,7 @@ export default function RegistroSaidaPage() {
   const [foundEntry, setFoundEntry] = useState<VehicleEntry | null>(null);
   const [entryNotFound, setEntryNotFound] = useState(false);
   const barcodeRef = useRef<HTMLInputElement | null>(null);
-  const cardRef = useRef<HTMLDivElement | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   const form = useForm<ExitFormValues>({
     resolver: zodResolver(exitSchema),
@@ -66,30 +65,21 @@ export default function RegistroSaidaPage() {
     }
     return () => clearTimeout(timer); // Cleanup timeout
   }, [foundEntry, entryNotFound]);
-
+  
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      cardRef.current?.requestFullscreen().catch(err => {
-        toast({
-          variant: 'destructive',
-          title: 'Erro de Tela Cheia',
-          description: `Não foi possível ativar o modo de tela cheia: ${err.message}`,
-        });
-      });
+    if (isFocusMode) {
+      document.body.classList.add('focus-mode');
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
+      document.body.classList.remove('focus-mode');
     }
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('focus-mode');
+    };
+  }, [isFocusMode]);
+
+  const toggleFocusMode = () => {
+    setIsFocusMode(prev => !prev);
   };
 
 
@@ -188,16 +178,16 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <Card ref={cardRef} className="max-w-6xl mx-auto shadow-xl bg-card flex flex-col fullscreen:min-h-screen fullscreen:max-w-none">
+    <Card className="max-w-6xl mx-auto shadow-xl bg-card flex flex-col">
       <CardHeader>
         <div className="flex justify-between items-center">
             <div className="flex-grow">
               <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Saída de Veículo</CardTitle>
               <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
             </div>
-            <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="shrink-0">
-              {isFullscreen ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
-              <span className="sr-only">{isFullscreen ? 'Minimizar' : 'Tela Cheia'}</span>
+            <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
+              {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
+              <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
             </Button>
         </div>
       </CardHeader>
@@ -278,5 +268,3 @@ export default function RegistroSaidaPage() {
     </Card>
   );
 }
-
-    
