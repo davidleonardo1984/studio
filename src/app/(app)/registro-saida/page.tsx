@@ -178,7 +178,7 @@ export default function RegistroSaidaPage() {
 
   return (
     <div className={`container mx-auto py-8 ${isFocusMode ? 'flex flex-1 flex-col p-4 justify-center' : ''}`}>
-      <div className="flex justify-between items-start mb-6">
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
           <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
             <LogOut className="mr-3 h-8 w-8 text-accent" />
@@ -188,16 +188,21 @@ export default function RegistroSaidaPage() {
             Insira o código de barras para registrar a saída.
           </p>
         </div>
-        <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
-          {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
-          <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
-        </Button>
       </div>
       <Card className="w-full max-w-6xl mx-auto shadow-xl">
         <CardHeader>
             <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
+             <div className="flex justify-between items-start mb-6">
+                <div>
+                    <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
+                </div>
+                <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
+                  {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
+                  <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
+                </Button>
+            </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -271,7 +276,7 @@ export default function RegistroSaidaPage() {
       {isFocusMode && (
         <div className="w-full px-4 text-center mt-8">
             <p className="font-bold text-destructive text-base">Atenção: Caso o código de barras não seja lido automaticamente.</p>
-            <p className="text-foreground text-base mt-1">Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando número abaixo código de barra ou informe à equipe vigilância.</p>
+            <p className="text-foreground text-base mt-1">Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando número abaixo do código de barra ou informe à equipe vigilância.</p>
         </div>
       )}
     </div>
