@@ -191,7 +191,8 @@ export default function RegistroSaidaPage() {
         </h1>
       )}
       <Card className={cn(
-          "mx-auto shadow-xl w-full max-w-lg"
+          "mx-auto shadow-xl",
+          isFocusMode ? "w-full" : "w-full max-w-lg"
       )}>
         <CardHeader>
           <div className="flex justify-between items-center">
