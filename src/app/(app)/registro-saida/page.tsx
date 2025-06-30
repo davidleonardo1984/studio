@@ -179,24 +179,11 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <div className={cn(
-      "flex flex-1",
-      isFocusMode
-        ? "flex-col items-center justify-between p-6"
-        : "items-center justify-center p-4"
-    )}>
-      {isFocusMode && (
-        <h1 className="text-3xl font-bold text-primary font-headline flex items-center gap-3">
-          <LogOut className="h-8 w-8" />
-          Registro de Saída
-        </h1>
-      )}
-      <Card className={cn(
-          "mx-auto shadow-xl w-full max-w-6xl",
-      )}>
+    <div className="flex flex-1 items-center justify-center p-4">
+      <Card className="mx-auto shadow-xl w-full max-w-6xl">
         <CardHeader>
           <div className="flex justify-between items-center">
-              <div className={cn(isFocusMode && "hidden")}>
+              <div>
                 <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Saída de Veículo</CardTitle>
                 <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
               </div>
@@ -276,13 +263,6 @@ export default function RegistroSaidaPage() {
           )}
         </CardContent>
       </Card>
-      {isFocusMode && (
-        <div className="text-center text-muted-foreground text-sm max-w-xl mx-auto">
-          <p className="font-bold mb-1">Atenção: Caso o código de barras não seja lido automaticamente.</p>
-          <p>Por favor, verifique se o código está legível e tente novamente.</p>
-          <p>Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.</p>
-        </div>
-      )}
     </div>
   );
 }
