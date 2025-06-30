@@ -183,7 +183,7 @@ export default function RegistroSaidaPage() {
         {isFocusMode && (
             <div className="w-full max-w-6xl flex-shrink-0 px-4">
                 <div className="p-4">
-                    <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
+                    <h1 className="text-3xl font-bold text-primary font-headline flex items-baseline">
                         <LogOut className="mr-3 h-8 w-8 text-accent" />
                         Registro de Saída
                     </h1>
@@ -195,7 +195,7 @@ export default function RegistroSaidaPage() {
             <Card className="w-full max-w-6xl shadow-xl">
                 <CardHeader>
                     <div className="flex justify-between items-start sm:items-center">
-                        <div className="flex items-center">
+                        <div className="flex items-baseline">
                             <LogOut className="mr-3 h-8 w-8 text-accent" />
                             <div>
                                 <h1 className="text-3xl font-bold text-primary font-headline">Registro de Saída de Veículo</h1>
