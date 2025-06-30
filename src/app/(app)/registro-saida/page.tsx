@@ -191,16 +191,15 @@ export default function RegistroSaidaPage() {
       </div>
       <Card className="w-full max-w-6xl mx-auto shadow-xl">
         <CardHeader>
-            <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
-             <div className="flex justify-between items-start mb-6">
-                <div>
-                    <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
-                </div>
-                <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
-                  {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
-                  <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
-                </Button>
+          <div className="flex justify-between items-start">
+            <div>
+                <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
             </div>
+            <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
+              {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
+              <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="pt-6">
           <Form {...form}>
