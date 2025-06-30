@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -179,23 +180,14 @@ export default function RegistroSaidaPage() {
 
   return (
     <div className={cn(
-      "flex flex-1",
-      isFocusMode 
-        ? "flex-col items-center justify-between p-6"
-        : "items-center justify-center p-4"
+      "flex flex-1 items-center justify-center p-4"
     )}>
-      {isFocusMode && (
-          <h1 className="text-3xl font-bold text-primary font-headline flex items-center gap-3">
-              <LogOut className="h-8 w-8 text-accent"/>
-              Registro de Saída
-          </h1>
-      )}
       <Card className={cn(
           "max-w-6xl mx-auto shadow-xl w-full"
       )}>
         <CardHeader>
           <div className="flex justify-between items-center">
-              <div className={cn(isFocusMode && "invisible")}>
+              <div>
                 <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Saída de Veículo</CardTitle>
                 <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
               </div>
@@ -270,19 +262,12 @@ export default function RegistroSaidaPage() {
               <AlertTitle>Código Não Encontrado</AlertTitle>
               <AlertDescription>
                 O código de barras informado não corresponde a nenhum veículo com entrada liberada na fábrica. Por favor, verifique o código e tente novamente.
-              </AlertDescription>
+              </Aler_Description>
             </Alert>
           )}
         </CardContent>
       </Card>
-      
-      {isFocusMode && (
-          <div className="text-center text-muted-foreground mt-8 text-sm max-w-lg">
-            <p className="font-bold">Atenção: Caso o código de barras não seja lido automaticamente.</p>
-            <p>Por favor, verifique se o código está legível e tente novamente.</p>
-            <p>Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.</p>
-          </div>
-      )}
     </div>
   );
 }
+
