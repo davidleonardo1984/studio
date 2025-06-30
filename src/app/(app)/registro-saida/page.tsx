@@ -179,11 +179,11 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <div className={cn("flex flex-1 p-4", isFocusMode ? "flex-col items-center" : "items-center justify-center")}>
+    <div className={cn("flex flex-1 p-4", isFocusMode ? "flex-col" : "items-center justify-center")}>
         {isFocusMode && (
             <div className="w-full max-w-6xl flex-shrink-0 px-4">
                 <div className="p-4">
-                    <h1 className="text-3xl font-bold text-primary font-headline flex items-baseline">
+                    <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
                         <LogOut className="mr-3 h-8 w-8 text-accent" />
                         Registro de Saída
                     </h1>
@@ -195,7 +195,7 @@ export default function RegistroSaidaPage() {
             <Card className="w-full max-w-6xl shadow-xl">
                 <CardHeader>
                     <div className="flex justify-between items-start sm:items-center">
-                        <div className="flex items-baseline">
+                        <div className="flex items-center">
                             <LogOut className="mr-3 h-8 w-8 text-accent" />
                             <div>
                                 <h1 className="text-3xl font-bold text-primary font-headline">Registro de Saída de Veículo</h1>
