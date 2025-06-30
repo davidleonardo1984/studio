@@ -182,7 +182,7 @@ export default function RegistroSaidaPage() {
     <div className={cn(
       "flex flex-1",
       isFocusMode 
-        ? "flex-col items-center justify-between p-6"
+        ? "flex-col items-start justify-between p-6"
         : "items-center justify-center p-4"
     )}>
       {isFocusMode && (
@@ -192,7 +192,8 @@ export default function RegistroSaidaPage() {
           </h1>
       )}
       <Card className={cn(
-          "max-w-6xl mx-auto shadow-xl w-full"
+          "max-w-6xl mx-auto shadow-xl w-full",
+          isFocusMode && "self-center"
       )}>
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -282,7 +283,7 @@ export default function RegistroSaidaPage() {
         </CardFooter>
       </Card>
       {isFocusMode && (
-          <div className="text-center text-muted-foreground max-w-3xl">
+          <div className="text-center text-muted-foreground max-w-3xl self-center">
               <p className="font-bold text-destructive">Atenção: Caso o código de barras não seja lido automaticamente.</p>
               <p className="text-sm mt-2">
                 Por favor, verifique se o código está legível e tente novamente.
