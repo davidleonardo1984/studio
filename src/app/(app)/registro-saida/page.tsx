@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -194,7 +193,7 @@ export default function RegistroSaidaPage() {
           <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
         </Button>
       </div>
-      <Card className="w-full max-w-lg mx-auto shadow-xl">
+      <Card className="w-full max-w-6xl mx-auto shadow-xl">
         <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
