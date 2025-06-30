@@ -177,7 +177,7 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <div className={`container mx-auto py-8 ${isFocusMode ? 'flex flex-1 flex-col p-4 justify-center' : ''}`}>
+    <div className="container mx-auto py-8">
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
           <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
@@ -189,11 +189,11 @@ export default function RegistroSaidaPage() {
           </p>
         </div>
       </div>
-      <Card className="w-full max-w-6xl mx-auto shadow-xl">
+      <Card className="w-full max-w-lg mx-auto shadow-xl">
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-                <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
+              <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
             </div>
             <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
               {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
