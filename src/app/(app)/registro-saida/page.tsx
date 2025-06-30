@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -271,4 +270,19 @@ export default function RegistroSaidaPage() {
               <AlertTitle>Código Não Encontrado</AlertTitle>
               <AlertDescription>
                 O código de barras informado não corresponde a nenhum veículo com entrada liberada na fábrica. Por favor, verifique o código e tente novamente.
-              </Aler
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+      
+      {isFocusMode && (
+          <div className="text-center text-muted-foreground mt-8 text-sm max-w-lg">
+            <p className="font-bold">Atenção: Caso o código de barras não seja lido automaticamente.</p>
+            <p>Por favor, verifique se o código está legível e tente novamente.</p>
+            <p>Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.</p>
+          </div>
+      )}
+    </div>
+  );
+}
