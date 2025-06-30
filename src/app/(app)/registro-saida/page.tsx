@@ -181,7 +181,7 @@ export default function RegistroSaidaPage() {
   return (
     <div className={cn("flex flex-1 p-4", isFocusMode ? "flex-col items-center" : "items-center justify-center")}>
         {isFocusMode && (
-            <div className="w-full max-w-6xl flex-shrink-0">
+            <div className="w-full max-w-6xl flex-shrink-0 px-4">
                 <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
                     <LogOut className="mr-3 h-8 w-8 text-accent" />
                     Registro de Saída
@@ -276,8 +276,8 @@ export default function RegistroSaidaPage() {
         </div>
 
         {isFocusMode && (
-            <div className="w-full max-w-6xl text-center flex-shrink-0">
-                <div className="text-sm">
+            <div className="w-full max-w-6xl text-center flex-shrink-0 px-4">
+                <div className="text-base">
                     <p className="font-bold text-destructive">Atenção: Caso o código de barras não seja lido automaticamente.</p>
                     <p className="text-foreground">Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente ou informe à equipe vigilância.</p>
                 </div>
