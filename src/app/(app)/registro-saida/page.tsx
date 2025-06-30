@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -192,18 +191,24 @@ export default function RegistroSaidaPage() {
         </h1>
       )}
       <Card className={cn(
-          "max-w-lg mx-auto shadow-xl",
-          isFocusMode && "bg-transparent border-0 shadow-none"
+          "mx-auto shadow-xl w-full max-w-lg",
+          isFocusMode && "bg-transparent border-0 shadow-none w-full"
       )}>
         <CardHeader>
           <div className="flex justify-between items-center">
               <div>
-                {!isFocusMode && (
+                 {!isFocusMode && (
                   <>
                     <CardTitle className="text-2xl font-bold text-primary font-headline">Registro de Saída de Veículo</CardTitle>
                     <CardDescription>Insira o código de barras para registrar a saída.</CardDescription>
                   </>
-                )}
+                 )}
+                 {isFocusMode && (
+                    <>
+                      <CardTitle className="sr-only">Registro de Saída de Veículo</CardTitle>
+                      <CardDescription className="sr-only">Insira o código de barras para registrar a saída.</CardDescription>
+                    </>
+                 )}
               </div>
               <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
                 {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
