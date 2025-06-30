@@ -15,6 +15,7 @@ import { CheckCircle, AlertTriangle, Search, Expand, Shrink } from 'lucide-react
 import type { VehicleEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 
 const exitSchema = z.object({
@@ -178,7 +179,7 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <Card className="max-w-6xl mx-auto shadow-xl bg-card flex flex-col">
+    <Card className={cn("max-w-6xl mx-auto shadow-xl bg-card flex flex-col transition-all duration-300", isFocusMode && "w-full h-full max-w-none rounded-none border-none shadow-none")}>
       <CardHeader>
         <div className="flex justify-between items-center">
             <div className="flex-grow">
