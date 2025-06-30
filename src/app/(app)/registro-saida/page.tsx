@@ -182,7 +182,7 @@ export default function RegistroSaidaPage() {
     <div className={cn(
       "flex flex-1",
       isFocusMode 
-        ? "flex-col items-start justify-between p-6"
+        ? "flex-col items-center justify-between p-6"
         : "items-center justify-center p-4"
     )}>
       {isFocusMode && (
