@@ -102,6 +102,8 @@ body.focus-mode header {
 }
 
 body.focus-mode .flex.flex-col > .flex-1.overflow-y-auto {
-    height: 100vh;
-    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
 }
