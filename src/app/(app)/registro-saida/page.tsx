@@ -185,9 +185,6 @@ export default function RegistroSaidaPage() {
             <LogOut className="mr-3 h-8 w-8 text-accent" />
             Registro de Saída de Veículo
           </h1>
-          <p className="text-muted-foreground">
-            Insira o código de barras para registrar a saída.
-          </p>
         </div>
         <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
           {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
@@ -195,7 +192,10 @@ export default function RegistroSaidaPage() {
         </Button>
       </div>
       <Card className="w-full max-w-6xl mx-auto shadow-xl">
-        <CardContent className="p-6">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
+        </CardHeader>
+        <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
