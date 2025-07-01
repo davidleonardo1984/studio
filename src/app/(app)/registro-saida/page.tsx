@@ -191,11 +191,8 @@ export default function RegistroSaidaPage() {
           <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
         </Button>
       </div>
-      <Card className="w-full max-w-2xl mx-auto shadow-xl">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
+      <Card className="w-full max-w-4xl mx-auto shadow-xl">
+        <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -271,12 +268,14 @@ export default function RegistroSaidaPage() {
       </Card>
       
       {isFocusMode && (
-        <div className="w-full max-w-2xl mx-auto mt-6">
+        <div className="w-full max-w-4xl mx-auto mt-6">
             <Alert variant="destructive" className="border">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle className="font-bold">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
-                <AlertDescription className="text-foreground text-base mt-1">
-                Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
+                <AlertDescription>
+                  <p className="text-foreground text-base mt-1">
+                    Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
+                  </p>
                 </AlertDescription>
             </Alert>
         </div>
