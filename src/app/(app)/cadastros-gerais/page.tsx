@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { Driver, TransportCompany, InternalDestination, NewDriver, NewTransportCompany, NewInternalDestination } from '@/lib/types';
-import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin, Loader2, AlertTriangle, Search, Edit3 } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Users, Truck, MapPin, Loader2, AlertTriangle, Search } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -818,12 +818,9 @@ export default function CadastrosGeraisPage() {
 
   return (
     <div className="container mx-auto py-8 space-y-8">
-      <div className="flex items-center">
-        <Edit3 className="mr-3 h-8 w-8 text-accent" />
-        <div>
-          <h1 className="text-3xl font-bold text-primary font-headline">Cadastros Gerais</h1>
-          <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras / empresas e destinos internos.</p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-primary font-headline">Cadastros Gerais</h1>
+        <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras / empresas e destinos internos.</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
