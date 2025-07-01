@@ -179,7 +179,7 @@ export default function RegistroSaidaPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="w-full max-w-4xl mx-auto">
+      <div className="w-full max-w-6xl mx-auto">
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
             <LogOut className="mr-3 h-8 w-8 text-accent" />
@@ -191,7 +191,7 @@ export default function RegistroSaidaPage() {
           </Button>
         </div>
         <Card className="shadow-xl">
-          <CardContent className="pt-6">
+          <CardContent className="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -268,11 +268,11 @@ export default function RegistroSaidaPage() {
         
         {isFocusMode && (
           <div className="mt-6">
-              <Alert variant="default" className="border">
+              <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle className="font-bold">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
                   <AlertDescription>
-                    <p className="text-foreground text-base mt-1">
+                    <p className="text-base mt-1">
                       Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
                     </p>
                   </AlertDescription>
