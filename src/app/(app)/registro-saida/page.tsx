@@ -276,7 +276,7 @@ export default function RegistroSaidaPage() {
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle className="font-bold">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
                 <AlertDescription>
-                Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o o número abaixo do código de barra ou informe à equipe vigilância.
+                Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
                 </AlertDescription>
             </Alert>
         </div>
