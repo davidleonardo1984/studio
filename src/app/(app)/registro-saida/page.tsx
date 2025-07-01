@@ -195,10 +195,10 @@ export default function RegistroSaidaPage() {
             </div>
         </div>
         <Card className="shadow-xl">
-          <CardHeader>
+          <CardHeader className="pb-2">
             <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
