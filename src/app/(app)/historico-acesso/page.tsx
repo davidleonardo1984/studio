@@ -707,9 +707,9 @@ export default function HistoricoAcessoPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-row items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-xl font-semibold text-primary flex items-center"><Truck className="mr-2 h-5 w-5" />Veículos Atualmente na Fábrica ({filteredVehiclesInsideFactory.length})</CardTitle>
+              <CardTitle className="flex items-center text-xl font-semibold text-primary"><Truck className="mr-2 h-5 w-5" />Veículos Atualmente na Fábrica ({filteredVehiclesInsideFactory.length})</CardTitle>
               <CardDescription>Lista de veículos que registraram entrada e ainda não saíram.</CardDescription>
             </div>
             <Input
