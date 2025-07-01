@@ -195,6 +195,7 @@ export default function HistoricoAcessoPage() {
     dateRange: undefined as DateRange | undefined,
   });
   const [hasSearched, setHasSearched] = useState(false);
+  const [vehiclesInsideSearchTerm, setVehiclesInsideSearchTerm] = useState('');
 
   useEffect(() => {
     if (!db) {
@@ -467,6 +468,18 @@ export default function HistoricoAcessoPage() {
     setIsPreviewModalOpen(false);
     setPreviewImageUrl(null);
   };
+
+  const filteredVehiclesInsideFactory = useMemo(() => {
+    if (!vehiclesInsideSearchTerm.trim()) {
+      return vehiclesInsideFactory;
+    }
+    const lowercasedTerm = vehiclesInsideSearchTerm.toLowerCase();
+    return vehiclesInsideFactory.filter(v =>
+      v.plate1.toLowerCase().includes(lowercasedTerm) ||
+      v.driverName.toLowerCase().includes(lowercasedTerm) ||
+      v.transportCompanyName.toLowerCase().includes(lowercasedTerm)
+    );
+  }, [vehiclesInsideFactory, vehiclesInsideSearchTerm]);
   
   if (!isClient) {
     return (
@@ -694,11 +707,22 @@ export default function HistoricoAcessoPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold text-primary flex items-center"><Truck className="mr-2 h-5 w-5" />Veículos Atualmente na Fábrica ({vehiclesInsideFactory.length})</CardTitle>
-          <CardDescription>Lista de veículos que registraram entrada e ainda não saíram.</CardDescription>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle className="text-xl font-semibold text-primary flex items-center"><Truck className="mr-2 h-5 w-5" />Veículos Atualmente na Fábrica ({filteredVehiclesInsideFactory.length})</CardTitle>
+              <CardDescription>Lista de veículos que registraram entrada e ainda não saíram.</CardDescription>
+            </div>
+            <Input
+              placeholder="Buscar por placa, motorista..."
+              value={vehiclesInsideSearchTerm}
+              onChange={(e) => setVehiclesInsideSearchTerm(e.target.value)}
+              prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+              className="w-full sm:max-w-xs"
+            />
+          </div>
         </CardHeader>
         <CardContent>
-           {vehiclesInsideFactory.length > 0 ? (
+           {filteredVehiclesInsideFactory.length > 0 ? (
             <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -714,7 +738,7 @@ export default function HistoricoAcessoPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {vehiclesInsideFactory.map((entry) => (
+                {filteredVehiclesInsideFactory.map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell className="font-mono text-xs">{entry.barcode}</TableCell>
                     <TableCell>{entry.plate1}</TableCell>
@@ -743,7 +767,9 @@ export default function HistoricoAcessoPage() {
             </Table>
             </div>
           ) : (
-            <p className="text-muted-foreground text-center py-8">NENHUM VEÍCULO DENTRO DA FÁBRICA NO MOMENTO.</p>
+            <p className="text-muted-foreground text-center py-8">
+              {vehiclesInsideSearchTerm ? "Nenhum veículo encontrado com os termos da busca." : "NENHUM VEÍCULO DENTRO DA FÁBRICA NO MOMENTO."}
+            </p>
           )}
         </CardContent>
       </Card>
