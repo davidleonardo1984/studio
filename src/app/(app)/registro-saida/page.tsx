@@ -198,7 +198,7 @@ export default function RegistroSaidaPage() {
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
           </CardHeader>
-          <CardContent className="pt-2">
+          <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
