@@ -14,10 +14,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, InternalDestination } from '@/lib/types';
-import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn } from 'lucide-react';
+import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn, Edit2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, Timestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 import {
   AlertDialog,
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -161,6 +162,9 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
 export default function RegistroEntradaPage() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [editingEntry, setEditingEntry] = useState<VehicleEntry | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAssistants, setShowAssistants] = useState(false);
 
@@ -258,6 +262,57 @@ export default function RegistroEntradaPage() {
   }, [toast]);
 
   useEffect(() => {
+    const entryId = searchParams.get('id');
+    if (!entryId || !db) {
+        setEditingEntry(null);
+        form.reset({
+            driverName: '', assistant1Name: '', assistant2Name: '',
+            transportCompanyName: '', plate1: '', plate2: '', plate3: '',
+            internalDestinationName: '', movementType: '', observation: '',
+        });
+        return;
+    }
+
+    const fetchEntry = async () => {
+        setDataLoading(true);
+        try {
+            const entryDocRef = doc(db, 'vehicleEntries', entryId);
+            const entryDocSnap = await getDoc(entryDocRef);
+
+            if (entryDocSnap.exists()) {
+                const entryData = { id: entryDocSnap.id, ...entryDocSnap.data() } as VehicleEntry;
+                setEditingEntry(entryData);
+                form.reset({
+                    driverName: entryData.driverName,
+                    assistant1Name: entryData.assistant1Name || '',
+                    assistant2Name: entryData.assistant2Name || '',
+                    transportCompanyName: entryData.transportCompanyName,
+                    plate1: entryData.plate1,
+                    plate2: entryData.plate2 || '',
+                    plate3: entryData.plate3 || '',
+                    internalDestinationName: entryData.internalDestinationName,
+                    movementType: entryData.movementType,
+                    observation: entryData.observation || '',
+                });
+                if (entryData.assistant1Name || entryData.assistant2Name) {
+                    setShowAssistants(true);
+                }
+            } else {
+                toast({ variant: "destructive", title: "Erro", description: "Registro de entrada não encontrado." });
+                router.push('/historico-acesso');
+            }
+        } catch (error) {
+            console.error("Error fetching entry:", error);
+            toast({ variant: "destructive", title: "Erro", description: "Não foi possível carregar os dados para edição." });
+        } finally {
+            setDataLoading(false);
+        }
+    };
+
+    fetchEntry();
+  }, [searchParams, db, form, router, toast]);
+
+  useEffect(() => {
     if (!isDialogOpen) {
       setIsApprovingNewEntry(false);
       setLiberatedByName('');
@@ -326,6 +381,30 @@ export default function RegistroEntradaPage() {
     setIsSubmitting(false);
   };
 
+  const handleUpdateSubmit = async (data: VehicleEntryFormData) => {
+    if (!editingEntry || !db || !user) return;
+
+    setIsSubmitting(true);
+    try {
+        const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
+        await updateDoc(entryDocRef, data as any);
+        
+        toast({
+            title: 'Registro Atualizado!',
+            description: `O registro do veículo ${data.plate1} foi atualizado com sucesso.`,
+            className: 'bg-green-600 text-white'
+        });
+        router.back();
+
+    } catch (error) {
+        console.error("Error updating entry:", error);
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível salvar as alterações." });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+
   const initiateNewEntryApproval = async () => {
     const isValid = await form.trigger();
     if (isValid) {
@@ -380,13 +459,17 @@ export default function RegistroEntradaPage() {
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex items-center">
         <div>
-          <h1 className="text-3xl font-bold text-primary font-headline">Registro de entrada de Veículo</h1>
-          <p className="text-muted-foreground">Preencha os dados abaixo para registrar a entrada de um veículo.</p>
+          <h1 className="text-3xl font-bold text-primary font-headline">
+            {editingEntry ? 'Editar Registro de Entrada' : 'Registro de Entrada de Veículo'}
+          </h1>
+          <p className="text-muted-foreground">
+            {editingEntry ? `Alterando dados do veículo ${editingEntry.plate1}.` : 'Preencha os dados abaixo para registrar a entrada de um veículo.'}
+          </p>
         </div>
       </div>
       <Card className="max-w-6xl mx-auto shadow-xl">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-semibold text-primary">Registro de Entrada</CardTitle>
+          <CardTitle className="text-xl font-semibold text-primary">{editingEntry ? 'Editar Registro' : 'Registro de Entrada'}</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -402,7 +485,7 @@ export default function RegistroEntradaPage() {
                             <Input
                                 placeholder={dataLoading ? "CARREGANDO..." : "Digite o nome do motorista"}
                                 {...field}
-                                disabled={dataLoading}
+                                disabled={dataLoading || isSubmitting}
                                 list="driver-list"
                             />
                         </FormControl>
@@ -425,7 +508,7 @@ export default function RegistroEntradaPage() {
                             <Input
                                 placeholder={dataLoading ? "CARREGANDO..." : "Digite o nome da Transportadora / Empresa"}
                                 {...field}
-                                disabled={dataLoading}
+                                disabled={dataLoading || isSubmitting}
                                 list="company-list"
                             />
                         </FormControl>
@@ -440,7 +523,7 @@ export default function RegistroEntradaPage() {
                 />
               </div>
 
-              <Button type="button" variant="outline" size="sm" onClick={() => setShowAssistants(!showAssistants)}>
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowAssistants(!showAssistants)} disabled={isSubmitting}>
                 {showAssistants ? 'Ocultar' : 'Adicionar'} Ajudantes
               </Button>
 
@@ -457,7 +540,7 @@ export default function RegistroEntradaPage() {
                                 placeholder={dataLoading ? "CARREGANDO..." : "Digite o nome do ajudante 1"}
                                 {...field}
                                 value={field.value ?? ''}
-                                disabled={dataLoading}
+                                disabled={dataLoading || isSubmitting}
                                 list="assistant-list"
                             />
                         </FormControl>
@@ -476,7 +559,7 @@ export default function RegistroEntradaPage() {
                                 placeholder={dataLoading ? "CARREGANDO..." : "Digite o nome do ajudante 2"}
                                 {...field}
                                 value={field.value ?? ''}
-                                disabled={dataLoading}
+                                disabled={dataLoading || isSubmitting}
                                 list="assistant-list"
                             />
                         </FormControl>
@@ -499,7 +582,7 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Placa 1</FormLabel>
-                      <FormControl><Input placeholder="AAA-1234" {...field} /></FormControl>
+                      <FormControl><Input placeholder="AAA-1234" {...field} disabled={isSubmitting} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -510,7 +593,7 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Placa 2 (Opcional)</FormLabel>
-                      <FormControl><Input placeholder="BBB-5678" {...field} /></FormControl>
+                      <FormControl><Input placeholder="BBB-5678" {...field} disabled={isSubmitting} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -521,7 +604,7 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Placa 3 (Opcional)</FormLabel>
-                      <FormControl><Input placeholder="CCC-9012" {...field} /></FormControl>
+                      <FormControl><Input placeholder="CCC-9012" {...field} disabled={isSubmitting} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -539,7 +622,7 @@ export default function RegistroEntradaPage() {
                             <Input
                                 placeholder={dataLoading ? "CARREGANDO..." : "Digite o destino interno"}
                                 {...field}
-                                disabled={dataLoading}
+                                disabled={dataLoading || isSubmitting}
                                 list="destination-list"
                             />
                         </FormControl>
@@ -558,7 +641,7 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Movimentação</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                      <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isSubmitting}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
                         </FormControl>
@@ -580,7 +663,7 @@ export default function RegistroEntradaPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Observação (Opcional)</FormLabel>
-                    <FormControl><Textarea placeholder="Detalhes adicionais..." {...field} rows={3} /></FormControl>
+                    <FormControl><Textarea placeholder="Detalhes adicionais..." {...field} rows={3} disabled={isSubmitting} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -589,23 +672,46 @@ export default function RegistroEntradaPage() {
           </Form>
         </CardContent>
         <CardFooter className="flex flex-col sm:flex-row justify-end gap-4 pt-6">
-            <Button
-                variant="outline"
-                onClick={form.handleSubmit(data => handleFormSubmit(data, 'aguardando_patio'))}
-                disabled={isSubmitting || dataLoading}
-                className="w-full sm:w-auto"
-            >
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SendToBack className="mr-2 h-4 w-4" /> }
-                Aguardar no Pátio
-            </Button>
-            <Button
-                onClick={initiateNewEntryApproval}
-                disabled={isSubmitting || dataLoading}
-                className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
-            >
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
-                Liberar Entrada e Imprimir
-            </Button>
+            {editingEntry ? (
+              <>
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.back()}
+                    disabled={isSubmitting}
+                >
+                    Cancelar
+                </Button>
+                <Button
+                    onClick={form.handleSubmit(handleUpdateSubmit)}
+                    disabled={isSubmitting || dataLoading}
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit2 className="mr-2 h-4 w-4" />}
+                    Salvar Alterações
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                    variant="outline"
+                    onClick={form.handleSubmit(data => handleFormSubmit(data, 'aguardando_patio'))}
+                    disabled={isSubmitting || dataLoading}
+                    className="w-full sm:w-auto"
+                >
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SendToBack className="mr-2 h-4 w-4" /> }
+                    Aguardar no Pátio
+                </Button>
+                <Button
+                    onClick={initiateNewEntryApproval}
+                    disabled={isSubmitting || dataLoading}
+                    className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
+                >
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
+                    Liberar Entrada e Imprimir
+                </Button>
+              </>
+            )}
         </CardFooter>
       </Card>
     </div>

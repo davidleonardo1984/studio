@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry, TransportCompany, Driver } from '@/lib/types';
-import { Download, Printer, Search, Truck, RotateCcw, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
+import { Download, Printer, Search, Truck, RotateCcw, Loader2, AlertTriangle, Trash2, Edit2 } from 'lucide-react';
 import type { DateRange } from "react-day-picker";
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, orderBy, onSnapshot, Timestamp, writeBatch } from 'firebase/firestore';
@@ -30,6 +30,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 
 const formatDateForImage = (timestamp: any) => {
@@ -174,6 +175,7 @@ export default function HistoricoAcessoPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const isClient = useIsClient();
+  const router = useRouter();
   
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -450,6 +452,10 @@ export default function HistoricoAcessoPage() {
         });
     }
   };
+  
+  const handleEdit = (entryId: string) => {
+    router.push(`/registro-entrada?id=${entryId}`);
+  };
 
   const resetFilters = () => {
     setFilters({ transportCompany: '', driverName: '', plate: '', dateRange: undefined });
@@ -721,7 +727,12 @@ export default function HistoricoAcessoPage() {
                             Na fábrica
                         </span>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
+                       {user?.role !== 'gate_agent' && (
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(entry.id)} title="Editar Registro">
+                              <Edit2 className="h-4 w-4 text-blue-600" />
+                          </Button>
+                        )}
                       <Button variant="ghost" size="icon" onClick={() => handlePrintEntry(entry)} title="Reimprimir Documento">
                         <Printer className="h-4 w-4 text-primary" />
                       </Button>
