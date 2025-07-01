@@ -380,7 +380,7 @@ export default function RegistroEntradaPage() {
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex items-center">
         <div>
-          <h1 className="text-3xl font-bold text-primary font-headline">Registro de Nova Entrada</h1>
+          <h1 className="text-3xl font-bold text-primary font-headline">Registro de entrada de Veículo</h1>
           <p className="text-muted-foreground">Preencha os dados abaixo para registrar a entrada de um veículo.</p>
         </div>
       </div>
@@ -653,5 +653,3 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
-
-    
