@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, AlertTriangle, Search, Expand, Shrink, LogOut } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Search, Expand, Shrink } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore';
@@ -195,7 +195,10 @@ export default function RegistroSaidaPage() {
             </div>
         </div>
         <Card className="shadow-xl">
-          <CardContent className="p-6">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
