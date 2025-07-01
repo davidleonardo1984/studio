@@ -180,11 +180,14 @@ export default function RegistroSaidaPage() {
   return (
     <div className="container mx-auto py-8">
        <div className="w-full max-w-6xl mx-auto">
-        <div className="mb-6 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
-            <LogOut className="mr-3 h-8 w-8 text-accent" />
-            Registro de Saída de Veículo
-          </h1>
+        <div className="mb-6 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
+              <LogOut className="mr-3 h-8 w-8 text-accent" />
+              Registro de Saída de Veículo
+            </h1>
+            <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
+          </div>
           <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
             {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
             <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
@@ -276,7 +279,7 @@ export default function RegistroSaidaPage() {
                   <AlertTitle className="font-bold">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
                   <AlertDescription>
                     <p className="text-base mt-1">
-                      Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manually digitando o número abaixo do código de barra ou informe à equipe vigilância.
+                      Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
                     </p>
                   </AlertDescription>
               </Alert>
