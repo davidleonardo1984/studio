@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry, Driver } from '@/lib/types';
-import { CheckCircle, Clock, Search, Loader2, AlertTriangle, ClipboardCopy, Bell, MapPin, Edit2 } from 'lucide-react';
+import { CheckCircle, Clock, Search, Loader2, AlertTriangle, ClipboardCopy, Bell, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
@@ -28,7 +28,6 @@ import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, Timestam
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
 
 
 const formatDateForImage = (timestamp: any) => {
@@ -148,7 +147,6 @@ const colorPalette = [
 export default function AguardandoLiberacaoPage() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const router = useRouter();
   const [waitingVehicles, setWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [persons, setPersons] = useState<Driver[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -366,10 +364,6 @@ export default function AguardandoLiberacaoPage() {
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível liberar la entrada do veículo." });
     }
   };
-  
-  const handleEdit = (vehicleId: string) => {
-    router.push(`/registro-entrada?id=${vehicleId}`);
-  };
 
   const handleClosePreview = () => {
     setIsPreviewModalOpen(false);
@@ -577,14 +571,6 @@ export default function AguardandoLiberacaoPage() {
                         )}
                         {user?.role !== 'gate_agent' && (
                           <>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => handleEdit(vehicle.id)}
-                                title="Editar Registro"
-                            >
-                                <Edit2 className="h-4 w-4 text-blue-600" />
-                            </Button>
                             <Button 
                                 variant="default" 
                                 size="sm" 
