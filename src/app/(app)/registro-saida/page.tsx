@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -179,20 +180,19 @@ export default function RegistroSaidaPage() {
   return (
     <div className="container mx-auto py-8">
        <div className="w-full max-w-6xl mx-auto">
-        <div className="mb-6 flex justify-between items-start">
-          <div className="flex items-center">
-            <LogOut className="mr-3 h-8 w-8 text-accent" />
+        <div className="flex items-center mb-6">
             <div>
               <h1 className="text-3xl font-bold text-primary font-headline">
                 Registro de Saída de Veículo
               </h1>
               <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
             </div>
-          </div>
-          <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
-            {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
-            <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
-          </Button>
+            <div className="ml-auto">
+                <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
+                    {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
+                    <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
+                </Button>
+            </div>
         </div>
         <Card className="shadow-xl">
           <CardHeader>
