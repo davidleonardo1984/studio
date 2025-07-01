@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -194,7 +193,10 @@ export default function RegistroSaidaPage() {
           </Button>
         </div>
         <Card className="shadow-xl">
-          <CardContent className="p-6">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
+          </CardHeader>
+          <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
