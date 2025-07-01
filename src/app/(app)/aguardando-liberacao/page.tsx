@@ -471,7 +471,6 @@ export default function AguardandoLiberacaoPage() {
           </Alert>
       )}
       <div className="flex items-center mb-6">
-        <Clock className="mr-3 h-8 w-8 text-accent" />
         <div>
             <h1 className="text-3xl font-bold text-primary font-headline">
                 Veículos Aguardando Liberação
