@@ -467,7 +467,7 @@ export default function RegistroEntradaPage() {
           </p>
         </div>
       </div>
-      <Card className="max-w-6xl mx-auto shadow-xl">
+      <Card className="shadow-xl">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-semibold text-primary">{editingEntry ? 'Editar Registro' : 'Registro de Entrada'}</CardTitle>
         </CardHeader>
