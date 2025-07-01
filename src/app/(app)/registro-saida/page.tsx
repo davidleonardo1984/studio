@@ -15,7 +15,6 @@ import { CheckCircle, AlertTriangle, Search, Expand, Shrink, LogOut } from 'luci
 import type { VehicleEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore';
-import Image from 'next/image';
 
 
 const exitSchema = z.object({
@@ -192,24 +191,11 @@ export default function RegistroSaidaPage() {
           <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
         </Button>
       </div>
-
-      {isFocusMode && (
-        <div className="flex justify-center mb-8">
-            <Image 
-              src="https://placehold.co/400x93.png" 
-              alt="Logo da Empresa" 
-              width={400} 
-              height={93} 
-              data-ai-hint="Michelin logo" 
-            />
-        </div>
-      )}
-
       <Card className="w-full max-w-2xl mx-auto shadow-xl">
-        <CardHeader className="p-4">
+        <CardHeader>
           <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
         </CardHeader>
-        <CardContent className="p-4">
+        <CardContent className="p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -290,7 +276,7 @@ export default function RegistroSaidaPage() {
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle className="font-bold">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
                 <AlertDescription className="text-foreground text-base mt-1">
-                Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o o número abaixo do código de barra ou informe à equipe vigilância.
+                Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
                 </AlertDescription>
             </Alert>
         </div>
