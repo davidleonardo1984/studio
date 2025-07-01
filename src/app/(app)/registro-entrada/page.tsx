@@ -385,7 +385,7 @@ export default function RegistroEntradaPage() {
         </div>
       </div>
       <Card className="max-w-6xl mx-auto shadow-xl">
-        <CardHeader>
+        <CardHeader className="pb-2">
           <CardTitle className="text-xl font-semibold text-primary">Registro de Entrada</CardTitle>
         </CardHeader>
         <CardContent>
@@ -653,3 +653,5 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
+
+    
