@@ -230,7 +230,7 @@ export default function RegistroSaidaPage() {
                           </Button>
                         </div>
                       </FormControl>
-                      <FormDescription className="text-center text-xs pt-2">
+                      <FormDescription className="text-center text-xs pt-4">
                         O sistema buscará automaticamente após a leitura do código de 14 dígitos.
                       </FormDescription>
                       <FormMessage />
@@ -276,7 +276,7 @@ export default function RegistroSaidaPage() {
                   <AlertTitle className="font-bold">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
                   <AlertDescription>
                     <p className="text-base mt-1">
-                      Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
+                      Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manually digitando o número abaixo do código de barra ou informe à equipe vigilância.
                     </p>
                   </AlertDescription>
               </Alert>
