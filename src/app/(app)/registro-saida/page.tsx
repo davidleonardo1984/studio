@@ -230,7 +230,7 @@ export default function RegistroSaidaPage() {
                           </Button>
                         </div>
                       </FormControl>
-                      <FormDescription className="text-center text-xs">
+                      <FormDescription className="text-center text-xs pt-2">
                         O sistema buscará automaticamente após a leitura do código de 14 dígitos.
                       </FormDescription>
                       <FormMessage />
