@@ -180,12 +180,14 @@ export default function RegistroSaidaPage() {
     <div className="container mx-auto py-8">
        <div className="w-full max-w-6xl mx-auto">
         <div className="mb-6 flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
-              <LogOut className="mr-3 h-8 w-8 text-accent" />
-              Registro de Saída de Veículo
-            </h1>
-            <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
+          <div className="flex items-center">
+            <LogOut className="mr-3 h-8 w-8 text-accent" />
+            <div>
+              <h1 className="text-3xl font-bold text-primary font-headline">
+                Registro de Saída de Veículo
+              </h1>
+              <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
+            </div>
           </div>
           <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
             {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
@@ -196,7 +198,7 @@ export default function RegistroSaidaPage() {
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
