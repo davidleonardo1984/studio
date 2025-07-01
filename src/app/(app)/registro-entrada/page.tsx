@@ -379,7 +379,6 @@ export default function RegistroEntradaPage() {
     <>
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex items-center">
-        <LogIn className="mr-3 h-8 w-8 text-accent" />
         <div>
           <h1 className="text-3xl font-bold text-primary font-headline">Registro de Nova Entrada</h1>
           <p className="text-muted-foreground">Preencha os dados abaixo para registrar a entrada de um veículo.</p>
