@@ -274,7 +274,7 @@ export default function RegistroSaidaPage() {
         
         {isFocusMode && (
           <div className="mt-6">
-              <Alert variant="default" className="border text-red-500">
+              <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle className="font-bold">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
                   <AlertDescription>
