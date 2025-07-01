@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, AlertTriangle, Search, Expand, Shrink, LogOut } from 'lucide-react';
@@ -179,7 +179,7 @@ export default function RegistroSaidaPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="w-full max-w-6xl mx-auto">
+       <div className="w-full max-w-6xl mx-auto">
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
             <LogOut className="mr-3 h-8 w-8 text-accent" />
@@ -230,6 +230,9 @@ export default function RegistroSaidaPage() {
                           </Button>
                         </div>
                       </FormControl>
+                      <FormDescription>
+                        O sistema buscará automaticamente após a leitura do código de 14 dígitos.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -268,7 +271,7 @@ export default function RegistroSaidaPage() {
         
         {isFocusMode && (
           <div className="mt-6">
-              <Alert variant="destructive">
+              <Alert variant="default" className="border text-red-500">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle className="font-bold">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
                   <AlertDescription>
@@ -279,7 +282,7 @@ export default function RegistroSaidaPage() {
               </Alert>
           </div>
         )}
-      </div>
+       </div>
     </div>
   );
 }
