@@ -195,9 +195,6 @@ export default function RegistroSaidaPage() {
             </div>
         </div>
         <Card className="shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
-          </CardHeader>
           <CardContent className="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
