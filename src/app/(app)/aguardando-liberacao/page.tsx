@@ -470,10 +470,10 @@ export default function AguardandoLiberacaoPage() {
               <AlertDescription>{liberationBanner}</AlertDescription>
           </Alert>
       )}
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+      <div className="flex items-center mb-6">
+        <Clock className="mr-3 h-8 w-8 text-accent" />
         <div>
-            <h1 className="text-3xl font-bold text-primary font-headline flex items-center">
-                <Clock className="mr-3 h-8 w-8 text-accent" />
+            <h1 className="text-3xl font-bold text-primary font-headline">
                 Veículos Aguardando Liberação
             </h1>
             <p className="text-muted-foreground">Lista de veículos no pátio que necessitam de aprovação para entrada.</p>
