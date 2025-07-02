@@ -455,7 +455,7 @@ export default function RegistroEntradaPage() {
 
   return (
     <>
-    <div className="container mx-auto pt-4 pb-8 space-y-8">
+    <div className="container mx-auto pb-8 space-y-8">
       <div className="flex items-center">
         <div>
           <h1 className="text-3xl font-bold text-primary font-headline">
@@ -466,7 +466,7 @@ export default function RegistroEntradaPage() {
           </p>
         </div>
       </div>
-      <Card className="shadow-xl w-full max-w-none">
+      <Card className="shadow-xl w-full">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-semibold text-primary">{editingEntry ? 'Editar Registro' : 'Registro de Entrada'}</CardTitle>
         </CardHeader>
