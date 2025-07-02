@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -330,18 +331,18 @@ function PersonsSection() {
                   <TableBody>
                     {filteredData.map((item) => (
                       <TableRow key={item.id} className={item.isBlocked ? "bg-destructive/10 hover:bg-destructive/20" : ""}>
-                          <TableCell>
+                          <TableCell className="py-1">
                               {item.isBlocked ? (
                                   <Badge variant="destructive">BLOQUEADO</Badge>
                               ) : (
                                   <Badge variant="secondary">ATIVO</Badge>
                               )}
                           </TableCell>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>{item.cpf}</TableCell>
-                          <TableCell>{item.cnh || 'N/A'}</TableCell>
-                          <TableCell>{item.phone ? formatDisplayPhoneNumber(item.phone) : 'N/A'}</TableCell>
-                          <TableCell className="text-right space-x-2">
+                          <TableCell className="py-1">{item.name}</TableCell>
+                          <TableCell className="py-1">{item.cpf}</TableCell>
+                          <TableCell className="py-1">{item.cnh || 'N/A'}</TableCell>
+                          <TableCell className="py-1">{item.phone ? formatDisplayPhoneNumber(item.phone) : 'N/A'}</TableCell>
+                          <TableCell className="text-right space-x-2 py-1">
                               <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); }}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
                               <AlertDialog>
                               <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
@@ -561,8 +562,8 @@ function TransportCompaniesSection() {
                   <TableBody>
                     {filteredData.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell className="text-right space-x-2">
+                        <TableCell className="py-1">{item.name}</TableCell>
+                        <TableCell className="text-right space-x-2 py-1">
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
@@ -777,8 +778,8 @@ function InternalDestinationsSection() {
                   <TableBody>
                     {filteredData.map((item) => (
                       <TableRow key={item.id}>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell className="text-right space-x-2">
+                          <TableCell className="py-1">{item.name}</TableCell>
+                          <TableCell className="text-right space-x-2 py-1">
                               <Button variant="ghost" size="icon" onClick={() => setEditingItem(item)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
                               <AlertDialog>
                               <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
@@ -816,7 +817,7 @@ export default function CadastrosGeraisPage() {
   const [activeTab, setActiveTab] = useState("persons");
 
   return (
-    <div className="container mx-auto pb-8 space-y-4">
+    <div className="container mx-auto pb-8">
       <div className="mb-2">
         <h1 className="text-3xl font-bold text-primary font-headline">Cadastros Gerais</h1>
         <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras / empresas e destinos internos.</p>
@@ -842,3 +843,5 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
+
+    
