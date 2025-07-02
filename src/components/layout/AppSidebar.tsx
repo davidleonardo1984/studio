@@ -55,7 +55,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent asChild>
         <ScrollArea className="flex-1">
-          <SidebarMenu className="p-2">
+          <SidebarMenu className="p-2 mt-4">
             {filteredNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href} >
