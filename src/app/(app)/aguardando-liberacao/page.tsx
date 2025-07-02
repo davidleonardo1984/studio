@@ -582,6 +582,7 @@ export default function AguardandoLiberacaoPage() {
                                 variant="outline"
                                 size="sm" 
                                 onClick={() => handleEdit(vehicle.id)}
+                                className="w-32"
                             >
                                 <Edit2 className="mr-2 h-4 w-4" />
                                 Editar
@@ -593,7 +594,7 @@ export default function AguardandoLiberacaoPage() {
                                 setSelectedVehicle(vehicle);
                                 setIsDialogOpen(true);
                                 }}
-                                className="bg-green-600 hover:bg-green-700 text-white"
+                                className="bg-green-600 hover:bg-green-700 text-white w-32"
                             >
                                 <CheckCircle className="mr-2 h-4 w-4" /> Liberar
                             </Button>
