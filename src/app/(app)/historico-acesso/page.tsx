@@ -708,17 +708,19 @@ export default function HistoricoAcessoPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
+            <div className="flex-grow">
               <CardTitle className="flex items-center text-xl font-semibold text-primary"><Truck className="mr-2 h-5 w-5" />Veículos Atualmente na Fábrica ({filteredVehiclesInsideFactory.length})</CardTitle>
               <CardDescription>Lista de veículos que registraram entrada e ainda não saíram.</CardDescription>
             </div>
-            <Input
-              placeholder="Buscar por placa, motorista..."
-              value={vehiclesInsideSearchTerm}
-              onChange={(e) => setVehiclesInsideSearchTerm(e.target.value)}
-              prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-              className="w-full sm:w-auto sm:max-w-xs"
-            />
+            <div className="w-full sm:w-auto">
+              <Input
+                placeholder="Buscar por placa, motorista..."
+                value={vehiclesInsideSearchTerm}
+                onChange={(e) => setVehiclesInsideSearchTerm(e.target.value)}
+                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                className="w-full sm:w-auto sm:max-w-xs"
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
