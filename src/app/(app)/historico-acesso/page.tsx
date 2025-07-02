@@ -521,7 +521,7 @@ export default function HistoricoAcessoPage() {
 
   return (
     <>
-    <div className="container mx-auto pt-4 pb-8 space-y-4">
+    <div className="container mx-auto pb-8 space-y-4">
       <div>
         <h1 className="text-3xl font-bold text-primary font-headline">Histórico de Acesso</h1>
         <p className="text-muted-foreground">Consulte, filtre e exporte os registros de entrada e saída.</p>
@@ -707,9 +707,12 @@ export default function HistoricoAcessoPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex-grow">
-              <CardTitle className="flex items-center text-xl font-semibold text-primary"><Truck className="mr-2 h-5 w-5" />Veículos Atualmente na Fábrica ({filteredVehiclesInsideFactory.length})</CardTitle>
+          <div className="flex flex-wrap justify-between items-center gap-4">
+            <div>
+              <CardTitle className="flex items-center text-xl font-semibold text-primary">
+                <Truck className="mr-2 h-5 w-5" />
+                Veículos Atualmente na Fábrica ({filteredVehiclesInsideFactory.length})
+              </CardTitle>
               <CardDescription>Lista de veículos que registraram entrada e ainda não saíram.</CardDescription>
             </div>
             <div className="w-full sm:w-auto">
@@ -785,3 +788,5 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
+
+    
