@@ -47,7 +47,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" side="left" variant="sidebar">
-      <SidebarHeader className="flex items-center justify-between p-2">
+      <SidebarHeader className="flex items-center justify-between p-2 mt-4">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-sidebar-foreground hover:text-sidebar-primary transition-colors">
           <ShieldCheck className="h-7 w-7 text-sidebar-primary" />
           <span className="text-lg group-data-[collapsible=icon]:hidden font-headline">Portaria Única RES</span>
@@ -55,7 +55,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent asChild>
         <ScrollArea className="flex-1">
-          <SidebarMenu className="p-2 mt-4">
+          <SidebarMenu className="p-2">
             {filteredNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href} >
