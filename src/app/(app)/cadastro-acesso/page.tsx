@@ -196,7 +196,7 @@ export default function CadastroAcessoPage() {
 
   if (user?.role !== 'admin') {
     return (
-      <div className="container mx-auto pt-4 pb-8 text-center">
+      <div className="container mx-auto pb-8 text-center">
         <Card className="max-w-md mx-auto p-8 shadow-xl">
             <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-destructive">Acesso Restrito</h1>
@@ -354,10 +354,10 @@ export default function CadastroAcessoPage() {
                     
                     return (
                       <TableRow key={u.id}>
-                        <TableCell className="font-medium">{u.name}</TableCell>
-                        <TableCell>{u.login}</TableCell>
-                        <TableCell><span className={`px-2 py-1 text-xs rounded-full ${roleClass}`}>{roleLabel}</span></TableCell>
-                        <TableCell className="text-right space-x-1">
+                        <TableCell className="font-medium py-1">{u.name}</TableCell>
+                        <TableCell className="py-1">{u.login}</TableCell>
+                        <TableCell className="py-1"><span className={`px-2 py-1 text-xs rounded-full ${roleClass}`}>{roleLabel}</span></TableCell>
+                        <TableCell className="text-right space-x-1 py-1">
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(u)} title="Editar" disabled={u.login === 'admin' && user?.login !== 'admin' /* Allow admin to edit self, but not other admins if any */}>
                             <Edit2 className="h-4 w-4 text-blue-600" />
                           </Button>
