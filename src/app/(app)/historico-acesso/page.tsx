@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -474,6 +475,7 @@ export default function HistoricoAcessoPage() {
     }
     const lowercasedTerm = vehiclesInsideSearchTerm.toLowerCase();
     return vehiclesInsideFactory.filter(v =>
+      v.barcode.toLowerCase().includes(lowercasedTerm) ||
       v.plate1.toLowerCase().includes(lowercasedTerm) ||
       v.driverName.toLowerCase().includes(lowercasedTerm) ||
       v.transportCompanyName.toLowerCase().includes(lowercasedTerm)
@@ -687,7 +689,7 @@ export default function HistoricoAcessoPage() {
                   </Table>
                   </div>
                 ) : (
-                    <p className="text-muted-foreground text-center py-8">NENHUM REGISTRO ENCONTRADO COM OS FILTROS APLICADOS.</p>
+                    <p className="text-muted-foreground text-center py-4">NENHUM REGISTRO ENCONTRADO COM OS FILTROS APLICADOS.</p>
                 )
              ) : (
                 <div className="text-center py-4">
@@ -716,7 +718,7 @@ export default function HistoricoAcessoPage() {
             </div>
             <div className="w-full sm:w-auto">
               <Input
-                placeholder="Buscar por placa, motorista..."
+                placeholder="Buscar por ID, placa, motorista..."
                 value={vehiclesInsideSearchTerm}
                 onChange={(e) => setVehiclesInsideSearchTerm(e.target.value)}
                 prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
