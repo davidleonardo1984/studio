@@ -309,7 +309,7 @@ function PersonsSection() {
                 <p className="ml-4 text-muted-foreground">Carregando...</p>
               </div>
             ) : !searchTerm.trim() ? (
-              <div className="text-center py-12">
+              <div className="text-center py-8">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
                 <p className="text-lg font-medium text-muted-foreground">
                   Utilize a busca para consultar os cadastros.
@@ -541,7 +541,7 @@ function TransportCompaniesSection() {
                 <p className="ml-4 text-muted-foreground">Carregando Transportadoras / Empresas...</p>
               </div>
             ) : !searchTerm.trim() ? (
-              <div className="text-center py-12">
+              <div className="text-center py-8">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
                 <p className="text-lg font-medium text-muted-foreground">
                   Utilize a busca para consultar os cadastros.
@@ -757,7 +757,7 @@ function InternalDestinationsSection() {
                 <p className="ml-4 text-muted-foreground">Carregando...</p>
               </div>
             ) : !searchTerm.trim() ? (
-              <div className="text-center py-12">
+              <div className="text-center py-8">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
                 <p className="text-lg font-medium text-muted-foreground">
                   Utilize a busca para consultar os cadastros.
@@ -817,7 +817,7 @@ export default function CadastrosGeraisPage() {
   const [activeTab, setActiveTab] = useState("persons");
 
   return (
-    <div className="container mx-auto pb-8">
+    <div className="container mx-auto pb-8 space-y-4">
       <div className="mb-2">
         <h1 className="text-3xl font-bold text-primary font-headline">Cadastros Gerais</h1>
         <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras / empresas e destinos internos.</p>
@@ -843,5 +843,7 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
+
+    
 
     
