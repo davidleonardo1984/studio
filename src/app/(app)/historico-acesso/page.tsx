@@ -522,7 +522,7 @@ export default function HistoricoAcessoPage() {
   return (
     <>
     <div className="container mx-auto pb-8 space-y-4">
-      <div>
+      <div className="pt-4">
         <h1 className="text-3xl font-bold text-primary font-headline">Histórico de Acesso</h1>
         <p className="text-muted-foreground">Consulte, filtre e exporte os registros de entrada e saída.</p>
       </div>
@@ -691,7 +691,7 @@ export default function HistoricoAcessoPage() {
                     <p className="text-muted-foreground text-center py-8">NENHUM REGISTRO ENCONTRADO COM OS FILTROS APLICADOS.</p>
                 )
              ) : (
-                <div className="text-center py-12">
+                <div className="text-center py-8">
                     <Search className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />
                     <p className="text-xl font-medium text-muted-foreground">
                         APLIQUE UM FILTRO PARA COMEÇAR
