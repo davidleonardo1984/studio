@@ -188,7 +188,7 @@ const QuickLinkCard: React.FC<QuickLinkProps> = ({ href, title, description, ico
 export default function DashboardPage() {
   const { user } = useAuth();
   return (
-    <div className="container mx-auto pt-4 pb-8">
+    <div className="container mx-auto pb-8">
       <div className="mb-12 text-center">
         <h1 className="text-4xl font-bold tracking-tight text-primary font-headline mb-4">
           Bem-vindo à Portaria Única RES
