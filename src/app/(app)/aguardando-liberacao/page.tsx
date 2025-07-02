@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -580,12 +579,12 @@ export default function AguardandoLiberacaoPage() {
                         {user?.role !== 'gate_agent' && (
                           <>
                             <Button 
-                                variant="ghost"
-                                size="icon" 
+                                variant="outline"
+                                size="sm" 
                                 onClick={() => handleEdit(vehicle.id)}
-                                title="Editar"
                             >
-                                <Edit2 className="h-4 w-4 text-blue-600" />
+                                <Edit2 className="mr-2 h-4 w-4" />
+                                Editar
                             </Button>
                             <Button 
                                 variant="default" 
