@@ -270,11 +270,11 @@ export default function AguardandoLiberacaoPage() {
     );
   }, [waitingVehicles, searchTerm]);
   
-  const companyColorMap = useMemo(() => {
-    const uniqueCompanies = [...new Set(waitingVehicles.map(v => v.transportCompanyName))];
+  const destinationColorMap = useMemo(() => {
+    const uniqueDestinations = [...new Set(waitingVehicles.map(v => v.internalDestinationName))];
     const map = new Map<string, { bg: string, text: string }>();
-    uniqueCompanies.forEach((company, index) => {
-      map.set(company, colorPalette[index % colorPalette.length]);
+    uniqueDestinations.forEach((destination, index) => {
+      map.set(destination, colorPalette[index % colorPalette.length]);
     });
     return map;
   }, [waitingVehicles]);
@@ -470,7 +470,7 @@ export default function AguardandoLiberacaoPage() {
               <AlertDescription>{liberationBanner}</AlertDescription>
           </Alert>
       )}
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+      <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
             <h1 className="text-3xl font-bold text-primary font-headline">
                 Veículos Aguardando Liberação
@@ -521,43 +521,45 @@ export default function AguardandoLiberacaoPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Ordem</TableHead>
-                  <TableHead>Motorista</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead>Transportadora / Empresa</TableHead>
-                  <TableHead>Destino Interno</TableHead>
-                  <TableHead>Placa 1</TableHead>
-                  <TableHead>Observação</TableHead>
-                  <TableHead>Data/Hora Chegada</TableHead>
-                  <TableHead>Tempo no Pátio</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="py-1">Ordem</TableHead>
+                  <TableHead className="py-1">Motorista</TableHead>
+                  <TableHead className="py-1">Telefone</TableHead>
+                  <TableHead className="py-1">Transportadora / Empresa</TableHead>
+                  <TableHead className="py-1">Destino Interno</TableHead>
+                  <TableHead className="py-1">Placa 1</TableHead>
+                  <TableHead className="py-1">Observação</TableHead>
+                  <TableHead className="py-1">Data/Hora Chegada</TableHead>
+                  <TableHead className="py-1">Tempo no Pátio</TableHead>
+                  <TableHead className="text-right py-1">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredVehicles.map((vehicle, index) => {
                     const driver = persons.find(p => p.name.toLowerCase() === vehicle.driverName.toLowerCase());
                     const phone = driver?.phone ? formatDisplayPhoneNumber(driver.phone) : 'N/A';
-                    const companyColors = companyColorMap.get(vehicle.transportCompanyName);
+                    const destinationColors = destinationColorMap.get(vehicle.internalDestinationName);
                     return (
                     <TableRow key={vehicle.id} className={cn(!!vehicle.notified && user?.role !== 'gate_agent' && 'bg-amber-100')}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>{vehicle.driverName}</TableCell>
-                        <TableCell>{phone}</TableCell>
-                        <TableCell>
+                        <TableCell className="py-1">{index + 1}</TableCell>
+                        <TableCell className="py-1">{vehicle.driverName}</TableCell>
+                        <TableCell className="py-1">{phone}</TableCell>
+                        <TableCell className="py-1">
+                            {vehicle.transportCompanyName}
+                        </TableCell>
+                        <TableCell className="py-1">
                             <span className={cn(
                                 'inline-block px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap',
-                                companyColors?.bg,
-                                companyColors?.text
+                                destinationColors?.bg,
+                                destinationColors?.text
                             )}>
-                                {vehicle.transportCompanyName}
+                                {vehicle.internalDestinationName}
                             </span>
                         </TableCell>
-                        <TableCell>{vehicle.internalDestinationName}</TableCell>
-                        <TableCell>{vehicle.plate1}</TableCell>
-                        <TableCell className="max-w-xs truncate">{vehicle.observation || '-'}</TableCell>
-                        <TableCell>{formatDate(vehicle.arrivalTimestamp)}</TableCell>
-                        <TableCell className="font-medium text-amber-700">{calculateWaitingTime(vehicle.arrivalTimestamp, now)}</TableCell>
-                        <TableCell className="text-right space-x-2">
+                        <TableCell className="py-1">{vehicle.plate1}</TableCell>
+                        <TableCell className="max-w-xs truncate py-1">{vehicle.observation || '-'}</TableCell>
+                        <TableCell className="py-1">{formatDate(vehicle.arrivalTimestamp)}</TableCell>
+                        <TableCell className="font-medium text-amber-700 py-1">{calculateWaitingTime(vehicle.arrivalTimestamp, now)}</TableCell>
+                        <TableCell className="text-right space-x-2 py-1">
                         {user?.role === 'gate_agent' && (
                             <Button 
                                 variant="outline" 
