@@ -483,7 +483,7 @@ export default function HistoricoAcessoPage() {
   
   if (!isClient) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto pt-4 pb-8">
         <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-4 text-muted-foreground">Carregando...</p>
@@ -494,7 +494,7 @@ export default function HistoricoAcessoPage() {
 
   if (!db) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto pt-4 pb-8">
         <Card className="shadow-lg mt-4 max-w-2xl mx-auto">
             <CardHeader>
                 <CardTitle className="text-xl font-semibold text-destructive flex items-center">
@@ -521,7 +521,7 @@ export default function HistoricoAcessoPage() {
 
   return (
     <>
-    <div className="container mx-auto py-8 space-y-8">
+    <div className="container mx-auto pt-4 pb-8 space-y-4">
       <div>
         <h1 className="text-3xl font-bold text-primary font-headline">Histórico de Acesso</h1>
         <p className="text-muted-foreground">Consulte, filtre e exporte os registros de entrada e saída.</p>

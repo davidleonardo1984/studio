@@ -817,7 +817,7 @@ export default function CadastrosGeraisPage() {
   const [activeTab, setActiveTab] = useState("persons");
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
+    <div className="container mx-auto pt-4 pb-8 space-y-4">
       <div>
         <h1 className="text-3xl font-bold text-primary font-headline">Cadastros Gerais</h1>
         <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras / empresas e destinos internos.</p>

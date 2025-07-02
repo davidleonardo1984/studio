@@ -196,7 +196,7 @@ export default function CadastroAcessoPage() {
 
   if (user?.role !== 'admin') {
     return (
-      <div className="container mx-auto py-8 text-center">
+      <div className="container mx-auto pt-4 pb-8 text-center">
         <Card className="max-w-md mx-auto p-8 shadow-xl">
             <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-destructive">Acesso Restrito</h1>
@@ -208,7 +208,7 @@ export default function CadastroAcessoPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto pt-4 pb-8">
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
             <h1 className="text-3xl font-bold text-primary font-headline">Gerenciamento de Acesso</h1>

@@ -152,7 +152,7 @@ export default function RegistroSaidaPage() {
 
   if (!db) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto pt-4 pb-8">
         <Card className="shadow-lg mt-4 max-w-2xl mx-auto">
             <CardHeader>
                 <CardTitle className="text-xl font-semibold text-destructive flex items-center">
@@ -178,7 +178,7 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto pt-4 pb-8">
       <div className="flex items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-primary font-headline">
@@ -193,7 +193,7 @@ export default function RegistroSaidaPage() {
               </Button>
           </div>
       </div>
-      <Card className="shadow-xl w-full max-w-none">
+      <Card className="shadow-xl w-full">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
         </CardHeader>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -92,7 +93,7 @@ export default function MudarSenhaPage() {
 
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto pt-4 pb-8">
       <Card className="max-w-lg mx-auto shadow-xl">
         <CardHeader>
           <div className="flex items-center mb-2">
