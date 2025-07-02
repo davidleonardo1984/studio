@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -178,7 +177,7 @@ export default function RegistroSaidaPage() {
   }
 
   return (
-    <div className="container mx-auto pt-4 pb-8">
+    <div className="container mx-auto pb-8">
       <div className="flex items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-primary font-headline">
