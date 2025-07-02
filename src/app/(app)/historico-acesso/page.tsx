@@ -483,7 +483,7 @@ export default function HistoricoAcessoPage() {
   
   if (!isClient) {
     return (
-      <div className="container mx-auto pt-4 pb-8">
+      <div className="container mx-auto pb-8">
         <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-4 text-muted-foreground">Carregando...</p>
@@ -494,7 +494,7 @@ export default function HistoricoAcessoPage() {
 
   if (!db) {
     return (
-      <div className="container mx-auto pt-4 pb-8">
+      <div className="container mx-auto pb-8">
         <Card className="shadow-lg mt-4 max-w-2xl mx-auto">
             <CardHeader>
                 <CardTitle className="text-xl font-semibold text-destructive flex items-center">
@@ -657,18 +657,18 @@ export default function HistoricoAcessoPage() {
                     <TableBody>
                       {filteredEntries.map((entry) => (
                         <TableRow key={entry.id}>
-                          <TableCell className="font-mono text-xs">{entry.barcode}</TableCell>
-                          <TableCell>{entry.driverName}</TableCell>
-                          <TableCell>{entry.transportCompanyName}</TableCell>
-                          <TableCell>{entry.plate1}</TableCell>
-                          <TableCell>{entry.plate2 || '-'}</TableCell>
-                          <TableCell>{entry.plate3 || '-'}</TableCell>
-                          <TableCell>{formatDate(entry.arrivalTimestamp)}</TableCell>
-                          <TableCell>{formatDate(entry.liberationTimestamp)}</TableCell>
-                          <TableCell>{formatDate(entry.exitTimestamp)}</TableCell>
-                          <TableCell>{calculateDuration(entry.arrivalTimestamp, entry.liberationTimestamp)}</TableCell>
-                          <TableCell>{calculateDuration(entry.liberationTimestamp, entry.exitTimestamp)}</TableCell>
-                          <TableCell>
+                          <TableCell className="font-mono text-xs py-1">{entry.barcode}</TableCell>
+                          <TableCell className="py-1">{entry.driverName}</TableCell>
+                          <TableCell className="py-1">{entry.transportCompanyName}</TableCell>
+                          <TableCell className="py-1">{entry.plate1}</TableCell>
+                          <TableCell className="py-1">{entry.plate2 || '-'}</TableCell>
+                          <TableCell className="py-1">{entry.plate3 || '-'}</TableCell>
+                          <TableCell className="py-1">{formatDate(entry.arrivalTimestamp)}</TableCell>
+                          <TableCell className="py-1">{formatDate(entry.liberationTimestamp)}</TableCell>
+                          <TableCell className="py-1">{formatDate(entry.exitTimestamp)}</TableCell>
+                          <TableCell className="py-1">{calculateDuration(entry.arrivalTimestamp, entry.liberationTimestamp)}</TableCell>
+                          <TableCell className="py-1">{calculateDuration(entry.liberationTimestamp, entry.exitTimestamp)}</TableCell>
+                          <TableCell className="py-1">
                               <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
                                   entry.status === 'saiu' ? 'bg-red-100 text-red-700' :
                                   entry.status === 'entrada_liberada' ? 'bg-green-100 text-green-700' :
@@ -677,7 +677,7 @@ export default function HistoricoAcessoPage() {
                                   {entry.status === 'saiu' ? 'Saiu' : entry.status === 'entrada_liberada' ? 'Na fábrica' : 'No pátio'}
                               </span>
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right py-1">
                             <Button variant="ghost" size="icon" onClick={() => handlePrintEntry(entry)} title="Reimprimir Documento">
                               <Printer className="h-4 w-4 text-primary" />
                             </Button>
@@ -745,18 +745,18 @@ export default function HistoricoAcessoPage() {
               <TableBody>
                 {filteredVehiclesInsideFactory.map((entry) => (
                   <TableRow key={entry.id}>
-                    <TableCell className="font-mono text-xs">{entry.barcode}</TableCell>
-                    <TableCell>{entry.plate1}</TableCell>
-                    <TableCell>{entry.driverName}</TableCell>
-                    <TableCell>{entry.transportCompanyName}</TableCell>
-                    <TableCell>{formatDate(entry.arrivalTimestamp)}</TableCell>
-                    <TableCell>{formatDate(entry.liberationTimestamp)}</TableCell>
-                     <TableCell>
+                    <TableCell className="font-mono text-xs py-1">{entry.barcode}</TableCell>
+                    <TableCell className="py-1">{entry.plate1}</TableCell>
+                    <TableCell className="py-1">{entry.driverName}</TableCell>
+                    <TableCell className="py-1">{entry.transportCompanyName}</TableCell>
+                    <TableCell className="py-1">{formatDate(entry.arrivalTimestamp)}</TableCell>
+                    <TableCell className="py-1">{formatDate(entry.liberationTimestamp)}</TableCell>
+                     <TableCell className="py-1">
                         <span className="px-2 py-1 text-xs rounded-full whitespace-nowrap bg-green-100 text-green-700">
                             Na fábrica
                         </span>
                     </TableCell>
-                    <TableCell className="text-right space-x-2">
+                    <TableCell className="text-right space-x-2 py-1">
                        {user?.role !== 'gate_agent' && (
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(entry.id)} title="Editar Registro">
                               <Edit2 className="h-4 w-4 text-blue-600" />
@@ -788,5 +788,3 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
-
-    
