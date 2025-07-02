@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -817,8 +816,8 @@ export default function CadastrosGeraisPage() {
   const [activeTab, setActiveTab] = useState("persons");
 
   return (
-    <div className="container mx-auto pt-4 pb-8 space-y-4">
-      <div>
+    <div className="container mx-auto pb-8 space-y-4">
+      <div className="mb-2">
         <h1 className="text-3xl font-bold text-primary font-headline">Cadastros Gerais</h1>
         <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras / empresas e destinos internos.</p>
       </div>
