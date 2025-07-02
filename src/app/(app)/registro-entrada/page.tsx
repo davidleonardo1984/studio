@@ -174,6 +174,10 @@ export default function RegistroEntradaPage() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
+  // New state for print confirmation dialog after edit
+  const [isPrintConfirmDialogOpen, setIsPrintConfirmDialogOpen] = useState(false);
+  const [updatedEntryForPrint, setUpdatedEntryForPrint] = useState<VehicleEntry | null>(null);
+
   const [transportCompanies, setTransportCompanies] = useState<TransportCompany[]>([]);
   const [persons, setPersons] = useState<Driver[]>([]);
   const [internalDestinations, setInternalDestinations] = useState<InternalDestination[]>([]);
@@ -393,7 +397,11 @@ export default function RegistroEntradaPage() {
             description: `O registro do veículo ${data.plate1} foi atualizado com sucesso.`,
             className: 'bg-green-600 text-white'
         });
-        router.back();
+        
+        // Open confirmation dialog instead of navigating back directly
+        const updatedEntry: VehicleEntry = { ...editingEntry, ...data };
+        setUpdatedEntryForPrint(updatedEntry);
+        setIsPrintConfirmDialogOpen(true);
 
     } catch (error) {
         console.error("Error updating entry:", error);
@@ -401,6 +409,30 @@ export default function RegistroEntradaPage() {
     } finally {
         setIsSubmitting(false);
     }
+  };
+
+  const handleConfirmPrint = async () => {
+    if (!updatedEntryForPrint) return;
+
+    toast({
+        title: 'Gerando Documento',
+        description: `Preparando documento para ${updatedEntryForPrint.plate1}...`,
+    });
+
+    const imageResult = await generateVehicleEntryImage(updatedEntryForPrint);
+    
+    if (imageResult.success && imageResult.imageUrl) {
+        setPreviewImageUrl(imageResult.imageUrl);
+        setIsPreviewModalOpen(true);
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Erro no Documento',
+            description: `Falha ao gerar o documento para ${updatedEntryForPrint.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
+        });
+        router.back();
+    }
+    setIsPrintConfirmDialogOpen(false);
   };
 
 
@@ -423,6 +455,9 @@ export default function RegistroEntradaPage() {
   const handleClosePreview = () => {
     setIsPreviewModalOpen(false);
     setPreviewImageUrl(null);
+    if (editingEntry) {
+      router.back();
+    }
   };
 
   if (!db) {
@@ -746,6 +781,22 @@ export default function RegistroEntradaPage() {
           <AlertDialogAction onClick={handleConfirmApproval}>
             Confirmar e Gerar Documento
           </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* New Dialog for Print Confirmation after Edit */}
+    <AlertDialog open={isPrintConfirmDialogOpen} onOpenChange={setIsPrintConfirmDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Registro Atualizado com Sucesso!</AlertDialogTitle>
+          <AlertDialogDescription>
+            Deseja reimprimir o romaneio de entrada com as novas informações?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => router.back()}>Não, Voltar</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirmPrint}>Sim, Imprimir</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
