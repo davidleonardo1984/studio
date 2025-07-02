@@ -423,7 +423,7 @@ export default function AguardandoLiberacaoPage() {
 
   if (!isClient) {
     return (
-      <div className="container mx-auto pt-4 pb-8">
+      <div className="container mx-auto pb-8">
         <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="ml-4 text-muted-foreground">Carregando...</p>
@@ -434,7 +434,7 @@ export default function AguardandoLiberacaoPage() {
 
   if (!db) {
     return (
-      <div className="container mx-auto pt-4 pb-8">
+      <div className="container mx-auto pb-8">
         <Card className="shadow-lg mt-4 max-w-2xl mx-auto">
             <CardHeader>
                 <CardTitle className="text-xl font-semibold text-destructive flex items-center">
@@ -462,7 +462,7 @@ export default function AguardandoLiberacaoPage() {
 
   return (
     <>
-    <div className="container mx-auto pt-4 pb-8">
+    <div className="container mx-auto pb-8">
       {liberationBanner && (
           <Alert className="bg-green-100 border-green-400 text-green-800 mb-6 animate-in fade-in-50">
               <CheckCircle className="h-5 w-5 text-green-600" />
