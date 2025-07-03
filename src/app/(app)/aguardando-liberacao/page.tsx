@@ -47,7 +47,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
         <p style="font-size: 9px; text-align: center; margin: 2px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
       </div>
 
-      <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; line-height: 1.4;">
+      <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; line-height: 1.4; display: flex; align-items: center;">
         <div style="display: inline-block; width: 48%; margin-right: 2%; vertical-align: middle;">
           <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Chegada:</p>
           <p style="margin: 0;">${formatDateForImage(entry.arrivalTimestamp)}</p>
@@ -81,7 +81,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
       </div>
       
       ${entry.liberatedBy ? `
-      <div style="display: flex; align-items: center; border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; margin-top: 15px;">
+      <div style="display: flex; align-items: center; border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; margin-top: 15px; min-height: 40px;">
         <p style="margin: 0;"><span style="font-weight: bold;">LIBERADO POR:</span> ${entry.liberatedBy.toUpperCase()}</p>
       </div>
       ` : ''}
@@ -577,6 +577,7 @@ export default function AguardandoLiberacaoPage() {
                                 size="sm" 
                                 onClick={() => handleNotify(vehicle)}
                                 disabled={!!vehicle.notified}
+                                className="w-40"
                             >
                                 <Bell className="mr-2 h-4 w-4" />
                                 {vehicle.notified ? 'Notificado' : 'Notificar Liberação'}
