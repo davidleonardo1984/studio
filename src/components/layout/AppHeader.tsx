@@ -248,7 +248,7 @@ export function AppHeader() {
     return name.substring(0, 2).toUpperCase();
   };
 
-  const handleApproveEntry = async (notification: AppNotification, liberatedBy?: string) => {
+  const handleApproveEntry = async (notification: AppNotification) => {
     if (!db) return;
     
     const vehicleDocRef = doc(db, 'vehicleEntries', notification.vehicleEntryId);
@@ -260,10 +260,12 @@ export function AppHeader() {
     }
     const vehicle = { id: vehicleDocSnap.id, ...vehicleDocSnap.data() } as VehicleEntry;
 
+    const agentWhoNotified = users.find(u => u.login === notification.createdBy);
+    
     const updatedVehicleData = {
         status: 'entrada_liberada' as const,
         liberationTimestamp: Timestamp.fromDate(new Date()),
-        liberatedBy: liberatedBy?.trim() || '',
+        liberatedBy: agentWhoNotified?.name || notification.createdBy, // Use agent's name, fallback to login
     };
     
     try {
@@ -472,7 +474,7 @@ export function AppHeader() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Liberação de {[selectedNotification?.plate1, selectedNotification?.plate2, selectedNotification?.plate3].filter(Boolean).join(' / ')}?</AlertDialogTitle>
             <AlertDialogDescription>
-              A liberação será registrada em nome do solicitante ({agentName}). Deseja continuar?
+              O agente {agentName} solicitou a liberação. A liberação será registrada em nome dele. Deseja continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -480,7 +482,7 @@ export function AppHeader() {
             <AlertDialogAction
               onClick={() => {
                 if (selectedNotification) {
-                  handleApproveEntry(selectedNotification, agentName);
+                  handleApproveEntry(selectedNotification);
                   setIsDialogOpen(false);
                 }
               }}

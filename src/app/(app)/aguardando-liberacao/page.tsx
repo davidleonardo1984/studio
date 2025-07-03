@@ -147,7 +147,7 @@ const colorPalette = [
 
 export default function AguardandoLiberacaoPage() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, users } = useAuth();
   const router = useRouter();
   const [waitingVehicles, setWaitingVehicles] = useState<VehicleEntry[]>([]);
   const [persons, setPersons] = useState<Driver[]>([]);
@@ -306,13 +306,19 @@ export default function AguardandoLiberacaoPage() {
   };
 
 
-  const handleApproveEntry = async (vehicle: VehicleEntry, liberatedBy?: string) => {
-    if (!db) return;
+  const handleApproveEntry = async (vehicle: VehicleEntry) => {
+    if (!db || !user) return;
+    
+    // If the vehicle was notified, the "liberatedBy" should be the agent who notified.
+    // Otherwise, it's the current admin/user.
+    const agentWhoNotified = users.find(u => u.login === vehicle.registeredBy);
+    const liberatedBy = vehicle.notified && agentWhoNotified ? agentWhoNotified.name : user.name;
+
     const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
     const updatedVehicleData = {
         status: 'entrada_liberada' as const,
         liberationTimestamp: Timestamp.fromDate(new Date()),
-        liberatedBy: liberatedBy?.trim() || '',
+        liberatedBy: liberatedBy,
     };
     
     try {
@@ -616,15 +622,19 @@ export default function AguardandoLiberacaoPage() {
         <AlertDialogHeader>
           <AlertDialogTitle>Confirmar Liberação de {selectedVehicle?.plate1}?</AlertDialogTitle>
           <AlertDialogDescription>
-            A liberação será registrada em seu nome ({user?.name}). Deseja continuar?
+            {selectedVehicle?.notified 
+              ? `O agente ${users.find(u => u.login === selectedVehicle.registeredBy)?.name || 'desconhecido'} solicitou a liberação. O registro será feito em nome dele.`
+              : `A liberação será registrada em seu nome (${user?.name}).`
+            }
+            {' '}Deseja continuar?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
-              if (selectedVehicle && user) {
-                handleApproveEntry(selectedVehicle, user.name);
+              if (selectedVehicle) {
+                handleApproveEntry(selectedVehicle);
                 setIsDialogOpen(false);
               }
             }}
