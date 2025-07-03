@@ -89,7 +89,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
         </div>
         
         <div style="font-size: 11px; line-height: 1.5; margin-top: 5px;">
-          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Observação:</span> ${entry.observation || '-'}</p>
+          ${entry.observation ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Observação:</span> ${entry.observation}</p>` : ''}
         </div>
       </div>
       

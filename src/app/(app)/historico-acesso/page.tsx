@@ -78,7 +78,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
         </div>
         
         <div style="font-size: 11px; line-height: 1.5; margin-top: 5px;">
-          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Observação:</span> ${entry.observation || '-'}</p>
+          ${entry.observation ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Observação:</span> ${entry.observation}</p>` : ''}
         </div>
       </div>
 
@@ -523,7 +523,7 @@ export default function HistoricoAcessoPage() {
   return (
     <>
     <div className="container mx-auto pb-8 space-y-4">
-      <div>
+      <div className="pt-2">
         <h1 className="text-3xl font-bold text-primary font-headline">Histórico de Acesso</h1>
         <p className="text-muted-foreground">Consulte, filtre e exporte os registros de entrada e saída.</p>
       </div>

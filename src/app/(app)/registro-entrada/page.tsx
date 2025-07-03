@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -100,7 +101,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
         </div>
         
         <div style="font-size: 11px; line-height: 1.5; margin-top: 5px;">
-          <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Observação:</span> ${entry.observation || '-'}</p>
+          ${entry.observation ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Observação:</span> ${entry.observation}</p>` : ''}
         </div>
       </div>
       
@@ -757,7 +758,7 @@ export default function RegistroEntradaPage() {
             Confirmar Liberação de {form.getValues().plate1}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Este campo é opcional. Pressione Enter ou clique em confirmar para prosseguir.
+            A liberação será registrada em seu nome ({user?.name}). Deseja continuar?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="py-2">
