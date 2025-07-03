@@ -48,11 +48,11 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
       </div>
 
       <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; line-height: 1.4;">
-        <div style="display: inline-block; width: 48%; margin-right: 2%; vertical-align: top;">
+        <div style="display: inline-block; width: 48%; margin-right: 2%; vertical-align: middle;">
           <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Chegada:</p>
           <p style="margin: 0;">${formatDateForImage(entry.arrivalTimestamp)}</p>
         </div>
-        <div style="display: inline-block; width: 48%; vertical-align: top;">
+        <div style="display: inline-block; width: 48%; vertical-align: middle;">
           <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Liberação:</p>
           <p style="margin: 0;">${formatDateForImage(entry.liberationTimestamp)}</p>
         </div>
@@ -81,7 +81,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
       </div>
       
       ${entry.liberatedBy ? `
-      <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; margin-top: 15px;">
+      <div style="display: flex; align-items: center; border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; margin-top: 15px;">
         <p style="margin: 0;"><span style="font-weight: bold;">LIBERADO POR:</span> ${entry.liberatedBy.toUpperCase()}</p>
       </div>
       ` : ''}
