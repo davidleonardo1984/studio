@@ -50,7 +50,7 @@ export function AppSidebar() {
       <SidebarHeader className="flex items-center justify-between p-2 mt-4">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-sidebar-foreground hover:text-sidebar-primary transition-colors">
           <ShieldCheck className="h-7 w-7 text-sidebar-primary" />
-          <span className="text-lg group-data-[collapsible=icon]:hidden font-headline">Portaria Única RES</span>
+          <span className="text-xl group-data-[collapsible=icon]:hidden font-headline">Portaria Única RES</span>
         </Link>
       </SidebarHeader>
       <SidebarContent asChild>
