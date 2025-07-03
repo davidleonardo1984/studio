@@ -313,7 +313,7 @@ export default function RegistroEntradaPage() {
     };
 
     fetchEntry();
-  }, [searchParams, db, form, router, toast]);
+  }, [searchParams, form, router, toast]);
 
   useEffect(() => {
     if (!isDialogOpen) {
