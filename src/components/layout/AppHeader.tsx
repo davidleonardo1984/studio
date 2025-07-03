@@ -162,14 +162,13 @@ const formatDisplayPhoneNumber = (val: string): string => {
 };
 
 export function AppHeader() {
-  const { user, logout } = useAuth();
+  const { user, logout, users } = useAuth();
   const { toast } = useToast();
   const { toggleSidebar, isMobile } = useSidebar();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [liberatedByName, setLiberatedByName] = useState('');
   const [selectedNotification, setSelectedNotification] = useState<AppNotification | null>(null);
 
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
@@ -225,7 +224,6 @@ export function AppHeader() {
   useEffect(() => {
     if (!isDialogOpen) {
       setSelectedNotification(null);
-      setLiberatedByName('');
     }
   }, [isDialogOpen]);
 
@@ -290,7 +288,6 @@ export function AppHeader() {
             icon: <CheckCircle className="h-6 w-6 text-white" />
         });
         
-        // Set item in localStorage to notify other tabs/windows
         localStorage.setItem('lastLiberatedVehicle', JSON.stringify({ 
             plate1: updatedVehicle.plate1, 
             timestamp: Date.now() 
@@ -398,6 +395,7 @@ export function AppHeader() {
     </DropdownMenu>
   );
 
+  const agentName = selectedNotification ? (users.find(u => u.login === selectedNotification.createdBy)?.name || selectedNotification.createdBy) : '';
 
   return (
     <>
@@ -472,36 +470,18 @@ export function AppHeader() {
       <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Liberação de {[selectedNotification?.plate1, selectedNotification?.plate2, selectedNotification?.plate3].filter(Boolean).join(' / ')}</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar Liberação de {[selectedNotification?.plate1, selectedNotification?.plate2, selectedNotification?.plate3].filter(Boolean).join(' / ')}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Este campo é opcional. Pressione Enter ou clique em confirmar para prosseguir.
+              A liberação será registrada em nome do solicitante ({agentName}). Deseja continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="py-2">
-            <Label htmlFor="liberado-por-header" className="text-right">Liberado por:</Label>
-            <Input
-              id="liberado-por-header"
-              placeholder="Nome do liberador"
-              value={liberatedByName}
-              onChange={(e) => setLiberatedByName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  if(selectedNotification) {
-                    handleApproveEntry(selectedNotification, liberatedByName);
-                    setIsDialogOpen(false);
-                  }
-                }
-              }}
-              className="mt-2"
-            />
-          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (selectedNotification) {
-                  handleApproveEntry(selectedNotification, liberatedByName);
+                  handleApproveEntry(selectedNotification, agentName);
+                  setIsDialogOpen(false);
                 }
               }}
             >

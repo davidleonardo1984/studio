@@ -154,30 +154,24 @@ export default function AguardandoLiberacaoPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // State for "Liberado por" dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [liberatedByName, setLiberatedByName] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleEntry | null>(null);
 
-  // State for PDF Preview Modal
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const isClient = useIsClient();
   const [now, setNow] = useState(new Date());
 
-  // State for liberation banner
   const [liberationBanner, setLiberationBanner] = useState<string | null>(null);
 
   useEffect(() => {
-    // Update the current time every minute to refresh the "time in yard" display
     const timer = setInterval(() => {
       setNow(new Date());
-    }, 60000); // 60000 ms = 1 minute
+    }, 60000); 
 
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch persons data for phone numbers
   useEffect(() => {
     if (!db) {
         setIsLoading(false);
@@ -196,7 +190,6 @@ export default function AguardandoLiberacaoPage() {
     fetchPersons();
   }, [toast]);
 
-  // Real-time listener for waiting vehicles
   useEffect(() => {
     if (!db) {
       setIsLoading(false);
@@ -211,11 +204,10 @@ export default function AguardandoLiberacaoPage() {
       querySnapshot.forEach((doc) => {
         newVehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
       });
-      // Sort client-side to avoid needing a composite index
       newVehicles.sort((a, b) => {
         const dateA = (a.arrivalTimestamp as any)?.toDate ? (a.arrivalTimestamp as any).toDate() : new Date(a.arrivalTimestamp as string);
         const dateB = (b.arrivalTimestamp as any)?.toDate ? (b.arrivalTimestamp as any).toDate() : new Date(b.arrivalTimestamp as string);
-        return dateA.getTime() - dateB.getTime(); // asc
+        return dateA.getTime() - dateB.getTime();
       });
       setWaitingVehicles(newVehicles);
       setIsLoading(false);
@@ -229,11 +221,9 @@ export default function AguardandoLiberacaoPage() {
   }, [toast]);
 
 
-  // Reset local state when dialog closes
   useEffect(() => {
     if (!isDialogOpen) {
       setSelectedVehicle(null);
-      setLiberatedByName('');
     }
   }, [isDialogOpen]);
 
@@ -340,8 +330,6 @@ export default function AguardandoLiberacaoPage() {
 
         const updatedVehicle: VehicleEntry = { ...vehicle, ...updatedVehicleData };
         
-        // This is a cross-tab communication mechanism.
-        // It helps update other open tabs immediately after liberation.
         localStorage.setItem('lastLiberatedVehicle', JSON.stringify({
             plate1: updatedVehicle.plate1,
             timestamp: Date.now()
@@ -626,36 +614,18 @@ export default function AguardandoLiberacaoPage() {
     <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Confirmar Liberação de {selectedVehicle?.plate1}</AlertDialogTitle>
+          <AlertDialogTitle>Confirmar Liberação de {selectedVehicle?.plate1}?</AlertDialogTitle>
           <AlertDialogDescription>
-            Este campo é opcional. Pressione Enter ou clique em confirmar para prosseguir.
+            A liberação será registrada em seu nome ({user?.name}). Deseja continuar?
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="py-2">
-          <Label htmlFor="liberado-por" className="text-right">Liberado por:</Label>
-          <Input
-            id="liberado-por"
-            placeholder="Nome do liberador"
-            value={liberatedByName}
-            onChange={(e) => setLiberatedByName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                if(selectedVehicle) {
-                  handleApproveEntry(selectedVehicle, liberatedByName);
-                  setIsDialogOpen(false);
-                }
-              }
-            }}
-            className="mt-2"
-          />
-        </div>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
-              if (selectedVehicle) {
-                handleApproveEntry(selectedVehicle, liberatedByName);
+              if (selectedVehicle && user) {
+                handleApproveEntry(selectedVehicle, user.name);
+                setIsDialogOpen(false);
               }
             }}
           >
@@ -673,7 +643,3 @@ export default function AguardandoLiberacaoPage() {
     </>
   );
 }
-
-    
-
-    
