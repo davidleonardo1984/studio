@@ -117,7 +117,7 @@ body.focus-mode .flex.flex-col > .flex-1.overflow-y-auto {
 body.focus-mode .flex.flex-col > .flex-1.overflow-y-auto::before {
     content: "MICHELIN";
     position: absolute;
-    top: 0px;
+    top: 4px;
     left: 50%;
     transform: translateX(-50%);
     background: hsl(var(--background));
