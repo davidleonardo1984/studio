@@ -331,20 +331,23 @@ export default function RegistroEntradaPage() {
     setIsSubmitting(true);
     
     const currentTime = new Date();
-    const newEntryData: Omit<VehicleEntry, 'id'> = {
+    const newEntryData: any = {
         ...data,
         barcode: generateBarcode(),
         arrivalTimestamp: Timestamp.fromDate(currentTime),
         status,
         registeredBy: user.login,
-        ...(status === 'entrada_liberada' && {
-            liberationTimestamp: Timestamp.fromDate(currentTime),
-            liberatedBy,
-        }),
     };
 
+    if (status === 'entrada_liberada') {
+        newEntryData.liberationTimestamp = Timestamp.fromDate(currentTime);
+        if (liberatedBy?.trim()) {
+            newEntryData.liberatedBy = liberatedBy.trim();
+        }
+    }
+
     try {
-        const docRef = await addDoc(collection(db, 'vehicleEntries'), newEntryData as any);
+        const docRef = await addDoc(collection(db, 'vehicleEntries'), newEntryData);
         const createdEntry: VehicleEntry = { ...newEntryData, id: docRef.id };
 
         if (status === 'aguardando_patio') {
@@ -758,11 +761,11 @@ export default function RegistroEntradaPage() {
             Confirmar Liberação de {form.getValues().plate1}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            A liberação será registrada em seu nome ({user?.name}). Deseja continuar?
+            Se desejar que um nome apareça no campo 'Liberado por' do documento, informe-o abaixo. Caso contrário, deixe em branco e o campo não será exibido.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="py-2">
-          <Label htmlFor="liberado-por-dialog" className="text-right">Liberado por:</Label>
+          <Label htmlFor="liberado-por-dialog" className="text-right">Liberado por (Opcional)</Label>
           <Input
             id="liberado-por-dialog"
             placeholder="Nome do liberador"

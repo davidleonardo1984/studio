@@ -312,20 +312,24 @@ export default function AguardandoLiberacaoPage() {
     if (!db || !user) return;
 
     const agentWhoNotified = users.find(u => u.login === vehicle.registeredBy);
-    let finalLiberatedBy = user.name; // Default to current user
+    let finalLiberatedBy: string | undefined = undefined;
 
     if (vehicle.notified && agentWhoNotified) {
-        finalLiberatedBy = agentWhoNotified.name; // Notified case: use the agent's name
+        finalLiberatedBy = agentWhoNotified.name;
     } else if (liberatedByOverride?.trim()) {
-        finalLiberatedBy = liberatedByOverride.trim(); // Manual override case
+        finalLiberatedBy = liberatedByOverride.trim();
     }
-
+    
     const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
-    const updatedVehicleData = {
+    
+    const updatedVehicleData: any = {
         status: 'entrada_liberada' as const,
         liberationTimestamp: Timestamp.fromDate(new Date()),
-        liberatedBy: finalLiberatedBy,
     };
+
+    if (finalLiberatedBy) {
+        updatedVehicleData.liberatedBy = finalLiberatedBy;
+    }
     
     try {
         await updateDoc(vehicleDocRef, updatedVehicleData);
@@ -630,8 +634,8 @@ export default function AguardandoLiberacaoPage() {
           <AlertDialogTitle>Confirmar Liberação de {selectedVehicle?.plate1}?</AlertDialogTitle>
           <AlertDialogDescription>
             {selectedVehicle?.notified 
-              ? `O agente ${users.find(u => u.login === selectedVehicle.registeredBy)?.name || 'desconhecido'} solicitou a liberação. O registro será feito em nome dele. Deseja continuar?`
-              : `A liberação será registrada em seu nome (${user?.name}). Se desejar, informe um nome diferente abaixo (opcional).`
+              ? `O agente ${users.find(u => u.login === selectedVehicle.registeredBy)?.name || 'desconhecido'} solicitou a liberação. O nome dele aparecerá no documento. Deseja continuar?`
+              : "Se desejar que um nome apareça no campo 'Liberado por' do documento, informe-o abaixo. Caso contrário, deixe em branco e o campo não será exibido."
             }
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -640,7 +644,7 @@ export default function AguardandoLiberacaoPage() {
             <Label htmlFor="liberated-by-dialog" className="text-right">Liberado por (Opcional)</Label>
             <Input
               id="liberated-by-dialog"
-              placeholder={user?.name || "Nome do liberador"}
+              placeholder="Nome do liberador"
               value={liberatedByName}
               onChange={(e) => setLiberatedByName(e.target.value)}
               className="mt-2"
@@ -671,4 +675,3 @@ export default function AguardandoLiberacaoPage() {
     </>
   );
 }
-
