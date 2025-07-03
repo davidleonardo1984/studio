@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, Fragment, useRef } from 'react';
@@ -60,7 +59,7 @@ const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ success
         <p style="font-size: 9px; text-align: center; margin: 2px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
       </div>
 
-      <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; line-height: 1.4;">
+      <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; line-height: 1.4; display: flex; align-items: center;">
         <div style="display: inline-block; width: 48%; margin-right: 2%; vertical-align: middle;">
           <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Chegada:</p>
           <p style="margin: 0;">${formatDateForImage(entry.arrivalTimestamp)}</p>
@@ -309,7 +308,7 @@ export function AppHeader() {
         }
     } catch (error) {
         console.error("Error approving entry: ", error);
-        toast({ variant: "destructive", title: "Erro", description: "Não foi possível liberar a entrada do veículo." });
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível liberar la entrada do veículo." });
     }
   };
   
@@ -340,7 +339,7 @@ export function AppHeader() {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <DropdownMenuContent className="w-96 p-0" align="end">
+      <DropdownMenuContent className="w-[30rem] p-0" align="end">
         <DropdownMenuLabel className="p-3 pb-2">Notificações de Liberação</DropdownMenuLabel>
         <DropdownMenuSeparator className="my-0"/>
         {notifications.length > 0 ? (
