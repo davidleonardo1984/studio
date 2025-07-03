@@ -156,6 +156,7 @@ export default function AguardandoLiberacaoPage() {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleEntry | null>(null);
+  const [liberatedByName, setLiberatedByName] = useState('');
 
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -224,6 +225,7 @@ export default function AguardandoLiberacaoPage() {
   useEffect(() => {
     if (!isDialogOpen) {
       setSelectedVehicle(null);
+      setLiberatedByName('');
     }
   }, [isDialogOpen]);
 
@@ -306,19 +308,23 @@ export default function AguardandoLiberacaoPage() {
   };
 
 
-  const handleApproveEntry = async (vehicle: VehicleEntry) => {
+  const handleApproveEntry = async (vehicle: VehicleEntry, liberatedByOverride?: string) => {
     if (!db || !user) return;
-    
-    // If the vehicle was notified, the "liberatedBy" should be the agent who notified.
-    // Otherwise, it's the current admin/user.
+
     const agentWhoNotified = users.find(u => u.login === vehicle.registeredBy);
-    const liberatedBy = vehicle.notified && agentWhoNotified ? agentWhoNotified.name : user.name;
+    let finalLiberatedBy = user.name; // Default to current user
+
+    if (vehicle.notified && agentWhoNotified) {
+        finalLiberatedBy = agentWhoNotified.name; // Notified case: use the agent's name
+    } else if (liberatedByOverride?.trim()) {
+        finalLiberatedBy = liberatedByOverride.trim(); // Manual override case
+    }
 
     const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
     const updatedVehicleData = {
         status: 'entrada_liberada' as const,
         liberationTimestamp: Timestamp.fromDate(new Date()),
-        liberatedBy: liberatedBy,
+        liberatedBy: finalLiberatedBy,
     };
     
     try {
@@ -336,7 +342,7 @@ export default function AguardandoLiberacaoPage() {
 
         const updatedVehicle: VehicleEntry = { ...vehicle, ...updatedVehicleData };
         
-        localStorage.setItem('lastLiberatedVehicle', JSON.stringify({
+        sessionStorage.setItem('lastLiberatedVehicle', JSON.stringify({
             plate1: updatedVehicle.plate1,
             timestamp: Date.now()
         }));
@@ -587,8 +593,9 @@ export default function AguardandoLiberacaoPage() {
                                 variant="default" 
                                 size="sm" 
                                 onClick={() => {
-                                setSelectedVehicle(vehicle);
-                                setIsDialogOpen(true);
+                                  setSelectedVehicle(vehicle);
+                                  setLiberatedByName(''); // Reset on open
+                                  setIsDialogOpen(true);
                                 }}
                                 className="bg-green-600 hover:bg-green-700 text-white w-24"
                             >
@@ -623,18 +630,29 @@ export default function AguardandoLiberacaoPage() {
           <AlertDialogTitle>Confirmar Liberação de {selectedVehicle?.plate1}?</AlertDialogTitle>
           <AlertDialogDescription>
             {selectedVehicle?.notified 
-              ? `O agente ${users.find(u => u.login === selectedVehicle.registeredBy)?.name || 'desconhecido'} solicitou a liberação. O registro será feito em nome dele.`
-              : `A liberação será registrada em seu nome (${user?.name}).`
+              ? `O agente ${users.find(u => u.login === selectedVehicle.registeredBy)?.name || 'desconhecido'} solicitou a liberação. O registro será feito em nome dele. Deseja continuar?`
+              : `A liberação será registrada em seu nome (${user?.name}). Se desejar, informe um nome diferente abaixo (opcional).`
             }
-            {' '}Deseja continuar?
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {!selectedVehicle?.notified && (
+          <div className="py-2">
+            <Label htmlFor="liberated-by-dialog" className="text-right">Liberado por (Opcional)</Label>
+            <Input
+              id="liberated-by-dialog"
+              placeholder={user?.name || "Nome do liberador"}
+              value={liberatedByName}
+              onChange={(e) => setLiberatedByName(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+        )}
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
               if (selectedVehicle) {
-                handleApproveEntry(selectedVehicle);
+                handleApproveEntry(selectedVehicle, liberatedByName);
                 setIsDialogOpen(false);
               }
             }}
@@ -653,3 +671,4 @@ export default function AguardandoLiberacaoPage() {
     </>
   );
 }
+
