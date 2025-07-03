@@ -64,6 +64,7 @@ export interface VehicleEntry {
   registeredBy: string; 
   liberatedBy?: string;
   notified?: boolean;
+  notifiedBy?: string;
 }
 
 

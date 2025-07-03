@@ -299,7 +299,7 @@ export default function AguardandoLiberacaoPage() {
       });
 
       const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
-      await updateDoc(vehicleDocRef, { notified: true });
+      await updateDoc(vehicleDocRef, { notified: true, notifiedBy: user.login });
 
     } catch (error) {
       console.error("Error sending notification:", error);
@@ -311,7 +311,7 @@ export default function AguardandoLiberacaoPage() {
   const handleApproveEntry = async (vehicle: VehicleEntry, liberatedByOverride?: string) => {
     if (!db || !user) return;
 
-    const agentWhoNotified = users.find(u => u.login === vehicle.registeredBy);
+    const agentWhoNotified = users.find(u => u.login === vehicle.notifiedBy);
     let finalLiberatedBy: string | undefined = undefined;
 
     if (vehicle.notified && agentWhoNotified) {
@@ -634,7 +634,7 @@ export default function AguardandoLiberacaoPage() {
           <AlertDialogTitle>Confirmar Liberação de {selectedVehicle?.plate1}?</AlertDialogTitle>
           <AlertDialogDescription>
             {selectedVehicle?.notified 
-              ? `O agente ${users.find(u => u.login === selectedVehicle.registeredBy)?.name || 'desconhecido'} solicitou a liberação. O nome dele aparecerá no documento. Deseja continuar?`
+              ? `O agente ${users.find(u => u.login === selectedVehicle.notifiedBy)?.name || 'desconhecido'} solicitou a liberação. O nome dele aparecerá no documento. Deseja continuar?`
               : "Se desejar que um nome apareça no campo 'Liberado por' do documento, informe-o abaixo. Caso contrário, deixe em branco e o campo não será exibido."
             }
           </AlertDialogDescription>
