@@ -35,13 +35,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initializeAuth = () => {
         setIsLoading(true);
         try {
-            const storedUser = localStorage.getItem('currentUser');
+            const storedUser = sessionStorage.getItem('currentUser');
             if (storedUser) {
                 setUser(JSON.parse(storedUser));
             }
         } catch (error) {
-            console.error("Failed to initialize auth from localStorage:", error);
-            localStorage.removeItem('currentUser');
+            console.error("Failed to initialize auth from sessionStorage:", error);
+            sessionStorage.removeItem('currentUser');
         } finally {
             // Loading will be set to false by the Firestore listener
         }
@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (foundUser) {
             const { password, ...userToStore } = foundUser;
             setUser(userToStore as User);
-            localStorage.setItem('currentUser', JSON.stringify(userToStore));
+            sessionStorage.setItem('currentUser', JSON.stringify(userToStore));
             return userToStore as User;
         }
 
@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('currentUser');
+    sessionStorage.removeItem('currentUser');
     router.push('/login');
   };
   
@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (user && user.id === updatedUser.id) {
             const { password, ...userToStore } = updatedUser;
             setUser(userToStore);
-            localStorage.setItem('currentUser', JSON.stringify(userToStore));
+            sessionStorage.setItem('currentUser', JSON.stringify(userToStore));
         }
         return { success: true };
     } catch (error) {
