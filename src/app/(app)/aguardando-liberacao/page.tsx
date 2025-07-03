@@ -634,7 +634,7 @@ export default function AguardandoLiberacaoPage() {
           <AlertDialogTitle>Confirmar Liberação de {selectedVehicle?.plate1}?</AlertDialogTitle>
           <AlertDialogDescription>
             {selectedVehicle?.notifiedBy 
-              ? `O agente ${users.find(u => u.login === selectedVehicle.notifiedBy)?.name || selectedVehicle.notifiedBy} solicitou a liberação. O nome dele aparecerá no documento. Deseja continuar?`
+              ? `O agente ${users.find(u => u.login === selectedVehicle.notifiedBy)?.name || selectedVehicle.notifiedBy} solicitou a liberação. A liberação será registrada em nome dele. Deseja continuar?`
               : "Se desejar que um nome apareça no campo 'Liberado por' do documento, informe-o abaixo. Caso contrário, deixe em branco e o campo não será exibido."
             }
           </AlertDialogDescription>
