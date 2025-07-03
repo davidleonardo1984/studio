@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -235,7 +236,7 @@ export default function RegistroSaidaPage() {
                         </Button>
                       </div>
                     </FormControl>
-                    <FormDescription className="text-center text-xs pt-4">
+                    <FormDescription className="text-center text-sm pt-4">
                       O sistema buscará automaticamente após a leitura do código de 14 dígitos.
                     </FormDescription>
                     <FormMessage />
