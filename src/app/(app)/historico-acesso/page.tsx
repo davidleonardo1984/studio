@@ -176,19 +176,19 @@ export default function HistoricoAcessoPage() {
                 }
             }
 
-            // Driver Name Filter (Exact Match)
+            // Driver Name Filter (Substring Match)
             if (driverName.trim()) {
                 const searchTerm = driverName.trim().toLowerCase();
-                const driverMatch = entry.driverName.toLowerCase() === searchTerm ||
-                    (entry.assistant1Name && entry.assistant1Name.toLowerCase() === searchTerm) ||
-                    (entry.assistant2Name && entry.assistant2Name.toLowerCase() === searchTerm);
+                const driverMatch = entry.driverName.toLowerCase().includes(searchTerm) ||
+                    (entry.assistant1Name && entry.assistant1Name.toLowerCase().includes(searchTerm)) ||
+                    (entry.assistant2Name && entry.assistant2Name.toLowerCase().includes(searchTerm));
                 if (!driverMatch) return false;
             }
 
-            // Transport Company Filter (Exact Match)
+            // Transport Company Filter (Substring Match)
             if (transportCompany.trim()) {
                  const searchTerm = transportCompany.trim().toLowerCase();
-                 const companyMatch = entry.transportCompanyName.toLowerCase() === searchTerm;
+                 const companyMatch = entry.transportCompanyName.toLowerCase().includes(searchTerm);
                 if (!companyMatch) return false;
             }
 
