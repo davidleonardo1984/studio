@@ -135,6 +135,21 @@ export default function RegistroEntradaPage() {
     },
   });
 
+  const handlePlateChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (value: string) => void) => {
+    const val = e.target.value;
+    if (!val) {
+      fieldOnChange(''); // for optional fields
+      return;
+    }
+    const input = val.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    let formatted = input.substring(0, 7);
+
+    if (formatted.length > 3) {
+        formatted = formatted.slice(0, 3) + '-' + formatted.slice(3);
+    }
+    fieldOnChange(formatted);
+  };
+
   useEffect(() => {
     if (!db) {
         setDataLoading(false);
@@ -518,7 +533,16 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Placa 1</FormLabel>
-                      <FormControl><Input placeholder="AAA-1234" {...field} disabled={isSubmitting} /></FormControl>
+                      <FormControl>
+                        <Input 
+                          placeholder="AAA-1234" 
+                          {...field}
+                          onChange={(e) => handlePlateChange(e, field.onChange)}
+                          disabled={isSubmitting} 
+                          maxLength={8}
+                          noAutoUppercase
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -529,7 +553,16 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Placa 2 (Opcional)</FormLabel>
-                      <FormControl><Input placeholder="BBB-5678" {...field} disabled={isSubmitting} /></FormControl>
+                      <FormControl>
+                        <Input 
+                          placeholder="BBB-5678" 
+                          {...field}
+                          onChange={(e) => handlePlateChange(e, field.onChange)}
+                          disabled={isSubmitting} 
+                          maxLength={8}
+                          noAutoUppercase
+                         />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -540,7 +573,16 @@ export default function RegistroEntradaPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Placa 3 (Opcional)</FormLabel>
-                      <FormControl><Input placeholder="CCC-9012" {...field} disabled={isSubmitting} /></FormControl>
+                      <FormControl>
+                        <Input 
+                          placeholder="CCC-9012" 
+                          {...field}
+                          onChange={(e) => handlePlateChange(e, field.onChange)}
+                          disabled={isSubmitting} 
+                          maxLength={8}
+                          noAutoUppercase
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
