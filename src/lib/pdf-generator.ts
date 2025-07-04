@@ -51,7 +51,7 @@ export const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ 
       </div>
       
       ${entry.liberatedBy ? `
-      <div style="display: flex; align-items: center; justify-content: center; border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; margin-top: 15px; min-height: 40px;">
+      <div style="display: flex; align-items: center; border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; margin-top: 15px; min-height: 40px;">
         <p style="margin: 0;"><span style="font-weight: bold;">LIBERADO POR:</span> ${entry.liberatedBy.toUpperCase()}</p>
       </div>
       ` : ''}
