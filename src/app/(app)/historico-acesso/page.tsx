@@ -151,8 +151,7 @@ export default function HistoricoAcessoPage() {
     setHasSearched(true);
 
     try {
-        // Fetch all entries ordered by date. Filtering is done client-side
-        // for robustness against data inconsistencies and to avoid complex index requirements.
+        // Fetch all entries ordered by date. Filtering is done client-side.
         const q = query(collection(db, 'vehicleEntries'), orderBy('arrivalTimestamp', 'desc'));
         
         const querySnapshot = await getDocs(q);
@@ -161,7 +160,6 @@ export default function HistoricoAcessoPage() {
         const { dateRange, driverName, transportCompany, plate } = filters;
 
         const filteredResults = allEntries.filter(entry => {
-            // Handle both string and Timestamp objects for arrivalTimestamp
             const arrivalDate = (entry.arrivalTimestamp as any).toDate 
                 ? (entry.arrivalTimestamp as any).toDate() 
                 : new Date(entry.arrivalTimestamp as string);
@@ -178,22 +176,23 @@ export default function HistoricoAcessoPage() {
                 }
             }
 
-            // Driver Name Filter
+            // Driver Name Filter (Exact Match)
             if (driverName.trim()) {
                 const searchTerm = driverName.trim().toLowerCase();
-                const driverMatch = entry.driverName.toLowerCase().includes(searchTerm) ||
-                    (entry.assistant1Name && entry.assistant1Name.toLowerCase().includes(searchTerm)) ||
-                    (entry.assistant2Name && entry.assistant2Name.toLowerCase().includes(searchTerm));
+                const driverMatch = entry.driverName.toLowerCase() === searchTerm ||
+                    (entry.assistant1Name && entry.assistant1Name.toLowerCase() === searchTerm) ||
+                    (entry.assistant2Name && entry.assistant2Name.toLowerCase() === searchTerm);
                 if (!driverMatch) return false;
             }
 
-            // Transport Company Filter
+            // Transport Company Filter (Exact Match)
             if (transportCompany.trim()) {
-                const companyMatch = entry.transportCompanyName.toLowerCase().includes(transportCompany.trim().toLowerCase());
+                 const searchTerm = transportCompany.trim().toLowerCase();
+                 const companyMatch = entry.transportCompanyName.toLowerCase() === searchTerm;
                 if (!companyMatch) return false;
             }
 
-            // Plate Filter
+            // Plate Filter (Substring Match)
             if (plate.trim()) {
                 const plateSearchTerm = plate.trim().toLowerCase();
                 const plateMatch = entry.plate1.toLowerCase().includes(plateSearchTerm) ||
