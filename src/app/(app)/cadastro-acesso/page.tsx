@@ -34,7 +34,7 @@ const userAccessSchema = z.object({
   name: z.string().min(3, { message: 'Nome é obrigatório (mín. 3 caracteres).' }),
   login: z.string().min(3, { message: 'Login é obrigatório (mín. 3 caracteres).' }),
   password: z.string().optional().refine(val => !val || val.length >= 6, { message: 'Senha deve ter no mínimo 6 caracteres se fornecida.'}),
-  role: z.enum(['admin', 'user', 'gate_agent'], { required_error: 'Perfil é obrigatório.' }),
+  role: z.enum(['admin', 'user', 'gate_agent', 'exit_agent'], { required_error: 'Perfil é obrigatório.' }),
   canViewDashboardStats: z.boolean().default(true).optional(),
 });
 
@@ -75,7 +75,7 @@ export default function CadastroAcessoPage() {
   useEffect(() => {
       if (roleValue === 'admin') {
           setValue('canViewDashboardStats', true);
-      } else if (roleValue === 'gate_agent') {
+      } else if (roleValue === 'gate_agent' || roleValue === 'exit_agent') {
         setValue('canViewDashboardStats', false);
       }
   }, [roleValue, setValue]);
@@ -119,7 +119,7 @@ export default function CadastroAcessoPage() {
         login: data.login, 
         ...(data.password && { password: data.password }), 
         role: data.role as UserRole,
-        canViewDashboardStats: data.role === 'admin' ? true : data.role === 'gate_agent' ? false : data.canViewDashboardStats,
+        canViewDashboardStats: data.role === 'admin' ? true : (data.role === 'gate_agent' || data.role === 'exit_agent') ? false : data.canViewDashboardStats,
       };
 
       const result = await updateUser(updatedUserData);
@@ -146,7 +146,7 @@ export default function CadastroAcessoPage() {
         login: data.login,
         password: data.password, 
         role: data.role as UserRole,
-        canViewDashboardStats: data.role === 'admin' ? true : data.role === 'gate_agent' ? false : data.canViewDashboardStats,
+        canViewDashboardStats: data.role === 'admin' ? true : (data.role === 'gate_agent' || data.role === 'exit_agent') ? false : data.canViewDashboardStats,
       };
       
       const result = await addUser(newUser);
@@ -282,6 +282,7 @@ export default function CadastroAcessoPage() {
                                     <SelectItem value="user">Usuário</SelectItem>
                                     <SelectItem value="admin">Administrador</SelectItem>
                                     <SelectItem value="gate_agent">Agente de Pátio</SelectItem>
+                                    <SelectItem value="exit_agent">Agente de Saída</SelectItem>
                                 </SelectContent>
                             </Select>
                             <FormMessage />
@@ -304,7 +305,7 @@ export default function CadastroAcessoPage() {
                                 <Switch
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
-                                    disabled={roleValue === 'admin' || roleValue === 'gate_agent'}
+                                    disabled={roleValue === 'admin' || roleValue === 'gate_agent' || roleValue === 'exit_agent'}
                                     aria-label="Ver Estatísticas do Painel"
                                 />
                             </FormControl>
@@ -349,8 +350,8 @@ export default function CadastroAcessoPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((u) => {
-                    const roleLabel = u.role === 'admin' ? 'Admin' : u.role === 'gate_agent' ? 'Agente de Pátio' : 'Usuário';
-                    const roleClass = u.role === 'admin' ? 'bg-accent text-accent-foreground' : u.role === 'gate_agent' ? 'bg-muted text-muted-foreground' : 'bg-secondary text-secondary-foreground';
+                    const roleLabel = u.role === 'admin' ? 'Admin' : u.role === 'gate_agent' ? 'Agente de Pátio' : u.role === 'exit_agent' ? 'Agente de Saída' : 'Usuário';
+                    const roleClass = u.role === 'admin' ? 'bg-accent text-accent-foreground' : u.role === 'gate_agent' ? 'bg-muted text-muted-foreground' : u.role === 'exit_agent' ? 'bg-blue-100 text-blue-800' : 'bg-secondary text-secondary-foreground';
                     
                     return (
                       <TableRow key={u.id}>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -47,6 +48,8 @@ export default function LoginPage() {
       });
       if (loggedInUser.role === 'gate_agent') {
         router.push('/aguardando-liberacao');
+      } else if (loggedInUser.role === 'exit_agent') {
+        router.push('/registro-saida');
       } else {
         router.push('/dashboard');
       }

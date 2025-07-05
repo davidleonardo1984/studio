@@ -27,6 +27,11 @@ export default function AuthenticatedLayout({ children }: { children: ReactNode 
       if (!allowedPaths.includes(pathname)) {
         router.replace('/aguardando-liberacao');
       }
+    } else if (user.role === 'exit_agent') {
+      const allowedPaths = ['/registro-saida', '/mudar-senha'];
+      if (!allowedPaths.includes(pathname)) {
+        router.replace('/registro-saida');
+      }
     }
   }, [user, isLoading, router, pathname]);
 

@@ -42,6 +42,9 @@ export function AppSidebar() {
     if (user?.role === 'gate_agent') {
       return item.href === '/aguardando-liberacao';
     }
+    if (user?.role === 'exit_agent') {
+      return item.href === '/registro-saida';
+    }
     return !item.adminOnly || (item.adminOnly && user?.role === 'admin');
   });
 

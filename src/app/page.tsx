@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from 'react';
@@ -14,6 +15,8 @@ export default function HomePage() {
       if (user) {
         if (user.role === 'gate_agent') {
           router.replace('/aguardando-liberacao');
+        } else if (user.role === 'exit_agent') {
+          router.replace('/registro-saida');
         } else {
           router.replace('/dashboard');
         }
