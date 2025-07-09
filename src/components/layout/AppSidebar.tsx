@@ -14,7 +14,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Home, LogIn, LogOut, Edit3, Users, History, KeyRound, ShieldCheck, ListChecks } from 'lucide-react';
+import { Home, LogIn, LogOut, Edit3, Users, History, KeyRound, ShieldCheck, ListChecks, Warehouse } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface NavItem {
@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
   { href: '/registro-entrada', label: 'Registro de Entrada', icon: LogIn },
   { href: '/registro-saida', label: 'Registro de Saída', icon: LogOut },
   { href: '/aguardando-liberacao', label: 'Aguardando Liberação', icon: ListChecks },
+  { href: '/veiculos-fabrica', label: 'Veículos na Fábrica', icon: Warehouse },
   { href: '/cadastros-gerais', label: 'Cadastros Gerais', icon: Edit3 },
   { href: '/historico-acesso', label: 'Histórico de Acesso', icon: History },
   { href: '/cadastro-acesso', label: 'Cadastro de Acesso', icon: Users, adminOnly: true },

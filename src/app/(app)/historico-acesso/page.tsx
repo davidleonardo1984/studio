@@ -81,7 +81,6 @@ export default function HistoricoAcessoPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
 
-  const [vehiclesInsideFactory, setVehiclesInsideFactory] = useState<VehicleEntry[]>([]);
   const [filteredEntries, setFilteredEntries] = useState<VehicleEntry[]>([]);
   
   const [filters, setFilters] = useState({
@@ -91,7 +90,6 @@ export default function HistoricoAcessoPage() {
     dateRange: undefined as DateRange | undefined,
   });
   const [hasSearched, setHasSearched] = useState(false);
-  const [vehiclesInsideSearchTerm, setVehiclesInsideSearchTerm] = useState('');
 
   useEffect(() => {
     if (!db) {
@@ -117,31 +115,6 @@ export default function HistoricoAcessoPage() {
       }
     };
     fetchData();
-  }, [toast]);
-
-  useEffect(() => {
-    if (!db) return;
-    const entriesCollection = collection(db, 'vehicleEntries');
-    const q = query(entriesCollection, where('status', '==', 'entrada_liberada'));
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const vehicles: VehicleEntry[] = [];
-        querySnapshot.forEach((doc) => {
-            vehicles.push({ id: doc.id, ...doc.data() } as VehicleEntry);
-        });
-        // Sort client-side
-        vehicles.sort((a, b) => {
-          const dateA = (a.arrivalTimestamp as any)?.toDate ? (a.arrivalTimestamp as any).toDate() : new Date(a.arrivalTimestamp as string);
-          const dateB = (b.arrivalTimestamp as any)?.toDate ? (b.arrivalTimestamp as any).toDate() : new Date(b.arrivalTimestamp as string);
-          return dateB.getTime() - dateA.getTime();
-        });
-        setVehiclesInsideFactory(vehicles);
-    }, (error) => {
-        console.error("Error fetching vehicles inside factory:", error);
-        toast({ variant: "destructive", title: "Erro em Tempo Real", description: "Não foi possível atualizar la lista de veículos na fábrica." });
-    });
-
-    return () => unsubscribe();
   }, [toast]);
 
 
@@ -348,10 +321,6 @@ export default function HistoricoAcessoPage() {
         });
     }
   };
-  
-  const handleEdit = (entryId: string) => {
-    router.push(`/registro-entrada?id=${entryId}`);
-  };
 
   const resetFilters = () => {
     setFilters({ transportCompany: '', driverName: '', plate: '', dateRange: undefined });
@@ -364,19 +333,6 @@ export default function HistoricoAcessoPage() {
     setPreviewImageUrl(null);
   };
 
-  const filteredVehiclesInsideFactory = useMemo(() => {
-    if (!vehiclesInsideSearchTerm.trim()) {
-      return vehiclesInsideFactory;
-    }
-    const lowercasedTerm = vehiclesInsideSearchTerm.toLowerCase();
-    return vehiclesInsideFactory.filter(v =>
-      v.barcode.toLowerCase().includes(lowercasedTerm) ||
-      v.plate1.toLowerCase().includes(lowercasedTerm) ||
-      v.driverName.toLowerCase().includes(lowercasedTerm) ||
-      v.transportCompanyName.toLowerCase().includes(lowercasedTerm)
-    );
-  }, [vehiclesInsideFactory, vehiclesInsideSearchTerm]);
-  
   if (!isClient) {
     return (
       <div className="container mx-auto pb-8">
@@ -599,81 +555,6 @@ export default function HistoricoAcessoPage() {
             )}
           </CardContent>
         </Card>
-
-
-      <Card className="shadow-lg">
-        <CardHeader>
-          <div className="flex flex-wrap justify-between items-center gap-4">
-            <div>
-              <CardTitle className="flex items-center text-xl font-semibold text-primary">
-                <Truck className="mr-2 h-5 w-5" />
-                Veículos Atualmente na Fábrica ({filteredVehiclesInsideFactory.length})
-              </CardTitle>
-              <CardDescription>Lista de veículos que registraram entrada e ainda não saíram.</CardDescription>
-            </div>
-            <div className="w-full sm:w-auto">
-              <Input
-                placeholder="Buscar por ID, placa, motorista..."
-                value={vehiclesInsideSearchTerm}
-                onChange={(e) => setVehiclesInsideSearchTerm(e.target.value)}
-                prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                className="w-full sm:w-auto sm:max-w-xs"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-           {filteredVehiclesInsideFactory.length > 0 ? (
-            <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID/CÓDIGO</TableHead>
-                  <TableHead>PLACA 1</TableHead>
-                  <TableHead>MOTORISTA</TableHead>
-                  <TableHead>TRANSPORTADORA / EMPRESA</TableHead>
-                  <TableHead>CHEGADA</TableHead>
-                  <TableHead>LIBERAÇÃO</TableHead>
-                  <TableHead>STATUS</TableHead>
-                   <TableHead className="text-right">AÇÕES</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredVehiclesInsideFactory.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell className="font-mono text-xs py-1">{entry.barcode}</TableCell>
-                    <TableCell className="py-1">{entry.plate1}</TableCell>
-                    <TableCell className="py-1">{entry.driverName}</TableCell>
-                    <TableCell className="py-1">{entry.transportCompanyName}</TableCell>
-                    <TableCell className="py-1">{formatDate(entry.arrivalTimestamp)}</TableCell>
-                    <TableCell className="py-1">{formatDate(entry.liberationTimestamp)}</TableCell>
-                     <TableCell className="py-1">
-                        <span className="px-2 py-1 text-xs rounded-full whitespace-nowrap bg-green-100 text-green-700">
-                            Na fábrica
-                        </span>
-                    </TableCell>
-                    <TableCell className="text-right space-x-2 py-1">
-                       {user?.role !== 'gate_agent' && (
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(entry.id)} title="Editar Registro">
-                              <Edit2 className="h-4 w-4 text-blue-600" />
-                          </Button>
-                        )}
-                      <Button variant="ghost" size="icon" onClick={() => handlePrintEntry(entry)} title="Reimprimir Documento">
-                        <Printer className="h-4 w-4 text-primary" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-8">
-              {vehiclesInsideSearchTerm ? "Nenhum veículo encontrado com os termos da busca." : "NENHUM VEÍCULO DENTRO DA FÁBRICA NO MOMENTO."}
-            </p>
-          )}
-        </CardContent>
-      </Card>
     </div>
 
     <DocumentPreviewModal 
