@@ -157,7 +157,7 @@ export default function VeiculosFabricaPage() {
 
         <Card className="shadow-xl">
           <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-row justify-between items-center gap-4">
               <CardTitle className="flex items-center text-xl font-semibold text-primary">
                 <Truck className="mr-2 h-5 w-5" />
                 Lista de Veículos ({filteredVehicles.length})
@@ -168,7 +168,7 @@ export default function VeiculosFabricaPage() {
                   placeholder="Buscar por ID, placa, motorista..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full sm:max-w-xs"
+                  className="max-w-xs"
                   prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
               />
             </div>
