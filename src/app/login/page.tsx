@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -84,7 +83,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Usuário</FormLabel>
                     <FormControl>
-                      <Input placeholder="admin" {...field} noAutoUppercase={true} />
+                      <Input placeholder="Usuário" {...field} noAutoUppercase={true} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
