@@ -322,7 +322,7 @@ export default function CadastroAcessoPage() {
       {!showForm && (
         <Card className="shadow-lg">
           <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div className="flex items-center justify-between">
               <CardTitle className="text-xl font-semibold text-primary">Usuários Cadastrados ({filteredUsers.length})</CardTitle>
               <Input 
                   placeholder="Pesquisar por nome ou login..."
