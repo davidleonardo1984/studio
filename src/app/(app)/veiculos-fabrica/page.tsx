@@ -157,20 +157,22 @@ export default function VeiculosFabricaPage() {
 
         <Card className="shadow-xl">
           <CardHeader>
-            <div className="flex flex-row justify-between items-center gap-4">
-              <CardTitle className="flex items-center text-xl font-semibold text-primary">
+            <div className="flex flex-row justify-between items-center gap-4 w-full">
+              <CardTitle className="flex items-center text-xl font-semibold text-primary whitespace-nowrap">
                 <Truck className="mr-2 h-5 w-5" />
                 Lista de Veículos ({filteredVehicles.length})
               </CardTitle>
-              <Input
-                  id="searchVehicles"
-                  type="text"
-                  placeholder="Buscar por ID, placa, motorista..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-xs"
-                  prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-              />
+              <div className="w-full flex justify-end">
+                <Input
+                    id="searchVehicles"
+                    type="text"
+                    placeholder="Buscar por ID, placa, motorista..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="max-w-xs"
+                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                />
+              </div>
             </div>
           </CardHeader>
           <CardContent>
