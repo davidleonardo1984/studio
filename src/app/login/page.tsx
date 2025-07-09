@@ -83,7 +83,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Usuário</FormLabel>
                     <FormControl>
-                      <Input placeholder="Usuário" {...field} noAutoUppercase={true} />
+                      <Input placeholder="usuário" {...field} noAutoUppercase={true} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
