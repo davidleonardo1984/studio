@@ -356,7 +356,7 @@ export default function CadastroAcessoPage() {
                 <TableBody>
                   {filteredUsers.map((u) => {
                     const roleLabel = u.role === 'admin' ? 'Admin' : u.role === 'gate_agent' ? 'Agente de Pátio' : u.role === 'exit_agent' ? 'Agente de Saída' : 'Usuário';
-                    const roleClass = u.role === 'admin' ? 'bg-accent text-accent-foreground' : u.role === 'gate_agent' ? 'bg-muted text-muted-foreground' : u.role === 'exit_agent' ? 'bg-blue-100 text-blue-800' : 'bg-secondary text-secondary-foreground';
+                    const roleClass = u.role === 'admin' ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground';
                     
                     return (
                       <TableRow key={u.id}>
@@ -398,5 +398,3 @@ export default function CadastroAcessoPage() {
     </div>
   );
 }
-
-    
