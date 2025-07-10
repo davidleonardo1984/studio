@@ -171,6 +171,7 @@ export default function VeiculosFabricaPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
             prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+            autoComplete="off"
            />
             </div>
            </div>
