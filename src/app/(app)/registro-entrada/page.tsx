@@ -438,6 +438,7 @@ export default function RegistroEntradaPage() {
                                 {...field}
                                 disabled={dataLoading || isSubmitting}
                                 list="driver-list"
+                                autoComplete="off"
                             />
                         </FormControl>
                         <datalist id="driver-list">
@@ -461,6 +462,7 @@ export default function RegistroEntradaPage() {
                                 {...field}
                                 disabled={dataLoading || isSubmitting}
                                 list="company-list"
+                                autoComplete="off"
                             />
                         </FormControl>
                         <datalist id="company-list">
@@ -493,6 +495,7 @@ export default function RegistroEntradaPage() {
                                 value={field.value ?? ''}
                                 disabled={dataLoading || isSubmitting}
                                 list="assistant-list"
+                                autoComplete="off"
                             />
                         </FormControl>
                         <FormMessage />
@@ -512,6 +515,7 @@ export default function RegistroEntradaPage() {
                                 value={field.value ?? ''}
                                 disabled={dataLoading || isSubmitting}
                                 list="assistant-list"
+                                autoComplete="off"
                             />
                         </FormControl>
                          <FormMessage />
@@ -541,6 +545,7 @@ export default function RegistroEntradaPage() {
                           disabled={isSubmitting} 
                           maxLength={8}
                           noAutoUppercase
+                          autoComplete="off"
                         />
                       </FormControl>
                       <FormMessage />
@@ -561,6 +566,7 @@ export default function RegistroEntradaPage() {
                           disabled={isSubmitting} 
                           maxLength={8}
                           noAutoUppercase
+                          autoComplete="off"
                          />
                       </FormControl>
                       <FormMessage />
@@ -581,6 +587,7 @@ export default function RegistroEntradaPage() {
                           disabled={isSubmitting} 
                           maxLength={8}
                           noAutoUppercase
+                          autoComplete="off"
                         />
                       </FormControl>
                       <FormMessage />
@@ -602,6 +609,7 @@ export default function RegistroEntradaPage() {
                                 {...field}
                                 disabled={dataLoading || isSubmitting}
                                 list="destination-list"
+                                autoComplete="off"
                             />
                         </FormControl>
                         <datalist id="destination-list">
