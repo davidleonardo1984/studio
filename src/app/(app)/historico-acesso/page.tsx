@@ -395,6 +395,7 @@ export default function HistoricoAcessoPage() {
                       onChange={(e) => setFilters(prev => ({...prev, driverName: e.target.value}))}
                       disabled={dataLoading}
                       list="driver-filter-list"
+                      autoComplete="off"
                     />
                     {dataLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
                 </div>
@@ -414,6 +415,7 @@ export default function HistoricoAcessoPage() {
                     onChange={(e) => setFilters(prev => ({ ...prev, transportCompany: e.target.value }))}
                     disabled={dataLoading}
                     list="transport-company-filter-list"
+                    autoComplete="off"
                   />
                    {dataLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
                 </div>
@@ -425,7 +427,7 @@ export default function HistoricoAcessoPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="plateFilter">Placa</Label>
-              <Input id="plateFilter" placeholder="FILTRAR POR PLACA..." value={filters.plate} onChange={(e) => setFilters(prev => ({...prev, plate: e.target.value}))} />
+              <Input id="plateFilter" placeholder="FILTRAR POR PLACA..." value={filters.plate} onChange={(e) => setFilters(prev => ({...prev, plate: e.target.value}))} autoComplete="off" />
             </div>
             <div className="space-y-1">
               <Label>Período de Chegada</Label>
@@ -565,3 +567,5 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
+
+    
