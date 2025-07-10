@@ -374,7 +374,7 @@ export default function HistoricoAcessoPage() {
   return (
     <>
     <div className="container mx-auto pb-8 space-y-4">
-      <div className="pt-2">
+      <div>
         <h1 className="text-3xl font-bold text-primary font-headline">Histórico de Acesso</h1>
         <p className="text-muted-foreground">Consulte, filtre e exporte os registros de entrada e saída.</p>
       </div>
@@ -567,5 +567,7 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
+
+    
 
     
