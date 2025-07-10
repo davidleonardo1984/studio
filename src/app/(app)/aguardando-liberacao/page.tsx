@@ -393,6 +393,7 @@ export default function AguardandoLiberacaoPage() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full sm:max-w-xs"
                         prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                        autoComplete="off"
                     />
                     {user?.role !== 'gate_agent' && (
                         <Button 
