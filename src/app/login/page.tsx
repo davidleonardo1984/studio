@@ -83,7 +83,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Usuário</FormLabel>
                     <FormControl>
-                      <Input placeholder="usuário" {...field} noAutoUppercase={true} />
+                      <Input placeholder="usuário" {...field} noAutoUppercase={true} autoComplete="off" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -96,7 +96,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Senha</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} noAutoUppercase={true} />
+                      <Input type="password" placeholder="••••••••" {...field} noAutoUppercase={true} autoComplete="off" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
