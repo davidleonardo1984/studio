@@ -51,11 +51,13 @@ export default function AuthenticatedLayout({ children }: { children: ReactNode 
   return (
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
-      <SidebarInset className="flex flex-col">
-        <AppHeader />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-background">
-          {children}
-        </main>
+      <SidebarInset>
+        <div className="flex flex-col h-full">
+            <AppHeader />
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-background">
+            {children}
+            </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
