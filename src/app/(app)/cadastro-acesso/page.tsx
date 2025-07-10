@@ -241,8 +241,8 @@ export default function CadastroAcessoPage() {
             <Form {...form}>
               <form id="user-access-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Maria Souza" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="login" render={({ field }) => ( <FormItem><FormLabel>Login de Acesso</FormLabel><FormControl><Input placeholder="Ex: maria.souza" {...field} disabled={!!editingUser && editingUser.login === 'admin'} noAutoUppercase={true} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Maria Souza" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="login" render={({ field }) => ( <FormItem><FormLabel>Login de Acesso</FormLabel><FormControl><Input placeholder="Ex: maria.souza" {...field} disabled={!!editingUser && editingUser.login === 'admin'} noAutoUppercase={true} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
                 </div>
                 <FormField
                   control={form.control}
@@ -252,7 +252,7 @@ export default function CadastroAcessoPage() {
                       <FormLabel>{editingUser ? 'Nova Senha (deixe em branco para não alterar)' : 'Senha'}</FormLabel>
                       <div className="relative">
                         <FormControl>
-                          <Input type={showPassword ? "text" : "password"} placeholder="Mínimo 6 caracteres" {...field} noAutoUppercase={true} />
+                          <Input type={showPassword ? "text" : "password"} placeholder="Mínimo 6 caracteres" {...field} noAutoUppercase={true} autoComplete="off" />
                         </FormControl>
                         <Button
                             type="button"
@@ -333,6 +333,7 @@ export default function CadastroAcessoPage() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -397,3 +398,5 @@ export default function CadastroAcessoPage() {
     </div>
   );
 }
+
+    
