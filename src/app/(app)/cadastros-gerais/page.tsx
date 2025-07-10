@@ -215,9 +215,9 @@ function PersonsSection() {
 
   const formFields = (form: any) => (
      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} /></FormControl><FormMessage /></FormItem>)} />
-      <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} maxLength={11} /></FormControl><FormMessage /></FormItem>)} />
-      <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} /></FormControl><FormMessage /></FormItem>)} />
+      <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+      <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} maxLength={11} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+      <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
       <FormField
         control={form.control}
         name="phone"
@@ -231,6 +231,7 @@ function PersonsSection() {
                 value={formatDisplayPhoneNumber(field.value || "")}
                 onChange={(e) => handlePhoneChange(e, field.onChange)}
                 type="tel"
+                autoComplete="off"
               />
             </FormControl>
             <FormMessage />
@@ -277,6 +278,7 @@ function PersonsSection() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                     className="w-full sm:w-auto"
+                    autoComplete="off"
                 />
             )}
             {showForm ? (
@@ -488,7 +490,7 @@ function TransportCompaniesSection() {
     <FormField control={form.control} name="name" render={({ field }) => (
       <FormItem>
         <FormLabel>Nome da Transportadora / Empresa</FormLabel>
-        <FormControl><Input placeholder="Ex: Transportes Rápidos S.A." {...field} /></FormControl>
+        <FormControl><Input placeholder="Ex: Transportes Rápidos S.A." {...field} autoComplete="off" /></FormControl>
         <FormMessage />
       </FormItem>
     )} />
@@ -509,6 +511,7 @@ function TransportCompaniesSection() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                     className="w-full sm:w-auto"
+                    autoComplete="off"
                 />
             )}
             {showForm ? (
@@ -704,7 +707,7 @@ function InternalDestinationsSection() {
     <FormField control={form.control} name="name" render={({ field }) => (
       <FormItem>
         <FormLabel>Nome do Destino</FormLabel>
-        <FormControl><Input placeholder="Ex: Almoxarifado Principal" {...field} /></FormControl>
+        <FormControl><Input placeholder="Ex: Almoxarifado Principal" {...field} autoComplete="off" /></FormControl>
         <FormMessage />
       </FormItem>
     )} />
@@ -725,6 +728,7 @@ function InternalDestinationsSection() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
                     className="w-full sm:w-auto"
+                    autoComplete="off"
                 />
             )}
             {showForm ? (
