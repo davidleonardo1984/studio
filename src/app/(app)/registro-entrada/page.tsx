@@ -726,6 +726,7 @@ export default function RegistroEntradaPage() {
               }
             }}
             className="mt-2"
+            autoComplete="off"
           />
         </div>
         <AlertDialogFooter>
