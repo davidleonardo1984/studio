@@ -307,18 +307,25 @@ export default function RegistroEntradaPage() {
     setIsSubmitting(true);
     try {
         const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
+        // Only update the form data, do not change status here.
         await updateDoc(entryDocRef, data as any);
         
         toast({
             title: 'Registro Atualizado!',
-            description: `O registro do veículo ${data.plate1} foi atualizado com sucesso.`,
-            className: 'bg-green-600 text-white'
+            description: `Os dados do veículo ${data.plate1} foram salvos.`,
+            className: 'bg-blue-600 text-white'
         });
         
-        // Open confirmation dialog instead of navigating back directly
         const updatedEntry: VehicleEntry = { ...editingEntry, ...data };
         setUpdatedEntryForPrint(updatedEntry);
-        setIsPrintConfirmDialogOpen(true);
+
+        // If the entry was waiting, ask if we should liberate it now.
+        if (updatedEntry.status === 'aguardando_patio') {
+            setIsPrintConfirmDialogOpen(true);
+        } else {
+            // If it was already liberated, just go back after saving.
+            router.back();
+        }
 
     } catch (error) {
         console.error("Error updating entry:", error);
@@ -328,28 +335,47 @@ export default function RegistroEntradaPage() {
     }
   };
 
-  const handleConfirmPrint = async () => {
-    if (!updatedEntryForPrint) return;
-
-    toast({
-        title: 'Gerando Documento',
-        description: `Preparando documento para ${updatedEntryForPrint.plate1}...`,
-    });
-
-    const imageResult = await generateVehicleEntryImage(updatedEntryForPrint);
+  // This function now handles both the status update and the printing.
+  const handleApproveAndUpdate = async () => {
+    if (!updatedEntryForPrint || !db) return;
     
-    if (imageResult.success && imageResult.imageUrl) {
-        setPreviewImageUrl(imageResult.imageUrl);
-        setIsPreviewModalOpen(true);
-    } else {
+    setIsPrintConfirmDialogOpen(false); // Close the first dialog
+
+    try {
+        const entryDocRef = doc(db, 'vehicleEntries', updatedEntryForPrint.id);
+        
+        // Update status to 'entrada_liberada' and set liberation timestamp
+        const liberationData = {
+            status: 'entrada_liberada',
+            liberationTimestamp: Timestamp.fromDate(new Date())
+        };
+        await updateDoc(entryDocRef, liberationData);
+        
+        const fullyUpdatedEntry = { ...updatedEntryForPrint, ...liberationData };
+
         toast({
-            variant: 'destructive',
-            title: 'Erro no Documento',
-            description: `Falha ao gerar o documento para ${updatedEntryForPrint.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
+            title: 'Entrada Liberada!',
+            description: `Preparando documento para ${fullyUpdatedEntry.plate1}...`,
+            className: 'bg-green-600 text-white',
         });
-        router.back();
+
+        const imageResult = await generateVehicleEntryImage(fullyUpdatedEntry);
+        
+        if (imageResult.success && imageResult.imageUrl) {
+            setPreviewImageUrl(imageResult.imageUrl);
+            setIsPreviewModalOpen(true); // This opens the print preview
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Erro no Documento',
+                description: `Falha ao gerar o documento. ${imageResult.error || ''}`,
+            });
+            router.back(); // Still go back even if printing fails
+        }
+    } catch (error) {
+        console.error("Error approving and updating entry:", error);
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível liberar a entrada do veículo." });
     }
-    setIsPrintConfirmDialogOpen(false);
   };
 
 
@@ -372,9 +398,8 @@ export default function RegistroEntradaPage() {
   const handleClosePreview = () => {
     setIsPreviewModalOpen(false);
     setPreviewImageUrl(null);
-    if (editingEntry) {
-      router.back();
-    }
+    // After printing (from either new or edit flow), go back to the list.
+    router.back();
   };
 
   if (!db) {
@@ -738,18 +763,18 @@ export default function RegistroEntradaPage() {
       </AlertDialogContent>
     </AlertDialog>
 
-    {/* New Dialog for Print Confirmation after Edit */}
+    {/* Dialog for Print Confirmation after Edit */}
     <AlertDialog open={isPrintConfirmDialogOpen} onOpenChange={setIsPrintConfirmDialogOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Registro Atualizado com Sucesso!</AlertDialogTitle>
+          <AlertDialogTitle>Registro Atualizado!</AlertDialogTitle>
           <AlertDialogDescription>
-            Deseja reimprimir o romaneio de entrada com as novas informações?
+            Deseja liberar a entrada e imprimir o romaneio com as novas informações? Se não, as alterações serão salvas e o veículo permanecerá aguardando no pátio.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => router.back()}>Não, Voltar</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirmPrint}>Sim, Imprimir</AlertDialogAction>
+          <AlertDialogCancel onClick={() => router.back()}>Não, Manter no Pátio</AlertDialogCancel>
+          <AlertDialogAction onClick={handleApproveAndUpdate}>Sim, Liberar e Imprimir</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -9,16 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry, Driver } from '@/lib/types';
 import { CheckCircle, Clock, Search, Loader2, AlertTriangle, ClipboardCopy, Bell, MapPin, Edit2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Label } from '@/components/ui/label';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import { useIsClient } from '@/hooks/use-is-client';
@@ -51,10 +41,6 @@ export default function AguardandoLiberacaoPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<VehicleEntry | null>(null);
-  const [liberatedByName, setLiberatedByName] = useState('');
-
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const isClient = useIsClient();
@@ -116,13 +102,6 @@ export default function AguardandoLiberacaoPage() {
     return () => unsubscribe();
   }, [toast]);
 
-
-  useEffect(() => {
-    if (!isDialogOpen) {
-      setSelectedVehicle(null);
-      setLiberatedByName('');
-    }
-  }, [isDialogOpen]);
 
   const calculateWaitingTime = useCallback((arrivalTimestamp: VehicleEntry['arrivalTimestamp'], currentTime: Date): string => {
     if (!arrivalTimestamp) return 'N/A';
@@ -209,31 +188,21 @@ export default function AguardandoLiberacaoPage() {
   };
 
 
-  const handleApproveEntry = async (vehicle: VehicleEntry, liberatedByOverride?: string) => {
+  const handleApproveAndPrint = async (vehicle: VehicleEntry) => {
     if (!db || !user) return;
   
-    let finalLiberatedBy: string | undefined = undefined;
-  
-    if (vehicle.notified && vehicle.liberatedBy) {
-      finalLiberatedBy = vehicle.liberatedBy; 
-    } else if (liberatedByOverride?.trim()) {
-      finalLiberatedBy = liberatedByOverride.trim();
-    }
-    
     const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
     
     const updatedVehicleData: any = {
         status: 'entrada_liberada' as const,
         liberationTimestamp: Timestamp.fromDate(new Date()),
+        liberatedBy: vehicle.liberatedBy, // Keep the original liberatedBy from notification
     };
-
-    if (finalLiberatedBy) {
-        updatedVehicleData.liberatedBy = finalLiberatedBy;
-    }
     
     try {
         await updateDoc(vehicleDocRef, updatedVehicleData);
         
+        // Remove notification after approval
         const notificationsQuery = query(collection(db, 'notifications'), where('vehicleEntryId', '==', vehicle.id));
         const notificationSnapshot = await getDocs(notificationsQuery);
         if (!notificationSnapshot.empty) {
@@ -474,25 +443,13 @@ export default function AguardandoLiberacaoPage() {
                         {user?.role !== 'gate_agent' && (
                           <>
                             <Button 
-                                variant="outline"
-                                size="sm" 
-                                onClick={() => handleEdit(vehicle.id)}
-                                className="w-24"
-                            >
-                                <Edit2 className="mr-2 h-4 w-4" />
-                                Editar
-                            </Button>
-                            <Button 
                                 variant="default" 
                                 size="sm" 
-                                onClick={() => {
-                                  setSelectedVehicle(vehicle);
-                                  setLiberatedByName(''); // Reset on open
-                                  setIsDialogOpen(true);
-                                }}
-                                className="bg-green-600 hover:bg-green-700 text-white w-24"
+                                onClick={() => handleEdit(vehicle.id)}
+                                className="w-24 bg-green-600 hover:bg-green-700 text-white"
                             >
-                                <CheckCircle className="mr-2 h-4 w-4" /> Liberar
+                                <Edit2 className="mr-2 h-4 w-4" />
+                                Liberar
                             </Button>
                           </>
                         )}
@@ -517,45 +474,7 @@ export default function AguardandoLiberacaoPage() {
         </CardContent>
       </Card>
     </div>
-    <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Confirmar Liberação de {selectedVehicle?.plate1}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {selectedVehicle?.notifiedBy 
-              ? `O agente ${selectedVehicle.liberatedBy} solicitou a liberação. A liberação será registrada em nome dele. Deseja continuar?`
-              : "Se desejar que um nome apareça no campo 'Liberado por' do documento, informe-o abaixo. Caso contrário, deixe em branco e o campo não será exibido."
-            }
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        {!selectedVehicle?.notifiedBy && (
-          <div className="py-2">
-            <Label htmlFor="liberated-by-dialog" className="text-right">Liberado por (Opcional)</Label>
-            <Input
-              id="liberated-by-dialog"
-              placeholder="Nome do liberador"
-              value={liberatedByName}
-              onChange={(e) => setLiberatedByName(e.target.value)}
-              className="mt-2"
-            />
-          </div>
-        )}
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => {
-              if (selectedVehicle) {
-                handleApproveEntry(selectedVehicle, liberatedByName);
-                setIsDialogOpen(false);
-              }
-            }}
-          >
-            Confirmar e Gerar Documento
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-
+    
     <DocumentPreviewModal 
         isOpen={isPreviewModalOpen}
         onClose={handleClosePreview}
