@@ -225,6 +225,7 @@ export default function RegistroSaidaPage() {
                           }}
                           className="rounded-r-none"
                           noAutoUppercase={true}
+                          autoComplete="off"
                         />
                         <Button type="submit" className="rounded-l-none" disabled={isProcessing}>
                           {isProcessing ? (
