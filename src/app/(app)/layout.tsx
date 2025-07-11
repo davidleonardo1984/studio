@@ -36,7 +36,6 @@ export default function AuthenticatedLayout({ children }: { children: ReactNode 
   }, [user, isLoading, router, pathname]);
 
   if (isLoading || !user) {
-    // Show a full-page loading skeleton or a simpler loading state
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="space-y-4 p-8 rounded-lg shadow-xl bg-card">
@@ -52,7 +51,7 @@ export default function AuthenticatedLayout({ children }: { children: ReactNode 
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
       <SidebarInset>
-        <div className="relative flex h-screen w-full flex-col overflow-hidden">
+        <div className="relative flex h-screen w-full flex-col">
           <AppHeader />
           <main className="flex-1 overflow-auto bg-background">
             <div className="p-4 sm:p-6 lg:p-8">
