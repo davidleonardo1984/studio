@@ -42,6 +42,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             style={style}
             onInput={handleInput}
             ref={ref}
+            autoComplete="off"
             {...rest}
           />
         </div>
@@ -55,6 +56,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         style={style}
         onInput={handleInput}
         ref={ref}
+        autoComplete="off"
         {...rest}
       />
     )

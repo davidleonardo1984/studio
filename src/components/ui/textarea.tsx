@@ -22,6 +22,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<'tex
         style={style}
         onInput={handleInput}
         ref={ref}
+        autoComplete="off"
         {...props}
       />
     );
