@@ -76,7 +76,7 @@ export function AppHeader() {
   const isInitialNotificationsLoad = useRef(true);
 
   useEffect(() => {
-    if (!db || !user || user.role === 'gate_agent') return;
+    if (!db || !user || user.role === 'gate_agent' || user.role === 'exit_agent') return;
 
     const notificationsQuery = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
     
@@ -213,7 +213,9 @@ export function AppHeader() {
     setPreviewImageUrl(null);
   };
 
-  const roleText = user?.role === 'admin' ? 'Administrador' : user?.role === 'gate_agent' ? 'Agente de Pátio' : 'Usuário';
+  const roleText = user?.role === 'admin' ? 'Administrador' : user?.role === 'gate_agent' ? 'Agente de Pátio' : user?.role === 'exit_agent' ? 'Agente de Saída' : 'Usuário';
+  const displayName = user?.role === 'admin' ? user.name.toUpperCase() : user?.name;
+
 
   const NotificationBell = () => (
     <DropdownMenu>
@@ -320,7 +322,7 @@ export function AppHeader() {
             </Tooltip>
           </TooltipProvider>
           
-          {user && user.role !== 'gate_agent' && <NotificationBell />}
+          {user && user.role !== 'gate_agent' && user.role !== 'exit_agent' && <NotificationBell />}
 
           {user && (
             <DropdownMenu>
@@ -331,7 +333,7 @@ export function AppHeader() {
                     <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                   </Avatar>
                   <div className="hidden flex-col items-start md:flex">
-                    <span className="text-sm font-medium">{user.name}</span>
+                    <span className="text-sm font-medium">{displayName}</span>
                     <span className="text-xs text-muted-foreground">{roleText}</span>
                   </div>
                   <ChevronDown className="ml-1 h-4 w-4 opacity-50 hidden md:block" />
@@ -340,7 +342,7 @@ export function AppHeader() {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.name}</p>
+                    <p className="text-sm font-medium leading-none">{displayName}</p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user.login}
                     </p>
