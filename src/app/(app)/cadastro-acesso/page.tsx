@@ -360,7 +360,7 @@ export default function CadastroAcessoPage() {
                     
                     return (
                       <TableRow key={u.id}>
-                        <TableCell className="font-medium py-1">{u.name}</TableCell>
+                        <TableCell className="font-medium py-1">{u.role === 'admin' ? u.name.toUpperCase() : u.name}</TableCell>
                         <TableCell className="py-1">{u.login}</TableCell>
                         <TableCell className="py-1"><span className={`px-2 py-1 text-xs rounded-full ${roleClass}`}>{roleLabel}</span></TableCell>
                         <TableCell className="text-right space-x-1 py-1">
