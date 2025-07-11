@@ -150,7 +150,7 @@ export default function VeiculosFabricaPage() {
   return (
     <>
       <div className="container mx-auto pb-8">
-        <div className="mb-4">
+        <div className="mb-4 pt-2">
           <h1 className="text-3xl font-bold text-primary font-headline">Veículos Atualmente na Fábrica</h1>
           <p className="text-muted-foreground">Lista de veículos que registraram entrada e ainda não saíram.</p>
         </div>

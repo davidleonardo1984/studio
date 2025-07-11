@@ -355,12 +355,12 @@ export default function CadastroAcessoPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((u) => {
-                    const roleLabel = u.role === 'admin' ? 'Admin' : u.role === 'gate_agent' ? 'Agente de Pátio' : u.role === 'exit_agent' ? 'Agente de Saída' : 'Usuário';
+                    const roleLabel = u.role === 'admin' ? 'Administrador' : u.role === 'gate_agent' ? 'Agente de Pátio' : u.role === 'exit_agent' ? 'Agente de Saída' : 'Usuário';
                     const roleClass = u.role === 'admin' ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground';
                     
                     return (
                       <TableRow key={u.id}>
-                        <TableCell className="font-medium py-1">{u.role === 'admin' ? u.name.toUpperCase() : u.name}</TableCell>
+                        <TableCell className="font-medium py-1">{u.name}</TableCell>
                         <TableCell className="py-1">{u.login}</TableCell>
                         <TableCell className="py-1"><span className={`px-2 py-1 text-xs rounded-full ${roleClass}`}>{roleLabel}</span></TableCell>
                         <TableCell className="text-right space-x-1 py-1">

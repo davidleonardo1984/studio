@@ -307,25 +307,26 @@ export default function RegistroEntradaPage() {
     setIsSubmitting(true);
     try {
         const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
-        // Only update the form data, do not change status here.
-        await updateDoc(entryDocRef, data as any);
         
-        toast({
-            title: 'Registro Atualizado!',
-            description: `Os dados do veículo ${data.plate1} foram salvos.`,
-            className: 'bg-blue-600 text-white'
-        });
+        // When editing, we also mark it as liberated.
+        const updateData: any = { 
+            ...data,
+            status: 'entrada_liberada',
+            liberationTimestamp: Timestamp.fromDate(new Date()),
+        };
         
-        const updatedEntry: VehicleEntry = { ...editingEntry, ...data };
+        await updateDoc(entryDocRef, updateData);
+        
+        const updatedEntry: VehicleEntry = { ...editingEntry, ...updateData };
         setUpdatedEntryForPrint(updatedEntry);
 
-        // If the entry was waiting, ask if we should liberate it now.
-        if (updatedEntry.status === 'aguardando_patio') {
-            setIsPrintConfirmDialogOpen(true);
-        } else {
-            // If it was already liberated, just go back after saving.
-            router.back();
-        }
+        toast({
+            title: 'Entrada Liberada!',
+            description: `Os dados do veículo ${data.plate1} foram salvos e a entrada foi liberada.`,
+            className: 'bg-green-600 text-white'
+        });
+
+        setIsPrintConfirmDialogOpen(true);
 
     } catch (error) {
         console.error("Error updating entry:", error);
@@ -335,46 +336,27 @@ export default function RegistroEntradaPage() {
     }
   };
 
-  // This function now handles both the status update and the printing.
-  const handleApproveAndUpdate = async () => {
-    if (!updatedEntryForPrint || !db) return;
+  const handlePrintConfirmation = async () => {
+    setIsPrintConfirmDialogOpen(false);
+    if (!updatedEntryForPrint) return;
+
+    toast({
+        title: 'Gerando Documento',
+        description: `Preparando documento para ${updatedEntryForPrint.plate1}...`,
+    });
+
+    const imageResult = await generateVehicleEntryImage(updatedEntryForPrint);
     
-    setIsPrintConfirmDialogOpen(false); // Close the first dialog
-
-    try {
-        const entryDocRef = doc(db, 'vehicleEntries', updatedEntryForPrint.id);
-        
-        // Update status to 'entrada_liberada' and set liberation timestamp
-        const liberationData = {
-            status: 'entrada_liberada',
-            liberationTimestamp: Timestamp.fromDate(new Date())
-        };
-        await updateDoc(entryDocRef, liberationData);
-        
-        const fullyUpdatedEntry = { ...updatedEntryForPrint, ...liberationData };
-
+    if (imageResult.success && imageResult.imageUrl) {
+        setPreviewImageUrl(imageResult.imageUrl);
+        setIsPreviewModalOpen(true);
+    } else {
         toast({
-            title: 'Entrada Liberada!',
-            description: `Preparando documento para ${fullyUpdatedEntry.plate1}...`,
-            className: 'bg-green-600 text-white',
+            variant: 'destructive',
+            title: 'Erro no Documento',
+            description: `Falha ao gerar o documento. ${imageResult.error || ''}`,
         });
-
-        const imageResult = await generateVehicleEntryImage(fullyUpdatedEntry);
-        
-        if (imageResult.success && imageResult.imageUrl) {
-            setPreviewImageUrl(imageResult.imageUrl);
-            setIsPreviewModalOpen(true); // This opens the print preview
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Erro no Documento',
-                description: `Falha ao gerar o documento. ${imageResult.error || ''}`,
-            });
-            router.back(); // Still go back even if printing fails
-        }
-    } catch (error) {
-        console.error("Error approving and updating entry:", error);
-        toast({ variant: "destructive", title: "Erro", description: "Não foi possível liberar a entrada do veículo." });
+        router.push('/aguardando-liberacao'); // Go back anyway
     }
   };
 
@@ -398,9 +380,13 @@ export default function RegistroEntradaPage() {
   const handleClosePreview = () => {
     setIsPreviewModalOpen(false);
     setPreviewImageUrl(null);
-    // After printing (from either new or edit flow), go back to the list.
-    router.back();
+    router.push(editingEntry ? '/aguardando-liberacao' : '/registro-entrada');
+    if (editingEntry) {
+      setEditingEntry(null);
+      form.reset();
+    }
   };
+
 
   if (!db) {
     return (
@@ -436,16 +422,16 @@ export default function RegistroEntradaPage() {
       <div className="flex items-center">
         <div>
           <h1 className="text-3xl font-bold text-primary font-headline">
-            {editingEntry ? 'Editar Registro de Entrada' : 'Registro de Entrada de Veículo'}
+            {editingEntry ? 'Liberar e Editar Registro de Entrada' : 'Registro de Entrada de Veículo'}
           </h1>
           <p className="text-muted-foreground">
-            {editingEntry ? `Alterando dados do veículo ${editingEntry.plate1}.` : 'Preencha os dados abaixo para registrar a entrada de um veículo.'}
+            {editingEntry ? `Alterando dados do veículo ${editingEntry.plate1} e liberando para a fábrica.` : 'Preencha os dados abaixo para registrar a entrada de um veículo.'}
           </p>
         </div>
       </div>
       <Card className="shadow-xl w-full">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-semibold text-primary">{editingEntry ? 'Editar Registro' : 'Registro de Entrada'}</CardTitle>
+          <CardTitle className="text-xl font-semibold text-primary">{editingEntry ? 'Editar e Liberar Registro' : 'Registro de Entrada'}</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -688,7 +674,7 @@ export default function RegistroEntradaPage() {
                 <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.back()}
+                    onClick={() => router.push('/aguardando-liberacao')}
                     disabled={isSubmitting}
                 >
                     Cancelar
@@ -696,10 +682,10 @@ export default function RegistroEntradaPage() {
                 <Button
                     onClick={form.handleSubmit(handleUpdateSubmit)}
                     disabled={isSubmitting || dataLoading}
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                    className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
                 >
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit2 className="mr-2 h-4 w-4" />}
-                    Salvar Alterações
+                    Salvar e Liberar
                 </Button>
               </>
             ) : (
@@ -765,18 +751,21 @@ export default function RegistroEntradaPage() {
 
     {/* Dialog for Print Confirmation after Edit */}
     <AlertDialog open={isPrintConfirmDialogOpen} onOpenChange={setIsPrintConfirmDialogOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Registro Atualizado!</AlertDialogTitle>
-          <AlertDialogDescription>
-            Deseja liberar a entrada e imprimir o romaneio com as novas informações? Se não, as alterações serão salvas e o veículo permanecerá aguardando no pátio.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => router.back()}>Não, Manter no Pátio</AlertDialogCancel>
-          <AlertDialogAction onClick={handleApproveAndUpdate}>Sim, Liberar e Imprimir</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Deseja reimprimir o romaneio?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    As alterações foram salvas e a entrada foi liberada. Você pode imprimir o documento agora ou mais tarde na tela de histórico.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => {
+                    setIsPrintConfirmDialogOpen(false);
+                    router.push('/aguardando-liberacao');
+                }}>Não, Voltar</AlertDialogCancel>
+                <AlertDialogAction onClick={handlePrintConfirmation}>Sim, Imprimir</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
     </AlertDialog>
 
     <DocumentPreviewModal 

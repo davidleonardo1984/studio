@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, AlertTriangle, Search, Expand, Shrink } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Search, LogOut, TvMinimalPlay } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore';
@@ -29,7 +29,6 @@ export default function RegistroSaidaPage() {
   const [foundEntry, setFoundEntry] = useState<VehicleEntry | null>(null);
   const [entryNotFound, setEntryNotFound] = useState(false);
   const barcodeRef = useRef<HTMLInputElement | null>(null);
-  const [isFocusMode, setIsFocusMode] = useState(false);
 
   const form = useForm<ExitFormValues>({
     resolver: zodResolver(exitSchema),
@@ -41,17 +40,19 @@ export default function RegistroSaidaPage() {
   const { watch, handleSubmit } = form;
   const barcodeValue = watch('barcode');
 
-  // Auto-focus on mount
-  useEffect(() => {
-    barcodeRef.current?.focus();
-  }, []);
+  const toggleFocusMode = () => {
+    document.body.classList.toggle('focus-mode');
+  };
 
-  // Auto-submit on 14 chars
   useEffect(() => {
+    // Auto-focus on mount
+    barcodeRef.current?.focus();
+    
+    // Auto-submit on 14 chars
     if (barcodeValue && barcodeValue.length === 14 && !isProcessing) {
       handleSubmit(onSubmit)();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [barcodeValue]);
 
 
@@ -65,22 +66,6 @@ export default function RegistroSaidaPage() {
     }
     return () => clearTimeout(timer); // Cleanup timeout
   }, [foundEntry, entryNotFound]);
-  
-  useEffect(() => {
-    if (isFocusMode) {
-      document.body.classList.add('focus-mode');
-    } else {
-      document.body.classList.remove('focus-mode');
-    }
-    // Cleanup on unmount
-    return () => {
-      document.body.classList.remove('focus-mode');
-    };
-  }, [isFocusMode]);
-
-  const toggleFocusMode = () => {
-    setIsFocusMode(prev => !prev);
-  };
 
 
   const processExit = async (barcodeToFind: string): Promise<VehicleEntry | null> => {
@@ -179,23 +164,25 @@ export default function RegistroSaidaPage() {
 
   return (
     <div className="container mx-auto pb-8">
-      <div className="flex items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-primary font-headline">
-              Registro de Saída de Veículo
-            </h1>
-            <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
-          </div>
-          <div className="ml-auto">
-              <Button variant="ghost" size="icon" onClick={toggleFocusMode} className="shrink-0">
-                  {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
-                  <span className="sr-only">{isFocusMode ? 'Sair do Modo Foco' : 'Ativar Modo Foco'}</span>
-              </Button>
-          </div>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-primary font-headline">
+            Registro de Saída de Veículo
+          </h1>
+          <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
+        </div>
+        <Button variant="outline" onClick={toggleFocusMode}>
+          <TvMinimalPlay className="mr-2 h-4 w-4"/>
+          <span className="focus-mode-text">Entrar no Modo Foco</span>
+          <span className="normal-mode-text">Sair do Modo Foco</span>
+        </Button>
       </div>
-      <Card className="shadow-xl w-full">
+      <Card className="shadow-xl w-full max-w-2xl mx-auto">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
+            <div className="flex items-center">
+              <LogOut className="h-6 w-6 mr-3 text-primary" />
+              <CardTitle className="text-xl font-semibold text-primary">Leitura do Código de Saída</CardTitle>
+            </div>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -273,22 +260,18 @@ export default function RegistroSaidaPage() {
               )}
             </div>
           )}
+          <div className="mt-6">
+            <Alert variant="default" className="border-yellow-400 bg-yellow-50">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <AlertTitle className="text-yellow-700">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
+              <AlertDescription className="text-yellow-600">
+                Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
+              </AlertDescription>
+            </Alert>
+          </div>
         </CardContent>
       </Card>
       
-      {isFocusMode && (
-        <div className="mt-6">
-            <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle className="font-bold">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
-                <AlertDescription>
-                  <p className="text-base mt-1">
-                    Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
-                  </p>
-                </AlertDescription>
-            </Alert>
-        </div>
-      )}
     </div>
   );
 }
