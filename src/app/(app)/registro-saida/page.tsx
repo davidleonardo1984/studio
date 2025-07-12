@@ -288,7 +288,7 @@ export default function RegistroSaidaPage() {
             </form>
           </Form>
 
-          <div className="mt-4 min-h-[110px]">
+          <div className="mt-4">
             {renderStatusAlert()}
           </div>
         </CardContent>
@@ -296,9 +296,9 @@ export default function RegistroSaidaPage() {
       
       <div className="mt-6">
         <Alert variant="destructive">
-            <AlertTriangle className="h-5 w-5" />
-            <AlertTitle className="text-base">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
-            <AlertDescription className="text-sm">
+            <AlertTriangle className="h-6 w-6" />
+            <AlertTitle className="text-lg">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
+            <AlertDescription className="text-base">
                 Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
             </AlertDescription>
         </Alert>
