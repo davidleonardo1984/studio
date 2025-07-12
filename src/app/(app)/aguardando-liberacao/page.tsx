@@ -446,10 +446,10 @@ export default function AguardandoLiberacaoPage() {
                                 variant="default" 
                                 size="sm" 
                                 onClick={() => handleEdit(vehicle.id)}
-                                className="w-24 bg-green-600 hover:bg-green-700 text-white"
+                                className="bg-green-600 hover:bg-green-700 text-white"
                             >
                                 <Edit2 className="mr-2 h-4 w-4" />
-                                Liberar
+                                Editar e Liberar
                             </Button>
                           </>
                         )}
