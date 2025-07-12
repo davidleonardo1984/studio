@@ -543,7 +543,7 @@ export default function AguardandoLiberacaoPage() {
           <Label htmlFor="liberado-por-dialog" className="text-right">Liberado por (Opcional)</Label>
           <Input
             id="liberado-por-dialog"
-            placeholder="Seu nome"
+            placeholder="Nome do liberador"
             value={liberatedByName}
             onChange={(e) => setLiberatedByName(e.target.value)}
             onKeyDown={(e) => {
