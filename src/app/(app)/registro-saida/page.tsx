@@ -164,7 +164,7 @@ export default function RegistroSaidaPage() {
 
   return (
     <div className="container mx-auto pb-8">
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex justify-between items-center -mt-4">
         <div>
           <h1 className="text-3xl font-bold text-primary font-headline">
             Registro de Saída de Veículo
