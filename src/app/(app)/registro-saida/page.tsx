@@ -168,7 +168,7 @@ export default function RegistroSaidaPage() {
           <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
         </div>
       </div>
-      <Card className="shadow-xl w-full max-w-2xl mx-auto">
+      <Card className="shadow-xl w-full">
         <CardHeader className="pb-2">
             <div className="flex items-center">
               <CardTitle className="text-xl font-semibold text-primary">Leitura do Código de Saída</CardTitle>
