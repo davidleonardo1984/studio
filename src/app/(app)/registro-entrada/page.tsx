@@ -785,9 +785,7 @@ export default function RegistroEntradaPage() {
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Liberar Entrada e Imprimir
                 </Button>
-                <AlertDialogCancel asChild>
-                    <Button variant="ghost" disabled={isSubmitting}>Voltar</Button>
-                </AlertDialogCancel>
+                <Button variant="ghost" onClick={() => setIsEditActionDialogOpen(false)} disabled={isSubmitting}>Voltar</Button>
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
