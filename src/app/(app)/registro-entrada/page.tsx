@@ -419,7 +419,7 @@ export default function RegistroEntradaPage() {
   return (
     <>
     <div className="container mx-auto pb-8 space-y-8">
-      <div className="flex items-center">
+      <div className="flex items-center -mt-4">
         <div>
           <h1 className="text-3xl font-bold text-primary font-headline">
             {editingEntry ? 'Liberar e Editar Registro de Entrada' : 'Registro de Entrada de Veículo'}
