@@ -446,6 +446,7 @@ export default function AguardandoLiberacaoPage() {
                                 variant="outline" 
                                 size="sm" 
                                 onClick={() => handleEdit(vehicle.id)}
+                                className="w-36"
                             >
                                 <Edit2 className="mr-2 h-4 w-4" />
                                 Editar Entrada
@@ -454,7 +455,7 @@ export default function AguardandoLiberacaoPage() {
                                 variant="default" 
                                 size="sm" 
                                 onClick={() => handleApproveAndPrint(vehicle)}
-                                className="bg-green-600 hover:bg-green-700 text-white"
+                                className="bg-green-600 hover:bg-green-700 text-white w-36"
                             >
                                 <Printer className="mr-2 h-4 w-4" />
                                 Liberar Entrada
