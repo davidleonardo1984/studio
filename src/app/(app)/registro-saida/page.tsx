@@ -283,7 +283,7 @@ export default function RegistroSaidaPage() {
             </form>
           </Form>
 
-          <div className="mt-4 min-h-[110px]">
+          <div className="mt-4">
             {renderStatusAlert()}
           </div>
         </CardContent>
