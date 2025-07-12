@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, AlertTriangle, Search, XCircle, Clock } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
@@ -25,7 +24,6 @@ type ExitFormValues = z.infer<typeof exitSchema>;
 type ExitStatus = 'success' | 'not_found' | 'already_exited' | 'not_liberated' | 'idle';
 
 export default function RegistroSaidaPage() {
-  const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastProcessedEntry, setLastProcessedEntry] = useState<VehicleEntry | null>(null);
   const [exitStatus, setExitStatus] = useState<ExitStatus>('idle');
@@ -126,29 +124,9 @@ export default function RegistroSaidaPage() {
         if (result.entry) {
             setLastProcessedEntry(result.entry);
         }
-
-        if (result.status === 'success') {
-            toast({
-                title: 'Saída Registrada!',
-                description: `Saída do veículo ${result.entry?.plate1} registrada com sucesso.`,
-                className: 'bg-green-600 text-white',
-                icon: <CheckCircle className="h-6 w-6 text-white" />
-            });
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Atenção',
-                description: result.message,
-            });
-        }
     } catch (error) {
         console.error("Error processing exit:", error);
         setExitStatus('not_found');
-        toast({
-            variant: 'destructive',
-            title: 'Erro de Sistema',
-            description: 'Ocorreu um erro ao comunicar com o banco de dados.',
-        });
     } finally {
         form.reset();
         setIsProcessing(false);
