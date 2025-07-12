@@ -820,7 +820,9 @@ export default function RegistroEntradaPage() {
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         Liberar Entrada e Imprimir
                     </Button>
-                    <Button variant="ghost" onClick={() => setIsEditActionDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
+                    <AlertDialogCancel asChild>
+                      <Button variant="ghost" disabled={isSubmitting}>Cancelar</Button>
+                    </AlertDialogCancel>
                 </AlertDialogFooter>
             ) : (
                  <AlertDialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
@@ -832,7 +834,6 @@ export default function RegistroEntradaPage() {
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         Salvar e Reimprimir Documento
                     </Button>
-                    <Button variant="ghost" onClick={() => setIsEditActionDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
                 </AlertDialogFooter>
             )}
         </AlertDialogContent>
