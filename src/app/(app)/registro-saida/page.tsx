@@ -180,7 +180,6 @@ export default function RegistroSaidaPage() {
       <Card className="shadow-xl w-full max-w-2xl mx-auto">
         <CardHeader className="pb-2">
             <div className="flex items-center">
-              <LogOut className="h-6 w-6 mr-3 text-primary" />
               <CardTitle className="text-xl font-semibold text-primary">Leitura do Código de Saída</CardTitle>
             </div>
         </CardHeader>
