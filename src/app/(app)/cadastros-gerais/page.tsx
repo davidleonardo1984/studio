@@ -822,7 +822,7 @@ export default function CadastrosGeraisPage() {
 
   return (
     <div className="container mx-auto pb-8 space-y-4">
-      <div>
+      <div className="-mt-4">
         <h1 className="text-3xl font-bold text-primary font-headline">Cadastros Gerais</h1>
         <p className="text-muted-foreground">Gerencie motoristas, ajudantes, transportadoras / empresas e destinos internos.</p>
       </div>
