@@ -338,7 +338,7 @@ export default function AguardandoLiberacaoPage() {
   return (
     <>
     <div className="container mx-auto pb-8">
-      <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+      <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center -mt-4">
         <div>
             <h1 className="text-3xl font-bold text-primary font-headline">
                 Veículos Aguardando Liberação
