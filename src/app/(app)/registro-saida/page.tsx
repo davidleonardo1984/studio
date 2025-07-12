@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, AlertTriangle, Search, LogOut, TvMinimalPlay } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Search } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore';
@@ -39,10 +39,6 @@ export default function RegistroSaidaPage() {
 
   const { watch, handleSubmit } = form;
   const barcodeValue = watch('barcode');
-
-  const toggleFocusMode = () => {
-    document.body.classList.toggle('focus-mode');
-  };
 
   useEffect(() => {
     // Auto-focus on mount
@@ -171,11 +167,6 @@ export default function RegistroSaidaPage() {
           </h1>
           <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
         </div>
-        <Button variant="outline" onClick={toggleFocusMode}>
-          <TvMinimalPlay className="mr-2 h-4 w-4"/>
-          <span className="focus-mode-text">Entrar no Modo Foco</span>
-          <span className="normal-mode-text">Sair do Modo Foco</span>
-        </Button>
       </div>
       <Card className="shadow-xl w-full max-w-2xl mx-auto">
         <CardHeader className="pb-2">
@@ -210,8 +201,8 @@ export default function RegistroSaidaPage() {
                             }
                           }}
                           className="rounded-r-none"
-                          noAutoUppercase={true}
                           autoComplete="off"
+                          noAutoUppercase={true}
                         />
                         <Button type="submit" className="rounded-l-none" disabled={isProcessing}>
                           {isProcessing ? (
