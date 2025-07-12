@@ -191,7 +191,13 @@ export default function HistoricoAcessoPage() {
     if (!timestamp) return 'N/A';
     // Firestore Timestamps have a toDate() method, legacy data might be strings
     const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp as string);
-    return date.toLocaleString('pt-BR');
+    return date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
   };
 
   const handleDeleteOldEntries = async () => {
