@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry, Driver } from '@/lib/types';
-import { CheckCircle, Clock, Search, Loader2, AlertTriangle, ClipboardCopy, Bell, MapPin, Edit2 } from 'lucide-react';
+import { CheckCircle, Clock, Search, Loader2, AlertTriangle, ClipboardCopy, Bell, MapPin, Edit2, Printer } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
@@ -443,13 +443,21 @@ export default function AguardandoLiberacaoPage() {
                         {user?.role !== 'gate_agent' && (
                           <>
                             <Button 
-                                variant="default" 
+                                variant="outline" 
                                 size="sm" 
                                 onClick={() => handleEdit(vehicle.id)}
-                                className="bg-green-600 hover:bg-green-700 text-white"
                             >
                                 <Edit2 className="mr-2 h-4 w-4" />
-                                Editar e Liberar
+                                Editar
+                            </Button>
+                            <Button 
+                                variant="default" 
+                                size="sm" 
+                                onClick={() => handleApproveAndPrint(vehicle)}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                                <Printer className="mr-2 h-4 w-4" />
+                                Liberar e Imprimir
                             </Button>
                           </>
                         )}
