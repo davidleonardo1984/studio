@@ -266,6 +266,7 @@ export default function AguardandoLiberacaoPage() {
     if (vehicle.notified) {
       handleApproveAndPrint(vehicle);
     } else {
+      setLiberatedByName(user?.name || '');
       setIsLiberationDialogOpen(true);
     }
   };
@@ -553,7 +554,6 @@ export default function AguardandoLiberacaoPage() {
             }}
             className="mt-2"
             autoComplete="off"
-            defaultValue={user?.name || ''}
           />
         </div>
         <AlertDialogFooter>
