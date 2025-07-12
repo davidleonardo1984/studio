@@ -310,16 +310,6 @@ export default function RegistroSaidaPage() {
           </div>
         </CardContent>
       </Card>
-      
-      <div className="mt-6">
-        <Alert variant="destructive">
-          <AlertTriangle className="h-5 w-5" />
-          <AlertTitle>Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
-          <AlertDescription>
-            Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
-          </AlertDescription>
-        </Alert>
-      </div>
     </div>
   );
 }
