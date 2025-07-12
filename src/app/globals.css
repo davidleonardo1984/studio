@@ -93,45 +93,25 @@ body {
 }
 
 /* Custom styles for focus mode */
-body.focus-mode .group\/sidebar-wrapper > div[data-state] {
-    display: none;
-}
-
+body.focus-mode .group\/sidebar-wrapper,
 body.focus-mode header {
     display: none;
 }
 
 body.focus-mode .flex.flex-col > .flex-1.overflow-auto {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    margin: 0;
-    height: 100svh;
+    padding: 0; /* Remove padding from the main content area */
 }
 
-body.focus-mode .container {
-    height: 100%;
-    width: 100%;
-    max-width: 100%;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-body.focus-mode .focus-mode-card {
-    height: 100%;
-    width: 100%;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-body.focus-mode .focus-mode-card > .pb-2 { /* CardHeader */
+/* Initially hide the normal mode text */
+.normal-mode-text {
     display: none;
+}
+
+/* When in focus mode, hide the focus mode text and show the normal mode text */
+body.focus-mode .focus-mode-text {
+    display: none;
+}
+
+body.focus-mode .normal-mode-text {
+    display: inline;
 }

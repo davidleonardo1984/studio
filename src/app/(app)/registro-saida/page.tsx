@@ -177,7 +177,7 @@ export default function RegistroSaidaPage() {
           <span className="normal-mode-text">Sair do Modo Foco</span>
         </Button>
       </div>
-      <Card className="shadow-xl w-full max-w-2xl mx-auto focus-mode-card">
+      <Card className="shadow-xl w-full max-w-2xl mx-auto">
         <CardHeader className="pb-2">
             <div className="flex items-center">
               <CardTitle className="text-xl font-semibold text-primary">Leitura do Código de Saída</CardTitle>
