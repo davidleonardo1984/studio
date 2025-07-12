@@ -107,7 +107,6 @@ export default function RegistroSaidaPage() {
   
   const formatDate = (timestamp: VehicleEntry['arrivalTimestamp']) => {
     if (!timestamp) return 'N/A';
-    // Firestore Timestamps have a toDate() method, legacy data might be strings
     const date = (timestamp as any).toDate ? (timestamp as any).toDate() : new Date(timestamp as string);
     return date.toLocaleString('pt-BR', {
       day: '2-digit',
@@ -297,9 +296,9 @@ export default function RegistroSaidaPage() {
       
       <div className="mt-6">
         <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
-            <AlertDescription>
+            <AlertTriangle className="h-5 w-5" />
+            <AlertTitle className="text-base">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
+            <AlertDescription className="text-sm">
                 Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
             </AlertDescription>
         </Alert>
