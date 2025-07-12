@@ -19,6 +19,16 @@ import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { generateVehicleEntryImage } from '@/lib/pdf-generator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 const colorPalette = [
@@ -45,6 +55,10 @@ export default function AguardandoLiberacaoPage() {
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const isClient = useIsClient();
   const [now, setNow] = useState(new Date());
+
+  const [isLiberationDialogOpen, setIsLiberationDialogOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleEntry | null>(null);
+  const [liberatedByName, setLiberatedByName] = useState('');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -101,6 +115,13 @@ export default function AguardandoLiberacaoPage() {
 
     return () => unsubscribe();
   }, [toast]);
+
+  useEffect(() => {
+    if (!isLiberationDialogOpen) {
+      setSelectedVehicle(null);
+      setLiberatedByName('');
+    }
+  }, [isLiberationDialogOpen]);
 
 
   const calculateWaitingTime = useCallback((arrivalTimestamp: VehicleEntry['arrivalTimestamp'], currentTime: Date): string => {
@@ -188,7 +209,7 @@ export default function AguardandoLiberacaoPage() {
   };
 
 
-  const handleApproveAndPrint = async (vehicle: VehicleEntry) => {
+  const handleApproveAndPrint = async (vehicle: VehicleEntry, liberatedBy?: string) => {
     if (!db || !user) return;
   
     const vehicleDocRef = doc(db, 'vehicleEntries', vehicle.id);
@@ -196,7 +217,7 @@ export default function AguardandoLiberacaoPage() {
     const updatedVehicleData: any = {
         status: 'entrada_liberada' as const,
         liberationTimestamp: Timestamp.fromDate(new Date()),
-        liberatedBy: vehicle.liberatedBy, // Keep the original liberatedBy from notification
+        liberatedBy: vehicle.notified ? vehicle.liberatedBy : (liberatedBy || user.name),
     };
     
     try {
@@ -239,6 +260,23 @@ export default function AguardandoLiberacaoPage() {
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível liberar la entrada do veículo." });
     }
   };
+
+  const initiateLiberation = (vehicle: VehicleEntry) => {
+    setSelectedVehicle(vehicle);
+    if (vehicle.notified) {
+      handleApproveAndPrint(vehicle);
+    } else {
+      setIsLiberationDialogOpen(true);
+    }
+  };
+  
+  const handleConfirmLiberation = () => {
+    if (selectedVehicle) {
+      handleApproveAndPrint(selectedVehicle, liberatedByName);
+    }
+    setIsLiberationDialogOpen(false);
+  };
+
 
   const handleClosePreview = () => {
     setIsPreviewModalOpen(false);
@@ -460,7 +498,7 @@ export default function AguardandoLiberacaoPage() {
                             <Button 
                                 variant="default" 
                                 size="sm" 
-                                onClick={() => handleApproveAndPrint(vehicle)}
+                                onClick={() => initiateLiberation(vehicle)}
                                 className="bg-green-600 hover:bg-green-700 text-white w-36"
                             >
                                 <Printer className="mr-2 h-4 w-4" />
@@ -490,6 +528,43 @@ export default function AguardandoLiberacaoPage() {
       </Card>
     </div>
     
+    <AlertDialog open={isLiberationDialogOpen} onOpenChange={setIsLiberationDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            Confirmar Liberação de {selectedVehicle?.plate1}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Como esta entrada não foi notificada, informe quem está liberando para que conste no documento.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="py-2">
+          <Label htmlFor="liberado-por-dialog" className="text-right">Liberado por (Opcional)</Label>
+          <Input
+            id="liberado-por-dialog"
+            placeholder="Seu nome"
+            value={liberatedByName}
+            onChange={(e) => setLiberatedByName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleConfirmLiberation();
+              }
+            }}
+            className="mt-2"
+            autoComplete="off"
+            defaultValue={user?.name || ''}
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirmLiberation}>
+            Confirmar e Gerar Documento
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
     <DocumentPreviewModal 
         isOpen={isPreviewModalOpen}
         onClose={handleClosePreview}
