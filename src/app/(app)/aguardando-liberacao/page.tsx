@@ -390,16 +390,16 @@ export default function AguardandoLiberacaoPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="py-1">Ordem</TableHead>
-                  <TableHead className="py-1">Motorista</TableHead>
-                  <TableHead className="py-1">Telefone</TableHead>
-                  <TableHead className="py-1">Transportadora / Empresa</TableHead>
-                  <TableHead className="py-1">Destino Interno</TableHead>
-                  <TableHead className="py-1">Placa 1</TableHead>
-                  <TableHead className="py-1">Observação</TableHead>
-                  <TableHead className="py-1">Data/Hora Chegada</TableHead>
-                  <TableHead className="py-1">Tempo no Pátio</TableHead>
-                  <TableHead className="text-right py-1">Ações</TableHead>
+                  <TableHead>Ordem</TableHead>
+                  <TableHead>Motorista</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Transportadora / Empresa</TableHead>
+                  <TableHead>Destino Interno</TableHead>
+                  <TableHead>Placa 1</TableHead>
+                  <TableHead>Observação</TableHead>
+                  <TableHead>Data/Hora Chegada</TableHead>
+                  <TableHead>Tempo no Pátio</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -448,7 +448,7 @@ export default function AguardandoLiberacaoPage() {
                                 onClick={() => handleEdit(vehicle.id)}
                             >
                                 <Edit2 className="mr-2 h-4 w-4" />
-                                Editar
+                                Editar Entrada
                             </Button>
                             <Button 
                                 variant="default" 
