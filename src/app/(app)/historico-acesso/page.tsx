@@ -60,10 +60,8 @@ const calculateDuration = (start: VehicleEntry['arrivalTimestamp'], end: Vehicle
     const hours = Math.floor(diff / (1000 * 60 * 60));
     diff -= hours * (1000 * 60 * 60);
     const mins = Math.floor(diff / (1000 * 60));
-    diff -= mins * (1000 * 60);
-    const secs = Math.floor(diff / 1000);
 
-    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 };
 
 
@@ -259,8 +257,8 @@ export default function HistoricoAcessoPage() {
     const headers = [
       "ID/CÓDIGO", "MOTORISTA", "AJUDANTE1", "AJUDANTE2", "TRANSPORTADORA / EMPRESA", 
       "PLACA1", "PLACA2", "PLACA3", "DESTINO INTERNO", "TIPO MOV.", "OBSERVAÇÃO", 
-      "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "TEMPO PÁTIO (HH:MM:SS)", "LIBERADO POR", "DATA/HORA SAÍDA", 
-      "TEMPO FÁBRICA (HH:MM:SS)", "STATUS", "REGISTRADO POR"
+      "DATA/HORA CHEGADA", "DATA/HORA LIBERAÇÃO", "TEMPO PÁTIO (HH:MM)", "LIBERADO POR", "DATA/HORA SAÍDA", 
+      "TEMPO FÁBRICA (HH:MM)", "STATUS", "REGISTRADO POR"
     ];
     const csvRows = [
         headers.map(escapeCsvField).join(','),
@@ -577,4 +575,5 @@ export default function HistoricoAcessoPage() {
     
 
     
+
 
