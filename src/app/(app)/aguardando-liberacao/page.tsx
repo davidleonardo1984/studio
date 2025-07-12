@@ -217,7 +217,7 @@ export default function AguardandoLiberacaoPage() {
     const updatedVehicleData: any = {
         status: 'entrada_liberada' as const,
         liberationTimestamp: Timestamp.fromDate(new Date()),
-        liberatedBy: vehicle.notified ? vehicle.liberatedBy : (liberatedBy || user.name),
+        liberatedBy: vehicle.notified ? vehicle.liberatedBy : liberatedBy,
     };
     
     try {
@@ -266,7 +266,7 @@ export default function AguardandoLiberacaoPage() {
     if (vehicle.notified) {
       handleApproveAndPrint(vehicle);
     } else {
-      setLiberatedByName(user?.name || '');
+      setLiberatedByName('');
       setIsLiberationDialogOpen(true);
     }
   };
