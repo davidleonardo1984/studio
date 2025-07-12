@@ -189,7 +189,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   return (
     <div className="container mx-auto pb-8">
-      <div className="mb-12 text-center -mt-4">
+      <div className="text-center -mt-4 mb-8">
         <h1 className="text-4xl font-bold tracking-tight text-primary font-headline mb-4">
           Bem-vindo à Portaria Única RES
         </h1>
