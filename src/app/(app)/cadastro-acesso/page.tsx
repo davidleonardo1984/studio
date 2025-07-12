@@ -208,7 +208,7 @@ export default function CadastroAcessoPage() {
   }
 
   return (
-    <div className="container mx-auto pb-8">
+    <div className="container mx-auto pb-8 -mt-4">
       <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
             <h1 className="text-3xl font-bold text-primary font-headline">Gerenciamento de Acesso</h1>
@@ -360,7 +360,7 @@ export default function CadastroAcessoPage() {
                     
                     return (
                       <TableRow key={u.id}>
-                        <TableCell className="font-medium py-1">{u.role === 'admin' ? u.name.toUpperCase() : u.name}</TableCell>
+                        <TableCell className="font-medium py-1">{u.name}</TableCell>
                         <TableCell className="py-1">{u.login}</TableCell>
                         <TableCell className="py-1"><span className={`px-2 py-1 text-xs rounded-full ${roleClass}`}>{roleLabel}</span></TableCell>
                         <TableCell className="text-right space-x-1 py-1">
