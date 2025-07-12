@@ -457,7 +457,7 @@ export default function AguardandoLiberacaoPage() {
                                 className="bg-green-600 hover:bg-green-700 text-white"
                             >
                                 <Printer className="mr-2 h-4 w-4" />
-                                Liberar e Imprimir
+                                Liberar Entrada
                             </Button>
                           </>
                         )}
