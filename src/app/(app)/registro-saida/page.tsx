@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, AlertTriangle, Search } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Search, XCircle, Clock } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore';
@@ -22,12 +22,13 @@ const exitSchema = z.object({
 });
 
 type ExitFormValues = z.infer<typeof exitSchema>;
+type ExitStatus = 'success' | 'not_found' | 'already_exited' | 'not_liberated' | 'idle';
 
 export default function RegistroSaidaPage() {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [foundEntry, setFoundEntry] = useState<VehicleEntry | null>(null);
-  const [entryNotFound, setEntryNotFound] = useState(false);
+  const [lastProcessedEntry, setLastProcessedEntry] = useState<VehicleEntry | null>(null);
+  const [exitStatus, setExitStatus] = useState<ExitStatus>('idle');
   const barcodeRef = useRef<HTMLInputElement | null>(null);
 
   const form = useForm<ExitFormValues>({
@@ -54,35 +55,56 @@ export default function RegistroSaidaPage() {
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (foundEntry || entryNotFound) {
+    if (exitStatus !== 'idle') {
       timer = setTimeout(() => {
-        setFoundEntry(null);
-        setEntryNotFound(false);
+        setExitStatus('idle');
+        setLastProcessedEntry(null);
       }, 5000); // 5 seconds
     }
     return () => clearTimeout(timer); // Cleanup timeout
-  }, [foundEntry, entryNotFound]);
+  }, [exitStatus]);
 
 
-  const processExit = async (barcodeToFind: string): Promise<VehicleEntry | null> => {
-    if (!db) return null;
+  const processExit = async (barcodeToFind: string): Promise<{ status: ExitStatus; entry?: VehicleEntry | null; message: string }> => {
+    if (!db) {
+        return { status: 'not_found', message: 'O banco de dados não está configurado.' };
+    }
+
     const entriesCollection = collection(db, 'vehicleEntries');
     const q = query(entriesCollection, where('barcode', '==', barcodeToFind));
     const querySnapshot = await getDocs(q);
 
-    if (!querySnapshot.empty) {
-      const entryDoc = querySnapshot.docs[0];
-      const entry = { id: entryDoc.id, ...entryDoc.data() } as VehicleEntry;
-      if (entry.status === 'entrada_liberada') {
-        const exitTimestamp = Timestamp.fromDate(new Date());
-        await updateDoc(doc(db, 'vehicleEntries', entry.id), {
-          status: 'saiu',
-          exitTimestamp: exitTimestamp,
-        });
-        return { ...entry, status: 'saiu', exitTimestamp };
-      }
+    if (querySnapshot.empty) {
+        return { status: 'not_found', message: 'Código de barras não encontrado no sistema.' };
     }
-    return null;
+
+    const entryDoc = querySnapshot.docs[0];
+    const entry = { id: entryDoc.id, ...entryDoc.data() } as VehicleEntry;
+
+    if (entry.status === 'saiu') {
+        return { status: 'already_exited', entry, message: `O veículo de placa ${entry.plate1} já registrou saída.` };
+    }
+
+    if (entry.status === 'aguardando_patio') {
+        return { status: 'not_liberated', entry, message: `A entrada do veículo ${entry.plate1} ainda não foi liberada.` };
+    }
+
+    if (entry.status === 'entrada_liberada') {
+        try {
+            const exitTimestamp = Timestamp.fromDate(new Date());
+            await updateDoc(doc(db, 'vehicleEntries', entry.id), {
+                status: 'saiu',
+                exitTimestamp: exitTimestamp,
+            });
+            const updatedEntry = { ...entry, status: 'saiu' as const, exitTimestamp };
+            return { status: 'success', entry: updatedEntry, message: 'Saída registrada com sucesso!' };
+        } catch (error) {
+            console.error("Error updating document:", error);
+            return { status: 'not_found', message: 'Ocorreu um erro ao atualizar o status do veículo.' };
+        }
+    }
+
+    return { status: 'not_found', message: 'Status do veículo desconhecido ou inválido.' };
   };
   
   const formatDate = (timestamp: VehicleEntry['arrivalTimestamp']) => {
@@ -94,31 +116,34 @@ export default function RegistroSaidaPage() {
 
   const onSubmit = async (data: ExitFormValues) => {
     setIsProcessing(true);
-    setFoundEntry(null);
-    setEntryNotFound(false);
+    setExitStatus('idle');
+    setLastProcessedEntry(null);
     
     try {
-        const updatedEntry = await processExit(data.barcode);
+        const result = await processExit(data.barcode);
 
-        if (updatedEntry) {
-            setFoundEntry(updatedEntry);
+        setExitStatus(result.status);
+        if (result.entry) {
+            setLastProcessedEntry(result.entry);
+        }
+
+        if (result.status === 'success') {
             toast({
                 title: 'Saída Registrada!',
-                description: `Saída do veículo ${updatedEntry.plate1} (Código: ${updatedEntry.barcode}) registrada com sucesso.`,
+                description: `Saída do veículo ${result.entry?.plate1} registrada com sucesso.`,
                 className: 'bg-green-600 text-white',
                 icon: <CheckCircle className="h-6 w-6 text-white" />
             });
         } else {
-            setEntryNotFound(true);
             toast({
                 variant: 'destructive',
-                title: 'Erro ao Registrar Saída',
-                description: 'Código de barras não encontrado ou veículo já saiu/não liberado.',
+                title: 'Atenção',
+                description: result.message,
             });
         }
     } catch (error) {
         console.error("Error processing exit:", error);
-        setEntryNotFound(true);
+        setExitStatus('not_found');
         toast({
             variant: 'destructive',
             title: 'Erro de Sistema',
@@ -157,6 +182,62 @@ export default function RegistroSaidaPage() {
       </div>
     );
   }
+
+  const renderStatusAlert = () => {
+    if (exitStatus === 'idle') return null;
+
+    const entryInfo = lastProcessedEntry ? (
+        <>
+            <p><strong>Veículo:</strong> {lastProcessedEntry.plate1}</p>
+            <p><strong>Motorista:</strong> {lastProcessedEntry.driverName}</p>
+            <p><strong>Horário de Chegada:</strong> {formatDate(lastProcessedEntry.arrivalTimestamp)}</p>
+            {lastProcessedEntry.exitTimestamp && <p><strong>Horário de Saída:</strong> {formatDate(lastProcessedEntry.exitTimestamp)}</p>}
+        </>
+    ) : null;
+
+    switch (exitStatus) {
+        case 'success':
+            return (
+                <Alert variant="default" className="bg-green-50 border-green-300">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <AlertTitle className="text-green-700 font-semibold">Saída Confirmada!</AlertTitle>
+                    <AlertDescription className="text-green-600">{entryInfo}</AlertDescription>
+                </Alert>
+            );
+        case 'already_exited':
+            return (
+                <Alert variant="destructive">
+                    <XCircle className="h-5 w-5" />
+                    <AlertTitle>Veículo Já Saiu</AlertTitle>
+                    <AlertDescription>{entryInfo}</AlertDescription>
+                </Alert>
+            );
+        case 'not_liberated':
+             return (
+                <Alert variant="destructive" className="bg-amber-50 border-amber-300">
+                    <Clock className="h-5 w-5 text-amber-600" />
+                    <AlertTitle className="text-amber-700 font-semibold">Veículo Não Liberado</AlertTitle>
+                    <AlertDescription className="text-amber-600">
+                        O veículo está no pátio e aguarda liberação para entrar na fábrica.
+                        {entryInfo}
+                    </AlertDescription>
+                </Alert>
+            );
+        case 'not_found':
+            return (
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-5 w-5" />
+                    <AlertTitle>Código Não Encontrado</AlertTitle>
+                    <AlertDescription>
+                        O código de barras informado não foi localizado. Por favor, verifique o código e tente novamente.
+                    </AlertDescription>
+                </Alert>
+            );
+        default:
+            return null;
+    }
+  };
+
 
   return (
     <div className="container mx-auto pb-8">
@@ -224,32 +305,9 @@ export default function RegistroSaidaPage() {
             </form>
           </Form>
 
-          {(foundEntry || entryNotFound) && (
-            <div className="mt-4">
-              {foundEntry && (
-                <Alert variant="default" className="bg-green-50 border-green-300">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <AlertTitle className="text-green-700 font-semibold">Saída Confirmada!</AlertTitle>
-                  <AlertDescription className="text-green-600">
-                    <p><strong>Veículo:</strong> {foundEntry.plate1}</p>
-                    <p><strong>Motorista:</strong> {foundEntry.driverName}</p>
-                    <p><strong>Transportadora / Empresa:</strong> {foundEntry.transportCompanyName}</p>
-                    <p><strong>Horário de Saída:</strong> {formatDate(foundEntry.exitTimestamp)}</p>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {entryNotFound && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-5 w-5" />
-                  <AlertTitle>Código Não Encontrado</AlertTitle>
-                  <AlertDescription>
-                    O código de barras informado não corresponde a nenhum veículo com entrada liberada na fábrica. Por favor, verifique o código e tente novamente.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          )}
+          <div className="mt-4 min-h-[110px]">
+            {renderStatusAlert()}
+          </div>
         </CardContent>
       </Card>
       
