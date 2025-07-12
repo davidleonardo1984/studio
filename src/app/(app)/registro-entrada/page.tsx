@@ -309,12 +309,13 @@ export default function RegistroEntradaPage() {
     if (!editingEntry || !updatedDataForAction || !db) return;
     setIsSubmitting(true);
     setIsEditActionDialogOpen(false);
-
+    const originPage = editingEntry.status === 'aguardando_patio' ? '/aguardando-liberacao' : '/veiculos-fabrica';
+  
     try {
         const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
         await updateDoc(entryDocRef, { ...updatedDataForAction });
         toast({ title: 'Alterações Salvas', description: `Os dados do veículo ${updatedDataForAction.plate1} foram atualizados.` });
-        router.push('/aguardando-liberacao');
+        router.push(originPage);
     } catch (error) {
         console.error("Error saving entry (save only):", error);
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível salvar as alterações." });
@@ -371,6 +372,46 @@ export default function RegistroEntradaPage() {
     }
   };
 
+  const handleSaveAndReprint = async () => {
+    if (!editingEntry || !updatedDataForAction || !db) return;
+    setIsSubmitting(true);
+    setIsEditActionDialogOpen(false);
+    
+    try {
+      const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
+      await updateDoc(entryDocRef, { ...updatedDataForAction });
+
+      const updatedEntry: VehicleEntry = { ...editingEntry, ...updatedDataForAction };
+
+      toast({
+        title: 'Documento Gerado!',
+        description: `Preparando documento atualizado para visualização...`,
+        className: 'bg-green-600 text-white'
+      });
+
+      const imageResult = await generateVehicleEntryImage(updatedEntry);
+      
+      if (imageResult.success && imageResult.imageUrl) {
+        setPreviewImageUrl(imageResult.imageUrl);
+        setIsPreviewModalOpen(true);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erro no Documento',
+          description: `Falha ao gerar o documento. ${imageResult.error || ''}`,
+        });
+        router.push('/veiculos-fabrica');
+      }
+
+    } catch (error) {
+      console.error("Error saving and reprinting entry:", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível salvar e reimprimir o documento." });
+    } finally {
+      setIsSubmitting(false);
+      setUpdatedDataForAction(null);
+    }
+  };
+
 
   const initiateNewEntryApproval = async () => {
     const isValid = await form.trigger();
@@ -391,7 +432,8 @@ export default function RegistroEntradaPage() {
   const handleClosePreview = () => {
     setIsPreviewModalOpen(false);
     setPreviewImageUrl(null);
-    router.push(editingEntry ? '/aguardando-liberacao' : '/registro-entrada');
+    const originPage = editingEntry?.status === 'aguardando_patio' ? '/aguardando-liberacao' : editingEntry?.status === 'entrada_liberada' ? '/veiculos-fabrica' : '/registro-entrada';
+    router.push(originPage);
     if (editingEntry) {
       setEditingEntry(null);
       form.reset();
@@ -685,7 +727,7 @@ export default function RegistroEntradaPage() {
                 <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push('/aguardando-liberacao')}
+                    onClick={() => router.back()}
                     disabled={isSubmitting}
                 >
                     Cancelar
@@ -768,25 +810,31 @@ export default function RegistroEntradaPage() {
                     Escolha a ação desejada para o veículo {editingEntry?.plate1}.
                 </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
-                <Button
-                    variant="outline"
-                    onClick={handleSaveOnly}
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Salvar e Manter no Pátio
-                </Button>
-                 <Button
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={handleSaveAndLiberate}
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Liberar Entrada e Imprimir
-                </Button>
-                <Button variant="ghost" onClick={() => setIsEditActionDialogOpen(false)} disabled={isSubmitting}>Voltar</Button>
-            </AlertDialogFooter>
+            {editingEntry?.status === 'aguardando_patio' ? (
+                <AlertDialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
+                    <Button variant="outline" onClick={handleSaveOnly} disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Salvar e Manter no Pátio
+                    </Button>
+                    <Button className="bg-green-600 hover:bg-green-700" onClick={handleSaveAndLiberate} disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Liberar Entrada e Imprimir
+                    </Button>
+                    <Button variant="ghost" onClick={() => setIsEditActionDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
+                </AlertDialogFooter>
+            ) : (
+                 <AlertDialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
+                    <Button variant="outline" onClick={handleSaveOnly} disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Salvar sem Reimprimir
+                    </Button>
+                    <Button className="bg-green-600 hover:bg-green-700" onClick={handleSaveAndReprint} disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Salvar e Reimprimir Documento
+                    </Button>
+                    <Button variant="ghost" onClick={() => setIsEditActionDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
+                </AlertDialogFooter>
+            )}
         </AlertDialogContent>
     </AlertDialog>
 
