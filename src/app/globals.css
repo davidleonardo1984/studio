@@ -98,9 +98,20 @@ body.focus-mode header {
     display: none;
 }
 
-body.focus-mode .flex.flex-col > .flex-1.overflow-auto {
-    padding: 0; /* Remove padding from the main content area */
+body.focus-mode .flex.flex-col > .flex-1.overflow-auto > .p-4.sm\:p-6.lg\:p-8 > .container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+    max-width: 100%;
 }
+
+body.focus-mode .flex.flex-col > .flex-1.overflow-auto {
+    padding: 0;
+}
+
 
 /* Initially hide the normal mode text */
 .normal-mode-text {
