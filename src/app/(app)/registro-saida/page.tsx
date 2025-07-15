@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, AlertTriangle, Search, XCircle, Clock } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Search, XCircle, Clock, Expand, Shrink } from 'lucide-react';
 import type { VehicleEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore';
@@ -28,6 +28,7 @@ export default function RegistroSaidaPage() {
   const [lastProcessedEntry, setLastProcessedEntry] = useState<VehicleEntry | null>(null);
   const [exitStatus, setExitStatus] = useState<ExitStatus>('idle');
   const barcodeRef = useRef<HTMLInputElement | null>(null);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   const form = useForm<ExitFormValues>({
     resolver: zodResolver(exitSchema),
@@ -223,7 +224,7 @@ export default function RegistroSaidaPage() {
 
 
   return (
-    <div className="container mx-auto pb-8">
+    <div className={`container mx-auto pb-8 transition-all duration-300 ${isFocusMode ? 'max-w-full' : ''}`}>
       <div className="mb-6 flex justify-between items-center -mt-4">
         <div>
           <h1 className="text-3xl font-bold text-primary font-headline">
@@ -231,6 +232,9 @@ export default function RegistroSaidaPage() {
           </h1>
           <p className="text-muted-foreground">Insira o código de barras para registrar a saída.</p>
         </div>
+        <Button variant="outline" size="icon" onClick={() => setIsFocusMode(!isFocusMode)} title={isFocusMode ? "Sair do Modo Foco" : "Entrar no Modo Foco"}>
+            {isFocusMode ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
+        </Button>
       </div>
       <Card className="shadow-xl w-full">
         <CardHeader className="pb-2">
