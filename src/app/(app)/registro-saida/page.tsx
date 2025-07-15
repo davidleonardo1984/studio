@@ -235,7 +235,7 @@ export default function RegistroSaidaPage() {
       <Card className="shadow-xl w-full">
         <CardHeader className="pb-2">
             <div className="flex items-center">
-              <CardTitle className="text-xl font-semibold text-primary">Leitura do Código de Saída</CardTitle>
+              <CardTitle className="text-xl font-semibold text-primary">Registro de Saída</CardTitle>
             </div>
         </CardHeader>
         <CardContent>
