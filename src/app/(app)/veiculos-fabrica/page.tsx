@@ -7,16 +7,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry } from '@/lib/types';
-import { Search, Loader2, AlertTriangle, Printer, Edit2, Truck } from 'lucide-react';
+import { Search, Loader2, AlertTriangle, Printer, Edit2, Truck, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import { useIsClient } from '@/hooks/use-is-client';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { generateVehicleEntryImage } from '@/lib/pdf-generator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function VeiculosFabricaPage() {
   const { user } = useAuth();
@@ -95,6 +106,20 @@ export default function VeiculosFabricaPage() {
             title: 'Erro no Documento',
             description: `Falha ao gerar o documento para ${entry.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
         });
+    }
+  };
+  
+  const handleDeleteEntry = async (entryId: string) => {
+    if (!db) {
+      toast({ variant: 'destructive', title: 'Erro de Conexão', description: 'Banco de dados não configurado.' });
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, 'vehicleEntries', entryId));
+      toast({ title: 'Registro Excluído', description: 'O registro do veículo foi removido com sucesso.' });
+    } catch (error) {
+      console.error("Error deleting entry: ", error);
+      toast({ variant: 'destructive', title: 'Erro ao Excluir', description: 'Não foi possível remover o registro.' });
     }
   };
 
@@ -226,6 +251,32 @@ export default function VeiculosFabricaPage() {
                         <Button variant="ghost" size="icon" onClick={() => handlePrintEntry(entry)} title="Reimprimir Documento">
                           <Printer className="h-4 w-4 text-primary" />
                         </Button>
+                        {user?.role === 'admin' && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" title="Excluir Registro">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja excluir permanentemente o registro de entrada do veículo {entry.plate1}? Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteEntry(entry.id)}
+                                  className="bg-destructive hover:bg-destructive/90"
+                                >
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
