@@ -14,6 +14,7 @@ import { CheckCircle, AlertTriangle, Search, XCircle, Clock } from 'lucide-react
 import type { VehicleEntry } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import { useAuth } from '@/context/AuthContext';
 
 
 const exitSchema = z.object({
@@ -24,6 +25,7 @@ type ExitFormValues = z.infer<typeof exitSchema>;
 type ExitStatus = 'success' | 'not_found' | 'already_exited' | 'not_liberated' | 'idle';
 
 export default function RegistroSaidaPage() {
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastProcessedEntry, setLastProcessedEntry] = useState<VehicleEntry | null>(null);
   const [exitStatus, setExitStatus] = useState<ExitStatus>('idle');
@@ -223,7 +225,7 @@ export default function RegistroSaidaPage() {
 
 
   return (
-    <div className={`container mx-auto pb-8 transition-all duration-300`}>
+    <div className="container mx-auto pb-8 transition-all duration-300">
       <div className="mb-6 flex justify-between items-center -mt-4">
         <div>
           <h1 className="text-3xl font-bold text-primary font-headline">
@@ -294,15 +296,17 @@ export default function RegistroSaidaPage() {
         </CardContent>
       </Card>
       
-      <div className="mt-6">
-        <Alert variant="destructive">
-            <AlertTriangle className="h-6 w-6" />
-            <AlertTitle className="text-lg">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
-            <AlertDescription className="text-base">
-                Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
-            </AlertDescription>
-        </Alert>
-      </div>
+      {user?.role === 'exit_agent' && (
+        <div className="mt-6">
+          <Alert variant="destructive">
+              <AlertTriangle className="h-6 w-6" />
+              <AlertTitle className="text-lg">Atenção: Caso o código de barras não seja lido automaticamente.</AlertTitle>
+              <AlertDescription className="text-base">
+                  Por favor, verifique se o código está legível e tente novamente. Caso o problema persista, registre a saída manualmente digitando o número abaixo do código de barra ou informe à equipe vigilância.
+              </AlertDescription>
+          </Alert>
+        </div>
+      )}
     </div>
   );
 }
