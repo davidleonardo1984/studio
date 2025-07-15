@@ -14,8 +14,7 @@ export default function AuthenticatedLayout({ children }: { children: ReactNode 
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [isFocusMode, setIsFocusMode] = useState(false);
-
+  
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
@@ -36,15 +35,6 @@ export default function AuthenticatedLayout({ children }: { children: ReactNode 
     }
   }, [user, isLoading, router, pathname]);
 
-  // Special handling for focus mode on specific pages
-  useEffect(() => {
-     if (pathname === '/registro-saida') {
-       // The page itself will handle its focus state, we just need to provide the right layout
-     } else {
-       setIsFocusMode(false);
-     }
-  }, [pathname]);
-
   if (isLoading || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -57,23 +47,13 @@ export default function AuthenticatedLayout({ children }: { children: ReactNode 
     );
   }
 
-  // A bit of a hack to get the focus mode button to work from the child page
-  const childrenWithProps = React.Children.map(children, child => {
-    if (React.isValidElement(child)) {
-      // @ts-ignore
-      return React.cloneElement(child, { isFocusMode, setIsFocusMode });
-    }
-    return child;
-  });
-
-
   return (
-    <SidebarProvider defaultOpen={!isFocusMode}>
-        {!isFocusMode && <AppSidebar />}
-        <SidebarInset className={`flex h-screen flex-col ${isFocusMode ? 'ml-0' : ''}`}>
-        {!isFocusMode && <AppHeader />}
-        <main className={`flex-1 overflow-auto bg-background ${isFocusMode ? 'p-0' : ''}`}>
-          <div className={`${isFocusMode ? 'h-full flex items-center justify-center' : 'p-4 sm:p-6 lg:p-8'}`}>
+    <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset className={`flex h-screen flex-col`}>
+        <AppHeader />
+        <main className={`flex-1 overflow-auto bg-background`}>
+          <div className={`p-4 sm:p-6 lg:p-8`}>
             {children}
           </div>
         </main>
