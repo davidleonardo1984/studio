@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, type ReactNode, useState } from 'react';
+import React, { useEffect, type ReactNode, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { AppSidebar } from '@/components/layout/AppSidebar';
