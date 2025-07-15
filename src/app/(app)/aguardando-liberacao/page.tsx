@@ -7,13 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry, Driver } from '@/lib/types';
-import { CheckCircle, Clock, Search, Loader2, AlertTriangle, ClipboardCopy, Bell, MapPin, Edit2, Printer, Trash2 } from 'lucide-react';
+import { CheckCircle, Clock, Search, Loader2, AlertTriangle, ClipboardCopy, Bell, MapPin, Edit2, Printer } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import { useIsClient } from '@/hooks/use-is-client';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, Timestamp, getDocs, addDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, Timestamp, getDocs, addDoc, writeBatch } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -28,7 +28,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 
@@ -279,22 +278,6 @@ export default function AguardandoLiberacaoPage() {
     setIsLiberationDialogOpen(false);
   };
 
-  const handleDeleteEntry = async (entryId: string) => {
-    if (!db) {
-      toast({ variant: 'destructive', title: 'Erro de Conexão', description: 'Banco de dados não configurado.' });
-      return;
-    }
-    try {
-      await deleteDoc(doc(db, 'vehicleEntries', entryId));
-      toast({ title: 'Registro Excluído', description: 'O registro do veículo foi removido com sucesso.' });
-      // The onSnapshot listener will automatically update the UI
-    } catch (error) {
-      console.error("Error deleting entry: ", error);
-      toast({ variant: 'destructive', title: 'Erro ao Excluir', description: 'Não foi possível remover o registro.' });
-    }
-  };
-
-
   const handleClosePreview = () => {
     setIsPreviewModalOpen(false);
     setPreviewImageUrl(null);
@@ -522,32 +505,6 @@ export default function AguardandoLiberacaoPage() {
                                 Liberar Entrada
                             </Button>
                           </>
-                        )}
-                        {user?.role === 'admin' && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" title="Excluir Registro">
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Tem certeza que deseja excluir permanentemente o registro de entrada do veículo {vehicle.plate1}? Esta ação não pode ser desfeita.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={() => handleDeleteEntry(vehicle.id)}
-                                            className="bg-destructive hover:bg-destructive/90"
-                                        >
-                                            Excluir
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
                         )}
                         </TableCell>
                     </TableRow>
