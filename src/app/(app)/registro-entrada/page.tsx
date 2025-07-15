@@ -414,10 +414,16 @@ export default function RegistroEntradaPage() {
   };
 
   const handleDeleteEntry = async () => {
-    if (!editingEntry || !db || user?.role !== 'admin') {
+    if (!editingEntry || !db) {
+      return;
+    }
+    
+    const allowedToDelete = user?.role === 'admin' || user?.role === 'user';
+    if (!allowedToDelete) {
       toast({ variant: "destructive", title: "Não permitido", description: "Você não tem permissão para excluir este registro." });
       return;
     }
+
     setIsSubmitting(true);
     try {
       const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
@@ -745,7 +751,7 @@ export default function RegistroEntradaPage() {
             {editingEntry ? (
                 <>
                     <div>
-                        {user?.role === 'admin' && (
+                        {(user?.role === 'admin' || user?.role === 'user') && (
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button
