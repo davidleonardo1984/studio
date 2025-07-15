@@ -310,13 +310,12 @@ export default function RegistroEntradaPage() {
     if (!editingEntry || !updatedDataForAction || !db) return;
     setIsSubmitting(true);
     setIsEditActionDialogOpen(false);
-    const originPage = editingEntry.status === 'aguardando_patio' ? '/aguardando-liberacao' : '/veiculos-fabrica';
-  
+    
     try {
         const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
         await updateDoc(entryDocRef, { ...updatedDataForAction });
         toast({ title: 'Alterações Salvas', description: `Os dados do veículo ${updatedDataForAction.plate1} foram atualizados.` });
-        router.push(originPage);
+        router.back();
     } catch (error) {
         console.error("Error saving entry (save only):", error);
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível salvar as alterações." });
@@ -362,7 +361,7 @@ export default function RegistroEntradaPage() {
                 title: 'Erro no Documento',
                 description: `Falha ao gerar o documento. ${imageResult.error || ''}`,
             });
-            router.push('/aguardando-liberacao');
+            router.back();
         }
     } catch (error) {
         console.error("Error updating and liberating entry:", error);
@@ -401,7 +400,7 @@ export default function RegistroEntradaPage() {
           title: 'Erro no Documento',
           description: `Falha ao gerar o documento. ${imageResult.error || ''}`,
         });
-        router.push('/veiculos-fabrica');
+        router.back();
       }
 
     } catch (error) {
@@ -429,7 +428,7 @@ export default function RegistroEntradaPage() {
       const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
       await deleteDoc(entryDocRef);
       toast({ title: 'Registro Excluído!', description: `O registro do veículo ${editingEntry.plate1} foi removido.` });
-      router.push('/historico-acesso');
+      router.back();
     } catch (error) {
       console.error("Error deleting entry:", error);
       toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir o registro." });
@@ -458,11 +457,12 @@ export default function RegistroEntradaPage() {
   const handleClosePreview = () => {
     setIsPreviewModalOpen(false);
     setPreviewImageUrl(null);
-    const originPage = editingEntry?.status === 'aguardando_patio' ? '/aguardando-liberacao' : editingEntry?.status === 'entrada_liberada' ? '/veiculos-fabrica' : '/registro-entrada';
-    router.push(originPage);
     if (editingEntry) {
       setEditingEntry(null);
       form.reset();
+      router.back();
+    } else {
+      router.push('/registro-entrada');
     }
   };
 
