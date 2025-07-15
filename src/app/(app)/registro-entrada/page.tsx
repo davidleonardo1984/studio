@@ -14,10 +14,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, InternalDestination } from '@/lib/types';
-import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn, Edit2 } from 'lucide-react';
+import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn, Edit2, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, addDoc, Timestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, Timestamp, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +27,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -412,6 +413,25 @@ export default function RegistroEntradaPage() {
     }
   };
 
+  const handleDeleteEntry = async () => {
+    if (!editingEntry || !db || user?.role !== 'admin') {
+      toast({ variant: "destructive", title: "Não permitido", description: "Você não tem permissão para excluir este registro." });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
+      await deleteDoc(entryDocRef);
+      toast({ title: 'Registro Excluído!', description: `O registro do veículo ${editingEntry.plate1} foi removido.` });
+      router.push('/historico-acesso');
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir o registro." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
 
   const initiateNewEntryApproval = async () => {
     const isValid = await form.trigger();
@@ -721,46 +741,81 @@ export default function RegistroEntradaPage() {
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row justify-end gap-4 pt-6">
+        <CardFooter className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6">
             {editingEntry ? (
-              <>
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => router.back()}
-                    disabled={isSubmitting}
-                >
-                    Cancelar
-                </Button>
-                <Button
-                    onClick={form.handleSubmit(initiateEditActionDialog)}
-                    disabled={isSubmitting || dataLoading}
-                    className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
-                >
-                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit2 className="mr-2 h-4 w-4" />}
-                    Salvar Alterações
-                </Button>
-              </>
+                <>
+                    <div>
+                        {user?.role === 'admin' && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        disabled={isSubmitting}
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Excluir Registro
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Tem certeza que deseja excluir permanentemente o registro do veículo {editingEntry.plate1}? Esta ação não pode ser desfeita.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={handleDeleteEntry}
+                                            className="bg-destructive hover:bg-destructive/90"
+                                        >
+                                            Sim, Excluir
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => router.back()}
+                            disabled={isSubmitting}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={form.handleSubmit(initiateEditActionDialog)}
+                            disabled={isSubmitting || dataLoading}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit2 className="mr-2 h-4 w-4" />}
+                            Salvar Alterações
+                        </Button>
+                    </div>
+                </>
             ) : (
-              <>
-                <Button
-                    variant="outline"
-                    onClick={form.handleSubmit(data => handleFormSubmit(data, 'aguardando_patio'))}
-                    disabled={isSubmitting || dataLoading}
-                    className="w-full sm:w-auto"
-                >
-                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SendToBack className="mr-2 h-4 w-4" /> }
-                    Aguardar no Pátio
-                </Button>
-                <Button
-                    onClick={initiateNewEntryApproval}
-                    disabled={isSubmitting || dataLoading}
-                    className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
-                >
-                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
-                    Liberar Entrada e Imprimir
-                </Button>
-              </>
+                <div className="flex justify-end w-full gap-4">
+                    <Button
+                        variant="outline"
+                        onClick={form.handleSubmit(data => handleFormSubmit(data, 'aguardando_patio'))}
+                        disabled={isSubmitting || dataLoading}
+                        className="w-full sm:w-auto"
+                    >
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SendToBack className="mr-2 h-4 w-4" /> }
+                        Aguardar no Pátio
+                    </Button>
+                    <Button
+                        onClick={initiateNewEntryApproval}
+                        disabled={isSubmitting || dataLoading}
+                        className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
+                    >
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
+                        Liberar Entrada e Imprimir
+                    </Button>
+                </div>
             )}
         </CardFooter>
       </Card>
