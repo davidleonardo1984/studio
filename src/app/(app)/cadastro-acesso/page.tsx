@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -49,6 +49,10 @@ export default function CadastroAcessoPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
 
   // Redirect if not admin
   useEffect(() => {
@@ -104,6 +108,21 @@ export default function CadastroAcessoPage() {
     );
   }, [allUsersFromAuth, searchTerm]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, rowsPerPage]);
+  
+  const totalPages = useMemo(() => {
+    if (rowsPerPage === 0) return 1;
+    return Math.ceil(filteredUsers.length / rowsPerPage);
+  }, [filteredUsers.length, rowsPerPage]);
+
+  const paginatedUsers = useMemo(() => {
+    if (rowsPerPage === 0) return filteredUsers;
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return filteredUsers.slice(startIndex, endIndex);
+  }, [filteredUsers, currentPage, rowsPerPage]);
 
   const onSubmit = async (data: UserAccessFormData) => {
     setIsSubmitting(true);
@@ -338,7 +357,7 @@ export default function CadastroAcessoPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {isAuthLoading ? (
               <div className="flex justify-center py-4">
                   <Loader2 className="h-6 w-6 animate-spin" />
@@ -350,11 +369,11 @@ export default function CadastroAcessoPage() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Login</TableHead>
                     <TableHead>Perfil</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead className="text-right pr-6">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.map((u) => {
+                  {paginatedUsers.map((u) => {
                     const roleLabel = u.role === 'admin' ? 'Administrador' : u.role === 'gate_agent' ? 'Agente de Pátio' : u.role === 'exit_agent' ? 'Agente de Saída' : 'Usuário';
                     const roleClass = u.role === 'admin' ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground';
                     
@@ -363,7 +382,7 @@ export default function CadastroAcessoPage() {
                         <TableCell className="font-medium py-1">{u.name}</TableCell>
                         <TableCell className="py-1">{u.login}</TableCell>
                         <TableCell className="py-1"><span className={`px-2 py-1 text-xs rounded-full ${roleClass}`}>{roleLabel}</span></TableCell>
-                        <TableCell className="text-right space-x-1 py-1">
+                        <TableCell className="text-right space-x-1 py-1 pr-4">
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(u)} title="Editar" disabled={u.login === 'admin' && user?.login !== 'admin' /* Allow admin to edit self, but not other admins if any */}>
                             <Edit2 className="h-4 w-4 text-blue-600" />
                           </Button>
@@ -393,8 +412,50 @@ export default function CadastroAcessoPage() {
               <p className="text-muted-foreground text-center py-4">{searchTerm ? "Nenhum usuário encontrado com os termos da busca." : "Nenhum usuário cadastrado."}</p>
             )}
           </CardContent>
+           {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between py-4">
+              <div className="flex items-center space-x-2 text-sm">
+                <Select
+                    value={rowsPerPage.toString()}
+                    onValueChange={(value) => setRowsPerPage(Number(value))}
+                >
+                    <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Itens por página" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="10">10 por página</SelectItem>
+                        <SelectItem value="30">30 por página</SelectItem>
+                        <SelectItem value="50">50 por página</SelectItem>
+                        <SelectItem value="0">Todos</SelectItem>
+                    </SelectContent>
+                </Select>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Próxima
+                </Button>
+              </div>
+            </CardFooter>
+          )}
         </Card>
       )}
     </div>
   );
 }
+
