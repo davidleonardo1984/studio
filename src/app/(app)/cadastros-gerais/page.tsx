@@ -268,7 +268,7 @@ function PersonsSection() {
       <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Users className="w-6 h-6 text-primary" />
-          <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes</CardTitle>
+          <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes ({data.length})</CardTitle>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
             {!showForm && (
@@ -501,7 +501,7 @@ function TransportCompaniesSection() {
       <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Truck className="w-6 h-6 text-primary" />
-          <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras / Empresas</CardTitle>
+          <CardTitle className="text-xl font-semibold text-primary font-headline">Transportadoras / Empresas ({data.length})</CardTitle>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
             {!showForm && (
@@ -718,7 +718,7 @@ function InternalDestinationsSection() {
       <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <MapPin className="w-6 h-6 text-primary" />
-          <CardTitle className="text-xl font-semibold text-primary font-headline">Destinos Internos</CardTitle>
+          <CardTitle className="text-xl font-semibold text-primary font-headline">Destinos Internos ({data.length})</CardTitle>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
             {!showForm && (
@@ -847,8 +847,3 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
-
-    
-
-    
-
