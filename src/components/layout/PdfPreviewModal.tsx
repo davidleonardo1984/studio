@@ -45,6 +45,7 @@ export function DocumentPreviewModal({ isOpen, onClose, imageUrl }: DocumentPrev
         </html>
       `);
       printWindow.document.close();
+      onClose(); // Close the modal immediately after opening the print dialog
     }
   };
 
