@@ -75,6 +75,10 @@ export const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ 
         </div>
       </div>
 
+      <div style="margin-top: 25px; padding: 10px; text-align: center; border: 1px solid #c00; background-color: #fff5f5; border-radius: 4px;">
+        <p style="font-size: 12px; font-weight: bold; color: #c00; margin: 0;">Atenção: todo veículo que entrar para entrega de material deverá receber o carimbo de autorização de saída.</p>
+      </div>
+
       <p style="text-align: center; font-size: 9px; margin-top: 25px; color: #777;">Portaria Única RES - Romaneio de Entrada</p>
     </div>
   `;
