@@ -85,6 +85,7 @@ export default function HistoricoAcessoPage() {
     transportCompany: '',
     driverName: '',
     plate: '',
+    observation: '',
     dateRange: undefined as DateRange | undefined,
   });
   const [hasSearched, setHasSearched] = useState(false);
@@ -128,7 +129,7 @@ export default function HistoricoAcessoPage() {
         const querySnapshot = await getDocs(q);
         let allEntries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
 
-        const { dateRange, driverName, transportCompany, plate } = filters;
+        const { dateRange, driverName, transportCompany, plate, observation } = filters;
 
         const filteredResults = allEntries.filter(entry => {
             const arrivalDate = (entry.arrivalTimestamp as any).toDate 
@@ -171,6 +172,14 @@ export default function HistoricoAcessoPage() {
                     (entry.plate3 && entry.plate3.toLowerCase().includes(plateSearchTerm));
                 if (!plateMatch) return false;
             }
+
+            // Observation Filter (Substring Match)
+            if (observation.trim()) {
+                const observationSearchTerm = observation.trim().toLowerCase();
+                const observationMatch = entry.observation && entry.observation.toLowerCase().includes(observationSearchTerm);
+                if (!observationMatch) return false;
+            }
+
 
             return true; // Entry passes all filters
         });
@@ -327,7 +336,7 @@ export default function HistoricoAcessoPage() {
   };
 
   const resetFilters = () => {
-    setFilters({ transportCompany: '', driverName: '', plate: '', dateRange: undefined });
+    setFilters({ transportCompany: '', driverName: '', plate: '', observation: '', dateRange: undefined });
     setFilteredEntries([]);
     setHasSearched(false);
   };
@@ -388,7 +397,7 @@ export default function HistoricoAcessoPage() {
           <CardTitle className="text-xl font-semibold text-primary">Filtros e Ações</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
             <div className="space-y-1">
               <Label htmlFor="driverNameFilter">Nome do Motorista / Ajudante</Label>
                <div className="relative">
@@ -432,6 +441,12 @@ export default function HistoricoAcessoPage() {
             <div className="space-y-1">
               <Label htmlFor="plateFilter">Placa</Label>
               <Input id="plateFilter" placeholder="FILTRAR POR PLACA..." value={filters.plate} onChange={(e) => setFilters(prev => ({...prev, plate: e.target.value}))} autoComplete="off" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+             <div className="space-y-1 lg:col-span-2">
+              <Label htmlFor="observationFilter">Observação</Label>
+              <Input id="observationFilter" placeholder="FILTRAR POR TEXTO NA OBSERVAÇÃO..." value={filters.observation} onChange={(e) => setFilters(prev => ({...prev, observation: e.target.value}))} autoComplete="off" />
             </div>
             <div className="space-y-1">
               <Label>Período de Chegada</Label>
@@ -575,5 +590,6 @@ export default function HistoricoAcessoPage() {
     
 
     
+
 
 
