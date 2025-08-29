@@ -89,6 +89,7 @@ export default function HistoricoAcessoPage() {
     dateRange: undefined as DateRange | undefined,
   });
   const [hasSearched, setHasSearched] = useState(false);
+  const [showObservationColumn, setShowObservationColumn] = useState(false);
 
   useEffect(() => {
     if (!db) {
@@ -121,6 +122,9 @@ export default function HistoricoAcessoPage() {
     if (!db) return;
     setIsSearching(true);
     setHasSearched(true);
+    
+    const { dateRange, driverName, transportCompany, plate, observation } = filters;
+    setShowObservationColumn(observation.trim() !== '');
 
     try {
         // Fetch all entries ordered by date. Filtering is done client-side.
@@ -129,7 +133,6 @@ export default function HistoricoAcessoPage() {
         const querySnapshot = await getDocs(q);
         let allEntries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
 
-        const { dateRange, driverName, transportCompany, plate, observation } = filters;
 
         const filteredResults = allEntries.filter(entry => {
             const arrivalDate = (entry.arrivalTimestamp as any).toDate 
@@ -339,6 +342,7 @@ export default function HistoricoAcessoPage() {
     setFilters({ transportCompany: '', driverName: '', plate: '', observation: '', dateRange: undefined });
     setFilteredEntries([]);
     setHasSearched(false);
+    setShowObservationColumn(false);
   };
   
   const handleClosePreview = () => {
@@ -516,7 +520,7 @@ export default function HistoricoAcessoPage() {
                         <TableHead>MOTORISTA</TableHead>
                         <TableHead>TRANSPORTADORA / EMPRESA</TableHead>
                         <TableHead>PLACA 1</TableHead>
-                        <TableHead>OBSERVAÇÃO</TableHead>
+                        {showObservationColumn && <TableHead>OBSERVAÇÃO</TableHead>}
                         <TableHead>CHEGADA</TableHead>
                         <TableHead>LIBERAÇÃO</TableHead>
                         <TableHead>SAÍDA</TableHead>
@@ -533,7 +537,7 @@ export default function HistoricoAcessoPage() {
                           <TableCell className="py-1">{entry.driverName}</TableCell>
                           <TableCell className="py-1">{entry.transportCompanyName}</TableCell>
                           <TableCell className="py-1">{entry.plate1}</TableCell>
-                          <TableCell className="max-w-[200px] truncate py-1" title={entry.observation}>{entry.observation || '-'}</TableCell>
+                          {showObservationColumn && <TableCell className="max-w-[200px] truncate py-1" title={entry.observation}>{entry.observation || '-'}</TableCell>}
                           <TableCell className="py-1">{formatDate(entry.arrivalTimestamp)}</TableCell>
                           <TableCell className="py-1">{formatDate(entry.liberationTimestamp)}</TableCell>
                           <TableCell className="py-1">{formatDate(entry.exitTimestamp)}</TableCell>
@@ -584,11 +588,3 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
-
-    
-
-    
-
-
-
-
