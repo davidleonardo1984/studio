@@ -90,6 +90,7 @@ export default function HistoricoAcessoPage() {
   });
   const [hasSearched, setHasSearched] = useState(false);
   const [showObservationColumn, setShowObservationColumn] = useState(false);
+  const [showAllPlateColumns, setShowAllPlateColumns] = useState(false);
 
   useEffect(() => {
     if (!db) {
@@ -125,6 +126,7 @@ export default function HistoricoAcessoPage() {
     
     const { dateRange, driverName, transportCompany, plate, observation } = filters;
     setShowObservationColumn(observation.trim() !== '');
+    setShowAllPlateColumns(plate.trim() !== '');
 
     try {
         // Fetch all entries ordered by date. Filtering is done client-side.
@@ -343,6 +345,7 @@ export default function HistoricoAcessoPage() {
     setFilteredEntries([]);
     setHasSearched(false);
     setShowObservationColumn(false);
+    setShowAllPlateColumns(false);
   };
   
   const handleClosePreview = () => {
@@ -520,6 +523,8 @@ export default function HistoricoAcessoPage() {
                         <TableHead>MOTORISTA</TableHead>
                         <TableHead>TRANSPORTADORA / EMPRESA</TableHead>
                         <TableHead>PLACA 1</TableHead>
+                        {showAllPlateColumns && <TableHead>PLACA 2</TableHead>}
+                        {showAllPlateColumns && <TableHead>PLACA 3</TableHead>}
                         {showObservationColumn && <TableHead>OBSERVAÇÃO</TableHead>}
                         <TableHead>CHEGADA</TableHead>
                         <TableHead>LIBERAÇÃO</TableHead>
@@ -537,6 +542,8 @@ export default function HistoricoAcessoPage() {
                           <TableCell className="py-1">{entry.driverName}</TableCell>
                           <TableCell className="py-1">{entry.transportCompanyName}</TableCell>
                           <TableCell className="py-1">{entry.plate1}</TableCell>
+                          {showAllPlateColumns && <TableCell className="py-1">{entry.plate2 || '-'}</TableCell>}
+                          {showAllPlateColumns && <TableCell className="py-1">{entry.plate3 || '-'}</TableCell>}
                           {showObservationColumn && <TableCell className="max-w-[200px] truncate py-1" title={entry.observation}>{entry.observation || '-'}</TableCell>}
                           <TableCell className="py-1">{formatDate(entry.arrivalTimestamp)}</TableCell>
                           <TableCell className="py-1">{formatDate(entry.liberationTimestamp)}</TableCell>
@@ -588,3 +595,4 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
+
