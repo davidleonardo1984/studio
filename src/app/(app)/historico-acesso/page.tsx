@@ -340,6 +340,17 @@ export default function HistoricoAcessoPage() {
     }
   };
 
+  const handlePlateFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    const input = val.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    let formatted = input.substring(0, 7);
+
+    if (formatted.length > 3) {
+      formatted = formatted.slice(0, 3) + '-' + formatted.slice(3);
+    }
+    setFilters(prev => ({...prev, plate: formatted}));
+  };
+
   const resetFilters = () => {
     setFilters({ transportCompany: '', driverName: '', plate: '', observation: '', dateRange: undefined });
     setFilteredEntries([]);
@@ -447,7 +458,15 @@ export default function HistoricoAcessoPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="plateFilter">Placa</Label>
-              <Input id="plateFilter" placeholder="FILTRAR POR PLACA..." value={filters.plate} onChange={(e) => setFilters(prev => ({...prev, plate: e.target.value}))} autoComplete="off" />
+              <Input
+                id="plateFilter"
+                placeholder="FILTRAR POR PLACA..."
+                value={filters.plate}
+                onChange={handlePlateFilterChange}
+                maxLength={8}
+                noAutoUppercase
+                autoComplete="off"
+              />
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
@@ -595,4 +614,3 @@ export default function HistoricoAcessoPage() {
     </>
   );
 }
-
