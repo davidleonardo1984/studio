@@ -64,16 +64,21 @@ export const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ 
 
       <hr style="margin-top: 15px; margin-bottom: 10px; border: 0; border-top: 1px solid #eee;" />
       
-      <div style="margin-top: 20px; font-size: 11px; page-break-inside: avoid; border: 1px solid #ddd; padding: 15px 10px; border-radius: 4px;">
-        <div style="display: inline-block; width: 45%; margin-right: 5%;">
-          <p style="text-align: center; margin: 0 0 40px 0;">Assinatura Responsável</p>
-          <hr style="border: 0; border-top: 1px solid #333; margin-bottom: 0;" />
+      <div style="margin-top: 20px; font-size: 11px; page-break-inside: avoid; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;">
+        <div style="width: 32%; text-align: center;">
+            <p style="margin: 0 0 40px 0;">Assinatura Responsável</p>
+            <hr style="border: 0; border-top: 1px solid #333;" />
         </div>
-        <div style="display: inline-block; width: 45%;">
-          <p style="text-align: center; margin: 0 0 40px 0;">Registro</p>
-          <hr style="border: 0; border-top: 1px solid #333; margin-bottom: 0;" />
+        <div style="width: 32%; text-align: center;">
+            <p style="margin: 0 0 40px 0;">Registro</p>
+            <hr style="border: 0; border-top: 1px solid #333;" />
         </div>
-      </div>
+        <div style="width: 32%; text-align: center;">
+            <div style="border: 2px dotted #000; height: 50px; margin-bottom: 5px;"></div>
+            <p style="margin: 0;">Carimbo</p>
+        </div>
+    </div>
+
 
       <div style="margin-top: 25px; padding: 10px; text-align: center; border: 1px solid #000; background-color: #f0f0f0; border-radius: 4px;">
         <p style="font-size: 12px; font-weight: bold; color: #000; margin: 0;">Atenção: todo veículo que entrar para entrega de material deverá receber o carimbo de autorização de saída.</p>
