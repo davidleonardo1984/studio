@@ -73,8 +73,8 @@ export const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ 
             <p style="margin: 0 0 40px 0;">Registro</p>
             <hr style="border: 0; border-top: 1px solid #333;" />
         </div>
-        <div style="width: 32%; text-align: center;">
-            <div style="border: 2px dotted #000; height: 50px; margin-bottom: 5px;"></div>
+        <div style="width: 32%; text-align: center; display: flex; flex-direction: column; justify-content: flex-end; align-items: center;">
+            <div style="border: 2px dotted #000; height: 80px; width: 80px; margin-bottom: 5px;"></div>
             <p style="margin: 0;">Carimbo</p>
         </div>
     </div>
