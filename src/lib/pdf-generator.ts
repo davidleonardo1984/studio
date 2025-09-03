@@ -20,10 +20,9 @@ export const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ 
       <h2 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 20px;">ROMANEIO DE ENTRADA</h2>
       <div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: center; height: 100px; margin-bottom: 15px; border: 2px dashed #333; background-color: #f9f9f9; padding: 0 15px 0 15px;">
         <p style="font-family: 'Libre Barcode 39 Text', 'Code 39', 'Courier New', monospace; font-size: 48px; text-align: center; margin: 0; color: #000; line-height: 0.9;">*${entry.barcode}*</p>
-        <p style="font-size: 9px; text-align: center; margin: 2px 0 0 0; color: #555;">(CÓDIGO DE BARRAS)</p>
       </div>
 
-      <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; line-height: 1.4; display: flex; align-items: center;">
+      <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 10px; line-height: 1.4; display: flex; align-items: center;">
         <div style="display: inline-block; width: 48%; margin-right: 2%; vertical-align: middle;">
           <p style="margin: 0 0 3px 0; font-weight: bold;">Data/Hora Chegada:</p>
           <p style="margin: 0;">${formatDateForImage(entry.arrivalTimestamp)}</p>
@@ -35,7 +34,7 @@ export const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ 
       </div>
 
       <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
-        <div style="display: flex; justify-content: space-between; font-size: 11px; line-height: 1.5;">
+        <div style="display: flex; justify-content: space-between; font-size: 10px; line-height: 1.5;">
           <div style="width: 55%;">
             <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Motorista:</span> ${entry.driverName}</p>
             ${entry.assistant1Name ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Ajudante 1:</span> ${entry.assistant1Name}</p>` : ''}
@@ -51,13 +50,13 @@ export const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ 
           </div>
         </div>
         
-        <div style="font-size: 11px; line-height: 1.5; margin-top: 5px;">
+        <div style="font-size: 10px; line-height: 1.5; margin-top: 5px;">
           ${entry.observation ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; display: block;">Observação:</span> ${entry.observation}</p>` : ''}
         </div>
       </div>
       
       ${entry.liberatedBy ? `
-      <div style="border: 1px solid #ddd; padding: 8px 10px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; margin-top: 5px;">
+      <div style="border: 1px solid #ddd; padding: 8px 10px; margin-bottom: 15px; border-radius: 4px; font-size: 10px; margin-top: 5px;">
         <p style="margin: 0;"><span style="font-weight: bold;">LIBERADO POR:</span> ${entry.liberatedBy.toUpperCase()}</p>
       </div>
       ` : ''}
@@ -74,7 +73,7 @@ export const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ 
             <hr style="border: 0; border-top: 1px solid #333;" />
         </div>
         <div style="width: 32%; text-align: center; display: flex; flex-direction: column; justify-content: flex-end; align-items: center;">
-            <div style="border: 2px dotted #000; height: 120px; width: 120px; margin-bottom: 5px;"></div>
+            <div style="border: 2px dotted #000; height: 110px; width: 110px; margin-bottom: 5px;"></div>
             <p style="margin: 0;">Carimbo</p>
         </div>
     </div>
