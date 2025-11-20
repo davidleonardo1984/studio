@@ -30,7 +30,8 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { format, parse } from 'date-fns';
+import { format, parse, isBefore, startOfDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 
 // Schemas for forms
@@ -123,7 +124,7 @@ function PersonsSection() {
 
   useEffect(() => {
     if (editingItem) {
-      form.reset({ name: editingItem.name, cpf: editingItem.cpf, cnh: editingItem.cnh, cnhExpirationDate: editingItem.cnhExpirationDate, phone: editingItem.phone, isBlocked: editingItem.isBlocked || false });
+      form.reset({ name: editingItem.name, cpf: editingItem.cpf, cnh: editingItem.cnh, cnhExpirationDate: editingItem.cnhExpirationDate || '', phone: editingItem.phone || '', isBlocked: editingItem.isBlocked || false });
       setShowForm(true);
     } else {
       form.reset({ name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false });
@@ -303,6 +304,16 @@ function PersonsSection() {
         return dateString; // fallback to original string if parsing fails
     }
   };
+  
+    const isCnhExpired = (dateString: string | undefined): boolean => {
+      if (!dateString) return false;
+      try {
+        const expirationDate = parse(dateString, 'yyyy-MM-dd', new Date());
+        return isBefore(expirationDate, startOfDay(new Date()));
+      } catch (e) {
+        return false;
+      }
+    };
 
 
   return (
@@ -385,7 +396,9 @@ function PersonsSection() {
                           <TableCell className="py-1">{item.name}</TableCell>
                           <TableCell className="py-1">{item.cpf}</TableCell>
                           <TableCell className="py-1">{item.cnh || 'N/A'}</TableCell>
-                          <TableCell className="py-1">{formatDateString(item.cnhExpirationDate)}</TableCell>
+                          <TableCell className={cn("py-1", isCnhExpired(item.cnhExpirationDate) && "text-destructive font-bold")}>
+                            {formatDateString(item.cnhExpirationDate)}
+                          </TableCell>
                           <TableCell className="py-1">{item.phone ? formatDisplayPhoneNumber(item.phone) : 'N/A'}</TableCell>
                           <TableCell className="text-right space-x-2 py-1">
                               <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); }}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
@@ -892,3 +905,5 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
+
+    
