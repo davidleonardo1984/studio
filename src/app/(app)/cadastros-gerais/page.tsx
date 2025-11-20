@@ -30,6 +30,8 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { DatePicker } from '@/components/ui/date-picker';
+import { format } from 'date-fns';
 
 
 // Schemas for forms
@@ -37,6 +39,7 @@ const personSchema = z.object({
   name: z.string().min(3, 'Nome é obrigatório (mín. 3 caracteres).'),
   cpf: z.string().length(11, 'CPF deve ter 11 dígitos.').regex(/^\d+$/, 'CPF deve conter apenas números.'),
   cnh: z.string().optional(),
+  cnhExpirationDate: z.string().optional(),
   phone: z.string().optional(),
   isBlocked: z.boolean().default(false).optional(),
 });
@@ -89,8 +92,10 @@ function PersonsSection() {
 
   const form = useForm<PersonFormData>({
     resolver: zodResolver(personSchema),
-    defaultValues: { name: '', cpf: '', cnh: '', phone: '', isBlocked: false },
+    defaultValues: { name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false },
   });
+  
+  const cnhValue = form.watch('cnh');
   
   if (!db) {
       return <FirebaseErrorDisplay />;
@@ -119,14 +124,14 @@ function PersonsSection() {
 
   useEffect(() => {
     if (editingItem) {
-      form.reset({ name: editingItem.name, cpf: editingItem.cpf, cnh: editingItem.cnh, phone: editingItem.phone, isBlocked: editingItem.isBlocked || false });
+      form.reset({ name: editingItem.name, cpf: editingItem.cpf, cnh: editingItem.cnh, cnhExpirationDate: editingItem.cnhExpirationDate, phone: editingItem.phone, isBlocked: editingItem.isBlocked || false });
       setShowForm(true);
     } else {
-      form.reset({ name: '', cpf: '', cnh: '', phone: '', isBlocked: false });
+      form.reset({ name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false });
     }
   }, [editingItem, form]);
 
-  const onSubmit = async (formData: NewDriver) => {
+  const onSubmit = async (formData: PersonFormData) => {
     setIsSubmitting(true);
     try {
         // Check for duplicates
@@ -148,13 +153,18 @@ function PersonsSection() {
             return;
         }
 
+        const dataToSave = {
+            ...formData,
+            cnhExpirationDate: formData.cnhExpirationDate ? format(new Date(formData.cnhExpirationDate), 'yyyy-MM-dd') : '',
+        };
+
 
         if (editingItem) {
             const itemDoc = doc(db, 'persons', editingItem.id);
-            await updateDoc(itemDoc, formData);
+            await updateDoc(itemDoc, dataToSave);
             toast({ title: "Pessoa atualizada!", description: `${formData.name} foi atualizado com sucesso.` });
         } else {
-            await addDoc(personsCollection, formData);
+            await addDoc(personsCollection, dataToSave);
             toast({ title: "Pessoa cadastrada!", description: `${formData.name} foi cadastrado com sucesso.` });
         }
         await refreshData();
@@ -212,12 +222,28 @@ function PersonsSection() {
       }
       fieldOnChange(rawValue);
   };
-
+  
   const formFields = (form: any) => (
-     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} maxLength={11} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+       {cnhValue && (
+        <FormField
+          control={form.control}
+          name="cnhExpirationDate"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Vencimento CNH</FormLabel>
+              <DatePicker
+                date={field.value ? new Date(field.value) : undefined}
+                onDateChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+              />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
       <FormField
         control={form.control}
         name="phone"
@@ -242,7 +268,7 @@ function PersonsSection() {
         control={form.control}
         name="isBlocked"
         render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card md:col-span-2">
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card md:col-span-1 lg:col-span-3">
                 <div className="space-y-0.5">
                     <FormLabel>Bloquear Acesso</FormLabel>
                     <FormDescription>
@@ -326,7 +352,7 @@ function PersonsSection() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Status</TableHead>
-                      <TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>CNH</TableHead><TableHead>Telefone</TableHead>
+                      <TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>CNH</TableHead><TableHead>Venc. CNH</TableHead><TableHead>Telefone</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -343,6 +369,7 @@ function PersonsSection() {
                           <TableCell className="py-1">{item.name}</TableCell>
                           <TableCell className="py-1">{item.cpf}</TableCell>
                           <TableCell className="py-1">{item.cnh || 'N/A'}</TableCell>
+                          <TableCell className="py-1">{item.cnhExpirationDate ? format(new Date(item.cnhExpirationDate), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                           <TableCell className="py-1">{item.phone ? formatDisplayPhoneNumber(item.phone) : 'N/A'}</TableCell>
                           <TableCell className="text-right space-x-2 py-1">
                               <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); }}><Edit2 className="h-4 w-4 text-blue-600" /></Button>

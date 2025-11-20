@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -33,6 +33,7 @@ import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { generateVehicleEntryImage } from '@/lib/pdf-generator';
+import { isAfter, parseISO } from 'date-fns';
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -81,6 +82,9 @@ export default function RegistroEntradaPage() {
   const [persons, setPersons] = useState<Driver[]>([]);
   const [internalDestinations, setInternalDestinations] = useState<InternalDestination[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+
+  const [isCnhAlertOpen, setIsCnhAlertOpen] = useState(false);
+  const [expiredDriver, setExpiredDriver] = useState<Driver | null>(null);
   
   const entrySchema = useMemo(() => {
     const personMap = new Map(persons.map(p => [p.name.toLowerCase(), p]));
@@ -134,6 +138,26 @@ export default function RegistroEntradaPage() {
       observation: '',
     },
   });
+
+  const handleDriverBlur = useCallback(() => {
+    const driverName = form.getValues('driverName');
+    if (!driverName) return;
+
+    const driver = persons.find(p => p.name.toLowerCase() === driverName.toLowerCase());
+    
+    if (driver?.cnh && driver.cnhExpirationDate) {
+      // Add one day to the expiration date to make the comparison correct
+      const expirationDate = parseISO(driver.cnhExpirationDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Normalize today's date
+
+      if (isAfter(today, expirationDate)) {
+        setExpiredDriver(driver);
+        setIsCnhAlertOpen(true);
+      }
+    }
+  }, [form, persons]);
+
 
   const handlePlateChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (value: string) => void) => {
     const val = e.target.value;
@@ -526,6 +550,7 @@ export default function RegistroEntradaPage() {
                             <Input
                                 placeholder={dataLoading ? "CARREGANDO..." : "Digite o nome do motorista"}
                                 {...field}
+                                onBlur={handleDriverBlur}
                                 disabled={dataLoading || isSubmitting}
                                 list="driver-list"
                                 autoComplete="off"
@@ -894,6 +919,30 @@ export default function RegistroEntradaPage() {
                     </Button>
                 </AlertDialogFooter>
             )}
+        </AlertDialogContent>
+    </AlertDialog>
+    
+    <AlertDialog open={isCnhAlertOpen} onOpenChange={setIsCnhAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="text-destructive" />
+                    CNH Vencida
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                    A CNH do motorista <strong>{expiredDriver?.name}</strong> está vencida desde {expiredDriver?.cnhExpirationDate ? new Date(expiredDriver.cnhExpirationDate).toLocaleDateString('pt-BR') : 'N/A'}. 
+                    Deseja atualizar a data de vencimento agora ou continuar com o registro?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => {
+                    router.push('/cadastros-gerais');
+                    setIsCnhAlertOpen(false);
+                }}>
+                    Atualizar Dados
+                </AlertDialogAction>
+                <AlertDialogCancel onClick={() => setIsCnhAlertOpen(false)}>Manter e Continuar</AlertDialogCancel>
+            </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
 

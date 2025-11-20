@@ -19,6 +19,7 @@ export interface Driver {
   name:string;
   cpf: string;
   cnh?: string;
+  cnhExpirationDate?: string;
   phone?: string;
   isBlocked?: boolean;
 }
