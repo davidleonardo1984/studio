@@ -43,6 +43,14 @@ const personSchema = z.object({
   cnhExpirationDate: z.string().optional(),
   phone: z.string().optional(),
   isBlocked: z.boolean().default(false).optional(),
+}).refine(data => {
+    if (data.cnh && data.cnh.trim() !== '') {
+        return data.cnhExpirationDate && data.cnhExpirationDate.trim() !== '';
+    }
+    return true;
+}, {
+    message: 'Vencimento da CNH é obrigatório quando a CNH é preenchida.',
+    path: ['cnhExpirationDate'],
 });
 type PersonFormData = z.infer<typeof personSchema>;
 
@@ -936,5 +944,7 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
+
+    
 
     
