@@ -30,8 +30,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { DatePicker } from '@/components/ui/date-picker';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 
 
 // Schemas for forms
@@ -155,7 +154,7 @@ function PersonsSection() {
 
         const dataToSave = {
             ...formData,
-            cnhExpirationDate: formData.cnhExpirationDate ? format(new Date(formData.cnhExpirationDate), 'yyyy-MM-dd') : '',
+            cnhExpirationDate: formData.cnhExpirationDate || '',
         };
 
 
@@ -234,14 +233,14 @@ function PersonsSection() {
           control={form.control}
           name="cnhExpirationDate"
           render={({ field }) => (
-            <FormItem className="flex flex-col">
+            <FormItem className="flex flex-col h-full justify-end">
               <FormLabel>Vencimento CNH</FormLabel>
-              <DatePicker
-                date={field.value ? new Date(field.value) : undefined}
-                onDateChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-              />
-              <FormMessage />
-            </FormItem>
+                <FormControl>
+                    <Input type="date" {...field} />
+                </FormControl>
+            <FormMessage />
+          </FormItem>
+
           )}
         />
       )}
@@ -250,20 +249,21 @@ function PersonsSection() {
         control={form.control}
         name="phone"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>Telefone (Opcional)</FormLabel>
-            <FormControl>
-              <Input
-                placeholder="(XX) XXXXX-XXXX"
-                {...field}
-                value={formatDisplayPhoneNumber(field.value || "")}
-                onChange={(e) => handlePhoneChange(e, field.onChange)}
-                type="tel"
-                autoComplete="off"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+          <FormItem className="flex flex-col justify-end">
+          <FormLabel>Telefone (Opcional)</FormLabel>
+          <FormControl>
+            <Input
+              placeholder="(XX) XXXXX-XXXX"
+              {...field}
+              value={formatDisplayPhoneNumber(field.value || "")}
+              onChange={(e) => handlePhoneChange(e, field.onChange)}
+              type="tel"
+              autoComplete="off"
+            />
+          </FormControl>
+          <FormMessage />
+      </FormItem>
+
         )}
       />
 
@@ -291,6 +291,18 @@ function PersonsSection() {
         />
     </div>
   );
+
+  const formatDateString = (dateString: string | undefined): string => {
+    if (!dateString) return 'N/A';
+    try {
+        // Assuming dateString is 'YYYY-MM-DD'
+        const date = parse(dateString, 'yyyy-MM-dd', new Date());
+        return format(date, 'dd/MM/yyyy');
+    } catch (e) {
+        return dateString; // fallback to original string if parsing fails
+    }
+  };
+
 
   return (
     <Card className="shadow-lg">
@@ -372,7 +384,7 @@ function PersonsSection() {
                           <TableCell className="py-1">{item.name}</TableCell>
                           <TableCell className="py-1">{item.cpf}</TableCell>
                           <TableCell className="py-1">{item.cnh || 'N/A'}</TableCell>
-                          <TableCell className="py-1">{item.cnhExpirationDate ? format(new Date(item.cnhExpirationDate), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                          <TableCell className="py-1">{formatDateString(item.cnhExpirationDate)}</TableCell>
                           <TableCell className="py-1">{item.phone ? formatDisplayPhoneNumber(item.phone) : 'N/A'}</TableCell>
                           <TableCell className="text-right space-x-2 py-1">
                               <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); }}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
