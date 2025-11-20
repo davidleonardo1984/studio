@@ -356,13 +356,9 @@ function PersonsSection() {
           <Users className="w-6 h-6 text-primary" />
           <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes ({data.length})</CardTitle>
         </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
             {!showForm && (
-                <div className="flex w-full flex-col sm:flex-row items-start sm:items-center gap-2">
-                    <div className="flex items-center space-x-2">
-                        <Switch id="show-blocked" checked={showBlocked} onCheckedChange={setShowBlocked} />
-                        <Label htmlFor="show-blocked">Mostrar bloqueados</Label>
-                    </div>
+                <div className="flex w-full flex-col sm:flex-row items-center gap-2">
                     <Input 
                         placeholder="Pesquisar ou '*' para todos"
                         value={searchTerm}
@@ -371,6 +367,10 @@ function PersonsSection() {
                         className="w-full sm:w-auto"
                         autoComplete="off"
                     />
+                    <div className="flex items-center space-x-2">
+                        <Switch id="show-blocked" checked={showBlocked} onCheckedChange={setShowBlocked} />
+                        <Label htmlFor="show-blocked">Mostrar bloqueados</Label>
+                    </div>
                 </div>
             )}
             {showForm ? (
