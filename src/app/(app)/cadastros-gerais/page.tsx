@@ -237,7 +237,7 @@ function PersonsSection() {
             <FormItem className="flex flex-col h-full justify-end">
               <FormLabel>Vencimento CNH</FormLabel>
                 <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" {...field} value={field.value ?? ''} />
                 </FormControl>
             <FormMessage />
           </FormItem>
