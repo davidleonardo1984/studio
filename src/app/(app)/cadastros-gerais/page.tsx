@@ -228,7 +228,8 @@ function PersonsSection() {
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} maxLength={11} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
-       {cnhValue && (
+      
+      {cnhValue && (
         <FormField
           control={form.control}
           name="cnhExpirationDate"
@@ -244,6 +245,7 @@ function PersonsSection() {
           )}
         />
       )}
+      
       <FormField
         control={form.control}
         name="phone"
@@ -264,6 +266,7 @@ function PersonsSection() {
           </FormItem>
         )}
       />
+
       <FormField
         control={form.control}
         name="isBlocked"
