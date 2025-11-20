@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, InternalDestination } from '@/lib/types';
-import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn, Edit2, Trash2 } from 'lucide-react';
+import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn, Edit2, Trash2, Save } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy, addDoc, Timestamp, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
@@ -33,7 +33,7 @@ import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { generateVehicleEntryImage } from '@/lib/pdf-generator';
-import { isAfter, parseISO } from 'date-fns';
+import { isAfter, parseISO, format } from 'date-fns';
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -85,6 +85,8 @@ export default function RegistroEntradaPage() {
 
   const [isCnhAlertOpen, setIsCnhAlertOpen] = useState(false);
   const [expiredDriver, setExpiredDriver] = useState<Driver | null>(null);
+  const [showCnhUpdate, setShowCnhUpdate] = useState(false);
+  const [newCnhExpirationDate, setNewCnhExpirationDate] = useState('');
   
   const entrySchema = useMemo(() => {
     const personMap = new Map(persons.map(p => [p.name.toLowerCase(), p]));
@@ -140,6 +142,7 @@ export default function RegistroEntradaPage() {
   });
 
   const handleDriverBlur = useCallback(() => {
+    if (showCnhUpdate) return;
     const driverName = form.getValues('driverName');
     if (!driverName) return;
 
@@ -156,7 +159,7 @@ export default function RegistroEntradaPage() {
         setIsCnhAlertOpen(true);
       }
     }
-  }, [form, persons]);
+  }, [form, persons, showCnhUpdate]);
 
 
   const handlePlateChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (value: string) => void) => {
@@ -259,6 +262,31 @@ export default function RegistroEntradaPage() {
       setLiberatedByName('');
     }
   }, [isDialogOpen]);
+  
+  const handleUpdateCnhDate = async () => {
+    if (!expiredDriver || !newCnhExpirationDate || !db) return;
+    setIsSubmitting(true);
+    try {
+        const driverDocRef = doc(db, 'persons', expiredDriver.id);
+        await updateDoc(driverDocRef, { cnhExpirationDate: newCnhExpirationDate });
+        
+        // Update local state to avoid re-triggering alert
+        setPersons(prev => prev.map(p => 
+            p.id === expiredDriver.id ? { ...p, cnhExpirationDate: newCnhExpirationDate } : p
+        ));
+        
+        toast({ title: "Sucesso!", description: `Vencimento da CNH de ${expiredDriver.name} atualizado.` });
+        setShowCnhUpdate(false);
+        setExpiredDriver(null);
+        setNewCnhExpirationDate('');
+    } catch(error) {
+        console.error("Error updating CNH date:", error);
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível atualizar a data da CNH." });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
 
   const handleFormSubmit = async (data: VehicleEntryFormData, status: 'aguardando_patio' | 'entrada_liberada', liberatedBy?: string) => {
     if (!user || !db) {
@@ -590,6 +618,38 @@ export default function RegistroEntradaPage() {
                   )}
                 />
               </div>
+
+               {showCnhUpdate && expiredDriver && (
+                <Card className="p-4 border-amber-400 bg-amber-50">
+                    <Label className="font-semibold text-amber-800">Atualizar CNH Vencida de {expiredDriver.name}</Label>
+                     <div className="flex items-center gap-2 mt-2">
+                        <Input 
+                            type="date"
+                            value={newCnhExpirationDate}
+                            onChange={(e) => setNewCnhExpirationDate(e.target.value)}
+                        />
+                        <Button 
+                            size="sm" 
+                            onClick={handleUpdateCnhDate} 
+                            disabled={isSubmitting || !newCnhExpirationDate}
+                            className="bg-amber-600 hover:bg-amber-700"
+                        >
+                            <Save className="mr-2 h-4 w-4" /> Salvar
+                        </Button>
+                        <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => {
+                                setShowCnhUpdate(false);
+                                setNewCnhExpirationDate('');
+                                setExpiredDriver(null);
+                            }}
+                        >
+                            Cancelar
+                        </Button>
+                    </div>
+                </Card>
+              )}
 
               <Button type="button" variant="outline" size="sm" onClick={() => setShowAssistants(!showAssistants)} disabled={isSubmitting}>
                 {showAssistants ? 'Ocultar' : 'Adicionar'} Ajudantes
@@ -936,7 +996,8 @@ export default function RegistroEntradaPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogAction onClick={() => {
-                    router.push('/cadastros-gerais');
+                    setShowCnhUpdate(true);
+                    setNewCnhExpirationDate(format(new Date(), 'yyyy-MM-dd'));
                     setIsCnhAlertOpen(false);
                 }}>
                     Atualizar Dados
@@ -955,3 +1016,5 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
+
+    
