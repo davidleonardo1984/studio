@@ -89,6 +89,7 @@ function PersonsSection() {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<Driver | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showBlocked, setShowBlocked] = useState(false);
 
   const form = useForm<PersonFormData>({
     resolver: zodResolver(personSchema),
@@ -192,14 +193,17 @@ function PersonsSection() {
   };
   
   const filteredData = useMemo(() => {
-    if (searchTerm.trim() === '*') return data;
+    const baseData = showBlocked ? data : data.filter(p => !p.isBlocked);
+
+    if (searchTerm.trim() === '*') return baseData;
     if (!searchTerm.trim()) return [];
+    
     const lowercasedTerm = searchTerm.toLowerCase();
-    return data.filter(person => 
+    return baseData.filter(person => 
       person.name.toLowerCase().includes(lowercasedTerm) ||
       person.cpf.includes(lowercasedTerm)
     );
-  }, [data, searchTerm]);
+  }, [data, searchTerm, showBlocked]);
 
   const formatDisplayPhoneNumber = (val: string): string => {
       if (typeof val !== 'string' || !val) return "";
@@ -228,7 +232,7 @@ function PersonsSection() {
      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} maxLength={11} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
-      <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+      <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} value={field.value ?? ''} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
       
       {cnhValue && (
         <FormField
@@ -323,16 +327,22 @@ function PersonsSection() {
           <Users className="w-6 h-6 text-primary" />
           <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes ({data.length})</CardTitle>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
             {!showForm && (
-                <Input 
-                    placeholder="Pesquisar ou '*' para todos"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                    className="w-full sm:w-auto"
-                    autoComplete="off"
-                />
+                <div className="flex w-full flex-col sm:flex-row items-start sm:items-center gap-2">
+                    <Input 
+                        placeholder="Pesquisar ou '*' para todos"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                        className="w-full sm:w-auto"
+                        autoComplete="off"
+                    />
+                     <div className="flex items-center space-x-2">
+                        <Switch id="show-blocked" checked={showBlocked} onCheckedChange={setShowBlocked} />
+                        <Label htmlFor="show-blocked">Mostrar bloqueados</Label>
+                    </div>
+                </div>
             )}
             {showForm ? (
               <>
