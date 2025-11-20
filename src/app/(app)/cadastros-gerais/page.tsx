@@ -359,6 +359,10 @@ function PersonsSection() {
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
             {!showForm && (
                 <div className="flex w-full flex-col sm:flex-row items-center gap-2">
+                    <div className="flex items-center space-x-2">
+                        <Switch id="show-blocked" checked={showBlocked} onCheckedChange={setShowBlocked} />
+                        <Label htmlFor="show-blocked">Mostrar bloqueados</Label>
+                    </div>
                     <Input 
                         placeholder="Pesquisar ou '*' para todos"
                         value={searchTerm}
@@ -367,10 +371,6 @@ function PersonsSection() {
                         className="w-full sm:w-auto"
                         autoComplete="off"
                     />
-                    <div className="flex items-center space-x-2">
-                        <Switch id="show-blocked" checked={showBlocked} onCheckedChange={setShowBlocked} />
-                        <Label htmlFor="show-blocked">Mostrar bloqueados</Label>
-                    </div>
                 </div>
             )}
             {showForm ? (
@@ -944,6 +944,8 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
+
+    
 
     
 
