@@ -126,7 +126,7 @@ function PersonsSection() {
 
   useEffect(() => {
     if (editingItem) {
-      form.reset({ name: editingItem.name, cpf: editingItem.cpf, cnh: editingItem.cnh, cnhExpirationDate: editingItem.cnhExpirationDate || '', phone: editingItem.phone || '', isBlocked: editingItem.isBlocked || false });
+      form.reset({ name: editingItem.name, cpf: editingItem.cpf, cnh: editingItem.cnh ?? '', cnhExpirationDate: editingItem.cnhExpirationDate || '', phone: editingItem.phone || '', isBlocked: editingItem.isBlocked || false });
       setShowForm(true);
     } else {
       form.reset({ name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false });
@@ -194,17 +194,37 @@ function PersonsSection() {
   };
   
   const filteredData = useMemo(() => {
-    const baseData = showBlocked ? data : data.filter(p => !p.isBlocked);
-
-    if (searchTerm.trim() === '*') return baseData;
-    if (!searchTerm.trim()) return [];
+    const term = searchTerm.trim().toLowerCase();
     
-    const lowercasedTerm = searchTerm.toLowerCase();
+    // '*' shows all (active and blocked)
+    if (term === '*') {
+      if (showBlocked) {
+        return data.filter(p => p.isBlocked);
+      }
+      return data;
+    }
+
+    let baseData: Driver[];
+    if (showBlocked) {
+      baseData = data.filter(p => p.isBlocked);
+    } else {
+      baseData = data.filter(p => !p.isBlocked);
+    }
+
+    if (!term && !showBlocked) {
+      return [];
+    }
+
+    if (!term && showBlocked) {
+      return baseData;
+    }
+
     return baseData.filter(person => 
-      person.name.toLowerCase().includes(lowercasedTerm) ||
-      person.cpf.includes(lowercasedTerm)
+      person.name.toLowerCase().includes(term) ||
+      person.cpf.includes(term)
     );
   }, [data, searchTerm, showBlocked]);
+
 
   const formatDisplayPhoneNumber = (val: string): string => {
       if (typeof val !== 'string' || !val) return "";
@@ -374,7 +394,7 @@ function PersonsSection() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="ml-4 text-muted-foreground">Carregando...</p>
               </div>
-            ) : searchTerm.trim() === '' && searchTerm.trim() !== '*' ? (
+            ) : searchTerm.trim() === '' && !showBlocked ? (
               <div className="text-center py-4">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
                 <p className="text-lg font-medium text-muted-foreground">
