@@ -100,6 +100,7 @@ export default function CadastroAcessoPage() {
   }, [editingUser, form]);
   
   const filteredUsers = useMemo(() => {
+    if (searchTerm.trim() === '*') return allUsersFromAuth;
     if (!searchTerm.trim()) return allUsersFromAuth;
     const lowercasedTerm = searchTerm.toLowerCase();
     return allUsersFromAuth.filter(u => 
@@ -348,7 +349,7 @@ export default function CadastroAcessoPage() {
     
               <div className="w-full sm:max-w-sm">
                 <Input 
-                  placeholder="Pesquisar por nome ou login..."
+                  placeholder="Pesquisar ou '*' para todos"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}

@@ -128,6 +128,8 @@ export default function HistoricoAcessoPage() {
     setShowObservationColumn(observation.trim() !== '');
     setShowAllPlateColumns(plate.trim() !== '');
 
+    const isWildcardSearch = driverName.trim() === '*' || transportCompany.trim() === '*' || plate.trim() === '*' || observation.trim() === '*';
+
     try {
         // Fetch all entries ordered by date. Filtering is done client-side.
         const q = query(collection(db, 'vehicleEntries'), orderBy('arrivalTimestamp', 'desc'));
@@ -135,6 +137,11 @@ export default function HistoricoAcessoPage() {
         const querySnapshot = await getDocs(q);
         let allEntries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleEntry));
 
+        if (isWildcardSearch) {
+          setFilteredEntries(allEntries);
+          setIsSearching(false);
+          return;
+        }
 
         const filteredResults = allEntries.filter(entry => {
             const arrivalDate = (entry.arrivalTimestamp as any).toDate 
@@ -421,7 +428,7 @@ export default function HistoricoAcessoPage() {
                <div className="relative">
                     <Input
                       id="driverNameFilter"
-                      placeholder={dataLoading ? "CARREGANDO..." : "FILTRAR POR NOME..."}
+                      placeholder={dataLoading ? "CARREGANDO..." : "FILTRAR POR NOME OU '*'"}
                       value={filters.driverName}
                       onChange={(e) => setFilters(prev => ({...prev, driverName: e.target.value}))}
                       disabled={dataLoading}
@@ -441,7 +448,7 @@ export default function HistoricoAcessoPage() {
                 <div className="relative">
                   <Input
                     id="transportCompanyFilter"
-                    placeholder={dataLoading ? "CARREGANDO..." : "FILTRAR POR TRANSPORTADORA / EMPRESA..."}
+                    placeholder={dataLoading ? "CARREGANDO..." : "FILTRAR POR EMPRESA OU '*'"}
                     value={filters.transportCompany}
                     onChange={(e) => setFilters(prev => ({ ...prev, transportCompany: e.target.value }))}
                     disabled={dataLoading}
@@ -460,7 +467,7 @@ export default function HistoricoAcessoPage() {
               <Label htmlFor="plateFilter">Placa</Label>
               <Input
                 id="plateFilter"
-                placeholder="FILTRAR POR PLACA..."
+                placeholder="FILTRAR POR PLACA OU '*'"
                 value={filters.plate}
                 onChange={handlePlateFilterChange}
                 maxLength={8}
@@ -472,7 +479,7 @@ export default function HistoricoAcessoPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
              <div className="space-y-1 lg:col-span-2">
               <Label htmlFor="observationFilter">Observação</Label>
-              <Input id="observationFilter" placeholder="FILTRAR POR TEXTO NA OBSERVAÇÃO..." value={filters.observation} onChange={(e) => setFilters(prev => ({...prev, observation: e.target.value}))} autoComplete="off" />
+              <Input id="observationFilter" placeholder="FILTRAR POR OBSERVAÇÃO OU '*'" value={filters.observation} onChange={(e) => setFilters(prev => ({...prev, observation: e.target.value}))} autoComplete="off" />
             </div>
             <div className="space-y-1">
               <Label>Período de Chegada</Label>

@@ -62,6 +62,9 @@ export default function VeiculosFabricaPage() {
   }, [toast]);
 
   const filteredVehicles = useMemo(() => {
+    if (searchTerm.trim() === '*') {
+      return vehicles;
+    }
     if (!searchTerm.trim()) {
       return vehicles;
     }
@@ -172,7 +175,7 @@ export default function VeiculosFabricaPage() {
             <Input
             id="searchVehicles"
             type="text"
-            placeholder="Buscar por ID, placa, motorista..."
+            placeholder="Buscar ou '*' para todos"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full"

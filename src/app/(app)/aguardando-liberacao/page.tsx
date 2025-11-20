@@ -152,6 +152,7 @@ export default function AguardandoLiberacaoPage() {
 
 
   const filteredVehicles = useMemo(() => {
+    if (searchTerm.trim() === '*') return waitingVehicles;
     return waitingVehicles.filter(v =>
       v.plate1.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -401,7 +402,7 @@ export default function AguardandoLiberacaoPage() {
                     <Input
                         id="searchWaiting"
                         type="text"
-                        placeholder="Buscar por placa, motorista, destino..."
+                        placeholder="Buscar ou '*' para todos"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full sm:max-w-xs"

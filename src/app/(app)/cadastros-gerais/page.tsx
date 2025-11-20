@@ -191,6 +191,7 @@ function PersonsSection() {
   };
   
   const filteredData = useMemo(() => {
+    if (searchTerm.trim() === '*') return data;
     if (!searchTerm.trim()) return [];
     const lowercasedTerm = searchTerm.toLowerCase();
     return data.filter(person => 
@@ -314,7 +315,7 @@ function PersonsSection() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
             {!showForm && (
                 <Input 
-                    placeholder="Pesquisar por nome ou CPF..."
+                    placeholder="Pesquisar ou '*' para todos"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
@@ -351,14 +352,14 @@ function PersonsSection() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="ml-4 text-muted-foreground">Carregando...</p>
               </div>
-            ) : !searchTerm.trim() ? (
+            ) : searchTerm.trim() === '' && searchTerm.trim() !== '*' ? (
               <div className="text-center py-4">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
                 <p className="text-lg font-medium text-muted-foreground">
                   Utilize a busca para consultar os cadastros.
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Digite um nome ou CPF para exibir os resultados.
+                  Digite um nome, CPF ou '*' para exibir os resultados.
                 </p>
               </div>
             ) : filteredData.length > 0 ? (
@@ -469,6 +470,7 @@ function TransportCompaniesSection() {
   }, [editingItem, form]);
   
   const filteredData = useMemo(() => {
+    if (searchTerm.trim() === '*') return data;
     if (!searchTerm.trim()) return [];
     const lowercasedTerm = searchTerm.toLowerCase();
     return data.filter(company => 
@@ -548,7 +550,7 @@ function TransportCompaniesSection() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
             {!showForm && (
                 <Input 
-                    placeholder="Pesquisar por nome..."
+                    placeholder="Pesquisar ou '*' para todos"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
@@ -585,14 +587,14 @@ function TransportCompaniesSection() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="ml-4 text-muted-foreground">Carregando Transportadoras / Empresas...</p>
               </div>
-            ) : !searchTerm.trim() ? (
+            ) : searchTerm.trim() === '' && searchTerm.trim() !== '*' ? (
               <div className="text-center py-4">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
                 <p className="text-lg font-medium text-muted-foreground">
                   Utilize a busca para consultar os cadastros.
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Digite o nome de uma transportadora para exibir.
+                  Digite o nome de uma transportadora ou '*' para exibir.
                 </p>
               </div>
             ) : filteredData.length > 0 ? (
@@ -691,6 +693,7 @@ function InternalDestinationsSection() {
   }, [editingItem, form]);
   
   const filteredData = useMemo(() => {
+    if (searchTerm.trim() === '*') return data;
     if (!searchTerm.trim()) return [];
     const lowercasedTerm = searchTerm.toLowerCase();
     return data.filter(destination => 
@@ -765,7 +768,7 @@ function InternalDestinationsSection() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
             {!showForm && (
                 <Input 
-                    placeholder="Pesquisar por nome..."
+                    placeholder="Pesquisar ou '*' para todos"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
@@ -802,14 +805,14 @@ function InternalDestinationsSection() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="ml-4 text-muted-foreground">Carregando...</p>
               </div>
-            ) : !searchTerm.trim() ? (
+            ) : searchTerm.trim() === '' && searchTerm.trim() !== '*' ? (
               <div className="text-center py-4">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
                 <p className="text-lg font-medium text-muted-foreground">
                   Utilize a busca para consultar os cadastros.
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Digite o nome de um destino para exibir.
+                  Digite o nome de um destino ou '*' para exibir.
                 </p>
               </div>
             ) : filteredData.length > 0 ? (
