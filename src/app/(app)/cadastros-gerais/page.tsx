@@ -375,7 +375,7 @@ function PersonsSection() {
             )}
             {showForm ? (
               <>
-                <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); form.reset(); }}>Cancelar</Button>
                 <Button type="submit" form="person-form" size="sm" disabled={isSubmitting}>
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
@@ -612,7 +612,7 @@ function TransportCompaniesSection() {
             )}
             {showForm ? (
               <>
-                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); form.reset(); }}>Cancelar</Button>
                   <Button type="submit" form="company-form" size="sm" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
@@ -830,7 +830,7 @@ function InternalDestinationsSection() {
             )}
             {showForm ? (
               <>
-                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>Cancelar</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); form.reset(); }}>Cancelar</Button>
                   <Button type="submit" form="destination-form" size="sm" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
@@ -944,6 +944,8 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
+
+    
 
     
 
