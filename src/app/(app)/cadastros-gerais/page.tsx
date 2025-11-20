@@ -351,41 +351,45 @@ function PersonsSection() {
 
   return (
     <Card className="shadow-lg">
-      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Users className="w-6 h-6 text-primary" />
-          <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes ({data.length})</CardTitle>
-        </div>
-        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Users className="w-6 h-6 text-primary" />
+            <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes ({data.length})</CardTitle>
+          </div>
+          <div className="flex flex-col items-end w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+              {!showForm ? (
+                <>
+                  <Input 
+                    placeholder="Pesquisar ou '*' para todos"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
+                    className="w-full sm:w-auto"
+                    autoComplete="off"
+                  />
+                  <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Cadastrar Pessoa
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); form.reset(); }}>Cancelar</Button>
+                  <Button type="submit" form="person-form" size="sm" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
+                  </Button>
+                </>
+              )}
+            </div>
             {!showForm && (
-                <div className="flex w-full flex-col sm:flex-row items-center gap-2">
-                    <div className="flex items-center space-x-2">
-                        <Switch id="show-blocked" checked={showBlocked} onCheckedChange={setShowBlocked} />
-                        <Label htmlFor="show-blocked">Mostrar bloqueados</Label>
-                    </div>
-                    <Input 
-                        placeholder="Pesquisar ou '*' para todos"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                        className="w-full sm:w-auto"
-                        autoComplete="off"
-                    />
-                </div>
+              <div className="flex items-center space-x-2 mt-2">
+                <Switch id="show-blocked" checked={showBlocked} onCheckedChange={setShowBlocked} />
+                <Label htmlFor="show-blocked">Mostrar bloqueados</Label>
+              </div>
             )}
-            {showForm ? (
-              <>
-                <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); form.reset(); }}>Cancelar</Button>
-                <Button type="submit" form="person-form" size="sm" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
-                </Button>
-              </>
-            ) : (
-                <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Cadastrar Pessoa
-                </Button>
-            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
