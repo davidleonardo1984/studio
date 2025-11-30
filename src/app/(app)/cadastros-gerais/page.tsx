@@ -285,7 +285,7 @@ function PersonsSection() {
             control={form.control}
             name="phone"
             render={({ field }) => (
-            <FormItem className="flex flex-col justify-end">
+            <FormItem className="flex flex-col h-full justify-end">
             <FormLabel>Telefone (Opcional)</FormLabel>
             <FormControl>
                 <Input
