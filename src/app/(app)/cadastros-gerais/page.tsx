@@ -263,50 +263,52 @@ function PersonsSection() {
       <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} maxLength={11} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} value={field.value ?? ''} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
       
-      {cnhValue && (
-        <FormField
-          control={form.control}
-          name="cnhExpirationDate"
-          render={({ field }) => (
-            <FormItem className="flex flex-col h-full justify-end">
-              <FormLabel>Vencimento CNH</FormLabel>
-                <FormControl>
-                    <Input type="date" {...field} value={field.value ?? ''} />
-                </FormControl>
-            <FormMessage />
-          </FormItem>
+      <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {cnhValue && (
+            <FormField
+            control={form.control}
+            name="cnhExpirationDate"
+            render={({ field }) => (
+                <FormItem className="flex flex-col h-full justify-end">
+                <FormLabel>Vencimento CNH</FormLabel>
+                    <FormControl>
+                        <Input type="date" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                <FormMessage />
+            </FormItem>
 
-          )}
-        />
-      )}
-      
-      <FormField
-        control={form.control}
-        name="phone"
-        render={({ field }) => (
-          <FormItem className="flex flex-col justify-end">
-          <FormLabel>Telefone (Opcional)</FormLabel>
-          <FormControl>
-            <Input
-              placeholder="(XX) XXXXX-XXXX"
-              {...field}
-              value={formatDisplayPhoneNumber(field.value || "")}
-              onChange={(e) => handlePhoneChange(e, field.onChange)}
-              type="tel"
-              autoComplete="off"
+            )}
             />
-          </FormControl>
-          <FormMessage />
-      </FormItem>
-
         )}
-      />
+        
+        <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+            <FormItem className="flex flex-col justify-end">
+            <FormLabel>Telefone (Opcional)</FormLabel>
+            <FormControl>
+                <Input
+                placeholder="(XX) XXXXX-XXXX"
+                {...field}
+                value={formatDisplayPhoneNumber(field.value || "")}
+                onChange={(e) => handlePhoneChange(e, field.onChange)}
+                type="tel"
+                autoComplete="off"
+                />
+            </FormControl>
+            <FormMessage />
+        </FormItem>
+
+            )}
+        />
+      </div>
 
       <FormField
         control={form.control}
         name="isBlocked"
         render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card md:col-span-1 lg:col-span-3">
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card md:col-span-2 lg:col-span-3">
                 <div className="space-y-0.5">
                     <FormLabel>Bloquear Acesso</FormLabel>
                     <FormDescription>
