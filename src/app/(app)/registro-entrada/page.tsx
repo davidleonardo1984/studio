@@ -126,7 +126,6 @@ export default function RegistroEntradaPage() {
 
   const form = useForm<VehicleEntryFormData>({
     resolver: zodResolver(entrySchema),
-    mode: "onBlur",
     defaultValues: {
       driverName: '',
       assistant1Name: '',
@@ -1037,4 +1036,5 @@ export default function RegistroEntradaPage() {
 
     
 
+    
     

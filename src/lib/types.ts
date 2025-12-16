@@ -67,6 +67,7 @@ export interface VehicleEntry {
   liberatedBy?: string;
   notified?: boolean;
   notifiedBy?: string;
+  isForeigner?: boolean;
 }
 
 
@@ -96,3 +97,5 @@ export interface AppNotification {
   createdAt: Timestamp;
   createdBy: string; 
 }
+
+    
