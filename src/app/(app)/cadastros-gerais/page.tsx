@@ -1002,3 +1002,5 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
+
+    

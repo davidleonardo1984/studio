@@ -295,9 +295,12 @@ export default function RegistroEntradaPage() {
     }
     setIsSubmitting(true);
     
+    const driver = persons.find(p => p.name.toLowerCase() === data.driverName.toLowerCase());
+
     const currentTime = new Date();
     const newEntryData: any = {
         ...data,
+        isForeigner: driver?.isForeigner || false,
         barcode: generateBarcode(),
         arrivalTimestamp: Timestamp.fromDate(currentTime),
         status,
@@ -363,9 +366,15 @@ export default function RegistroEntradaPage() {
     setIsSubmitting(true);
     setIsEditActionDialogOpen(false);
     
+    const driver = persons.find(p => p.name.toLowerCase() === updatedDataForAction.driverName.toLowerCase());
+    const dataToUpdate: any = {
+        ...updatedDataForAction,
+        isForeigner: driver?.isForeigner || false,
+    };
+
     try {
         const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
-        await updateDoc(entryDocRef, { ...updatedDataForAction });
+        await updateDoc(entryDocRef, dataToUpdate);
         toast({ title: 'Alterações Salvas', description: `Os dados do veículo ${updatedDataForAction.plate1} foram atualizados.` });
         router.back();
     } catch (error) {
@@ -382,10 +391,13 @@ export default function RegistroEntradaPage() {
     setIsSubmitting(true);
     setIsEditActionDialogOpen(false);
     
+    const driver = persons.find(p => p.name.toLowerCase() === updatedDataForAction.driverName.toLowerCase());
+
     try {
         const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
         const updateData: any = { 
             ...updatedDataForAction,
+            isForeigner: driver?.isForeigner || false,
             status: 'entrada_liberada',
             liberationTimestamp: Timestamp.fromDate(new Date()),
             // If there was a liberatedBy from a notification, preserve it. Otherwise, use current user's name.
@@ -429,11 +441,17 @@ export default function RegistroEntradaPage() {
     setIsSubmitting(true);
     setIsEditActionDialogOpen(false);
     
+    const driver = persons.find(p => p.name.toLowerCase() === updatedDataForAction.driverName.toLowerCase());
+    const dataToUpdate: any = {
+        ...updatedDataForAction,
+        isForeigner: driver?.isForeigner || false,
+    };
+
     try {
       const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
-      await updateDoc(entryDocRef, { ...updatedDataForAction });
+      await updateDoc(entryDocRef, dataToUpdate);
 
-      const updatedEntry: VehicleEntry = { ...editingEntry, ...updatedDataForAction };
+      const updatedEntry: VehicleEntry = { ...editingEntry, ...dataToUpdate };
 
       toast({
         title: 'Documento Gerado!',
@@ -1016,5 +1034,7 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
+
+    
 
     

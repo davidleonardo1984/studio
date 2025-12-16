@@ -36,7 +36,7 @@ export const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ 
       <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
         <div style="display: flex; justify-content: space-between; font-size: 10px; line-height: 1.5;">
           <div style="width: 55%;">
-            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Motorista:</span> ${entry.driverName}</p>
+            <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Motorista:</span> ${entry.driverName} ${entry.isForeigner ? '(Estrangeiro)' : ''}</p>
             ${entry.assistant1Name ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Ajudante 1:</span> ${entry.assistant1Name}</p>` : ''}
             ${entry.assistant2Name ? `<p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Ajudante 2:</span> ${entry.assistant2Name}</p>` : ''}
             <p style="margin: 0 0 5px 0;"><span style="font-weight: bold; min-width: 90px; display: inline-block;">Placa 1:</span> ${entry.plate1}</p>
@@ -116,3 +116,5 @@ export const generateVehicleEntryImage = async (entry: VehicleEntry): Promise<{ 
     }
   }
 };
+
+    
