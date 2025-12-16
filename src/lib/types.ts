@@ -22,6 +22,7 @@ export interface Driver {
   cnhExpirationDate?: string;
   phone?: string;
   isBlocked?: boolean;
+  isForeigner?: boolean;
 }
 
 export type NewDriver = Omit<Driver, 'id'>;

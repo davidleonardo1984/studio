@@ -38,19 +38,37 @@ import { Label } from '@/components/ui/label';
 // Schemas for forms
 const personSchema = z.object({
   name: z.string().min(3, 'Nome é obrigatório (mín. 3 caracteres).'),
-  cpf: z.string().length(11, 'CPF deve ter 11 dígitos.').regex(/^\d+$/, 'CPF deve conter apenas números.'),
+  cpf: z.string(),
   cnh: z.string().optional(),
   cnhExpirationDate: z.string().optional(),
   phone: z.string().optional(),
   isBlocked: z.boolean().default(false).optional(),
-}).refine(data => {
+  isForeigner: z.boolean().default(false).optional(),
+}).superRefine((data, ctx) => {
     if (data.cnh && data.cnh.trim() !== '') {
-        return data.cnhExpirationDate && data.cnhExpirationDate.trim() !== '';
+        if (!data.cnhExpirationDate || data.cnhExpirationDate.trim() === '') {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Vencimento da CNH é obrigatório quando a CNH é preenchida.',
+                path: ['cnhExpirationDate'],
+            });
+        }
     }
-    return true;
-}, {
-    message: 'Vencimento da CNH é obrigatório quando a CNH é preenchida.',
-    path: ['cnhExpirationDate'],
+    if (!data.isForeigner) {
+        if (!data.cpf || data.cpf.length !== 11) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'CPF deve ter 11 dígitos.',
+                path: ['cpf'],
+            });
+        } else if (!/^\d+$/.test(data.cpf)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'CPF deve conter apenas números.',
+                path: ['cpf'],
+            });
+        }
+    }
 });
 type PersonFormData = z.infer<typeof personSchema>;
 
@@ -102,10 +120,18 @@ function PersonsSection() {
 
   const form = useForm<PersonFormData>({
     resolver: zodResolver(personSchema),
-    defaultValues: { name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false },
+    defaultValues: { name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false, isForeigner: false },
   });
   
   const cnhValue = form.watch('cnh');
+  const isForeigner = form.watch('isForeigner');
+
+  useEffect(() => {
+    if (isForeigner) {
+      form.setValue('cpf', '');
+      form.clearErrors('cpf');
+    }
+  }, [isForeigner, form]);
   
   if (!db) {
       return <FirebaseErrorDisplay />;
@@ -134,24 +160,25 @@ function PersonsSection() {
 
   useEffect(() => {
     if (editingItem) {
-      form.reset({ name: editingItem.name, cpf: editingItem.cpf, cnh: editingItem.cnh ?? '', cnhExpirationDate: editingItem.cnhExpirationDate || '', phone: editingItem.phone || '', isBlocked: editingItem.isBlocked || false });
+      form.reset({ name: editingItem.name, cpf: editingItem.cpf, cnh: editingItem.cnh ?? '', cnhExpirationDate: editingItem.cnhExpirationDate || '', phone: editingItem.phone || '', isBlocked: editingItem.isBlocked || false, isForeigner: editingItem.isForeigner || false });
       setShowForm(true);
     } else {
-      form.reset({ name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false });
+      form.reset({ name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false, isForeigner: false });
     }
   }, [editingItem, form]);
 
   const onSubmit = async (formData: PersonFormData) => {
     setIsSubmitting(true);
     try {
-        // Check for duplicates
-        const isDuplicateCpf = data.some(
-            p => p.cpf === formData.cpf && p.id !== editingItem?.id
-        );
-        if (isDuplicateCpf) {
-            form.setError("cpf", { type: "manual", message: "Este CPF já está cadastrado." });
-            setIsSubmitting(false);
-            return;
+        if (!formData.isForeigner) {
+            const isDuplicateCpf = data.some(
+                p => p.cpf === formData.cpf && p.id !== editingItem?.id
+            );
+            if (isDuplicateCpf) {
+                form.setError("cpf", { type: "manual", message: "Este CPF já está cadastrado." });
+                setIsSubmitting(false);
+                return;
+            }
         }
 
         const isDuplicateName = data.some(
@@ -163,10 +190,13 @@ function PersonsSection() {
             return;
         }
 
-        const dataToSave = {
+        const dataToSave: Partial<Driver> = {
             ...formData,
             cnhExpirationDate: formData.cnhExpirationDate || '',
         };
+        if(formData.isForeigner) {
+            dataToSave.cpf = '';
+        }
 
 
         if (editingItem) {
@@ -260,7 +290,7 @@ function PersonsSection() {
   const formFields = (form: any) => (
      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
-      <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} maxLength={11} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+      <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} maxLength={11} autoComplete="off" disabled={isForeigner} /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} value={field.value ?? ''} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
       
       <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -303,29 +333,51 @@ function PersonsSection() {
             )}
         />
       </div>
-
-      <FormField
-        control={form.control}
-        name="isBlocked"
-        render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card md:col-span-2 lg:col-span-3">
-                <div className="space-y-0.5">
-                    <FormLabel>Bloquear Acesso</FormLabel>
-                    <FormDescription>
-                        Impedir que esta pessoa seja registrada em novas entradas na portaria.
-                    </FormDescription>
-                </div>
-                <FormControl>
-                    <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={!editingItem}
-                        aria-label="Bloquear Acesso"
-                    />
-                </FormControl>
-            </FormItem>
-        )}
+      <div className="md:col-span-3 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="isForeigner"
+          render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card">
+                  <div className="space-y-0.5">
+                      <FormLabel>Estrangeiro</FormLabel>
+                      <FormDescription>
+                          Marque se a pessoa não possuir CPF.
+                      </FormDescription>
+                  </div>
+                  <FormControl>
+                      <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          aria-label="Estrangeiro"
+                      />
+                  </FormControl>
+              </FormItem>
+          )}
         />
+        <FormField
+          control={form.control}
+          name="isBlocked"
+          render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card">
+                  <div className="space-y-0.5">
+                      <FormLabel>Bloquear Acesso</FormLabel>
+                      <FormDescription>
+                          Impedir que esta pessoa seja registrada em novas entradas.
+                      </FormDescription>
+                  </div>
+                  <FormControl>
+                      <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={!editingItem}
+                          aria-label="Bloquear Acesso"
+                      />
+                  </FormControl>
+              </FormItem>
+          )}
+          />
+      </div>
     </div>
   );
 
@@ -439,7 +491,7 @@ function PersonsSection() {
                               )}
                           </TableCell>
                           <TableCell className="py-1">{item.name}</TableCell>
-                          <TableCell className="py-1">{item.cpf}</TableCell>
+                          <TableCell className="py-1">{item.isForeigner ? 'ESTRANGEIRO' : item.cpf}</TableCell>
                           <TableCell className="py-1">{item.cnh || 'N/A'}</TableCell>
                           <TableCell className={cn("py-1", isCnhExpired(item.cnhExpirationDate) && "text-destructive font-bold")}>
                             {formatDateString(item.cnhExpirationDate)}
@@ -950,11 +1002,3 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
-
-    
