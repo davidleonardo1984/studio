@@ -7,16 +7,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { VehicleEntry } from '@/lib/types';
-import { Search, Loader2, AlertTriangle, Printer, Edit2, Truck } from 'lucide-react';
+import { Search, Loader2, AlertTriangle, Printer, Edit2, Truck, RotateCcw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import { useIsClient } from '@/hooks/use-is-client';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { generateVehicleEntryImage } from '@/lib/pdf-generator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function VeiculosFabricaPage() {
   const { user } = useAuth();
@@ -30,6 +40,10 @@ export default function VeiculosFabricaPage() {
   
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+  const [isRevertDialogOpen, setIsRevertDialogOpen] = useState(false);
+  const [selectedVehicleForRevert, setSelectedVehicleForRevert] = useState<VehicleEntry | null>(null);
+
 
   useEffect(() => {
     if (!db) {
@@ -98,6 +112,52 @@ export default function VeiculosFabricaPage() {
             title: 'Erro no Documento',
             description: `Falha ao gerar o documento para ${entry.plate1}. Detalhe: ${imageResult.error || 'N/A'}`,
         });
+    }
+  };
+  
+  const handleReturnToYard = async () => {
+    if (!selectedVehicleForRevert || !db) return;
+  
+    const vehicleDocRef = doc(db, 'vehicleEntries', selectedVehicleForRevert.id);
+  
+    try {
+      // Revert status and clear liberation info
+      await updateDoc(vehicleDocRef, {
+        status: 'aguardando_patio',
+        liberationTimestamp: null,
+        liberatedBy: null,
+        notified: false,
+        notifiedBy: null
+      });
+
+      // If it was notified, re-create the notification
+      if (selectedVehicleForRevert.notified) {
+         await addDoc(collection(db, 'notifications'), {
+            vehicleEntryId: selectedVehicleForRevert.id,
+            plate1: selectedVehicleForRevert.plate1,
+            plate2: selectedVehicleForRevert.plate2 || '',
+            plate3: selectedVehicleForRevert.plate3 || '',
+            driverName: selectedVehicleForRevert.driverName,
+            transportCompanyName: selectedVehicleForRevert.transportCompanyName,
+            internalDestinationName: selectedVehicleForRevert.internalDestinationName,
+            driverPhone: '', // Not available here, can be re-fetched if needed
+            createdAt: Timestamp.now(),
+            createdBy: selectedVehicleForRevert.notifiedBy || 'system',
+        });
+      }
+  
+      toast({
+        title: 'Veículo Retornou ao Pátio',
+        description: `O veículo ${selectedVehicleForRevert.plate1} agora está na lista de aguardando liberação.`,
+        className: 'bg-amber-500 text-white'
+      });
+  
+    } catch (error) {
+      console.error("Error reverting vehicle status:", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível reverter o status do veículo." });
+    } finally {
+      setIsRevertDialogOpen(false);
+      setSelectedVehicleForRevert(null);
     }
   };
 
@@ -222,9 +282,22 @@ export default function VeiculosFabricaPage() {
                       </TableCell>
                       <TableCell className="text-right space-x-2 py-1">
                          {user?.role !== 'gate_agent' && user?.role !== 'exit_agent' && (
+                          <>
                             <Button variant="ghost" size="icon" onClick={() => handleEdit(entry.id)} title="Editar Registro">
                                 <Edit2 className="h-4 w-4 text-blue-600" />
                             </Button>
+                             <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => {
+                                  setSelectedVehicleForRevert(entry);
+                                  setIsRevertDialogOpen(true);
+                                }} 
+                                title="Retornar ao Pátio"
+                              >
+                                <RotateCcw className="h-4 w-4 text-amber-600" />
+                              </Button>
+                          </>
                           )}
                         <Button variant="ghost" size="icon" onClick={() => handlePrintEntry(entry)} title="Reimprimir Documento">
                           <Printer className="h-4 w-4 text-primary" />
@@ -252,6 +325,29 @@ export default function VeiculosFabricaPage() {
           onClose={handleClosePreview}
           imageUrl={previewImageUrl}
       />
+      
+      <AlertDialog open={isRevertDialogOpen} onOpenChange={setIsRevertDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Ação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você tem certeza que deseja retornar o veículo de placa{' '}
+              <strong>{selectedVehicleForRevert?.plate1}</strong> para a lista de "Aguardando Liberação"? A liberação atual será desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedVehicleForRevert(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 hover:bg-amber-700"
+              onClick={handleReturnToYard}
+            >
+              Sim, Retornar ao Pátio
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
+
+    
