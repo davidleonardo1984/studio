@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, InternalDestination } from '@/lib/types';
-import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn, Edit2, Trash2, Save } from 'lucide-react';
+import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn, Edit2, Trash2, Save, UserPlus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy, addDoc, Timestamp, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
@@ -34,10 +34,21 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { generateVehicleEntryImage } from '@/lib/pdf-generator';
 import { isAfter, parseISO, format } from 'date-fns';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { PersonForm } from '@/components/forms/PersonForm';
+
+
+// ====================================================================================
+// 5. UTILIZAÇÃO DA NOVA FUNCIONALIDADE
+//    - O botão "Cadastrar Nova Pessoa" foi adicionado ao cabeçalho.
+//    - Ele usa um `Dialog` para abrir o `PersonForm` em um modal.
+//    - A função `handlePersonCreated` é passada para o `onSuccess` do `PersonForm`.
+//      Quando um novo cadastro é feito, essa função atualiza a lista de pessoas
+//      da página e fecha o modal.
+// ====================================================================================
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
-// Base schema for fields that don't depend on fetched data
 const baseSchema = z.object({
   plate1: z.string().min(7, { message: 'Placa 1 é obrigatória (mín. 7 caracteres).' }).max(8),
   plate2: z.string().optional().refine(val => !val || (val.length >= 7 && val.length <=8) , {message: "Placa 2 inválida (mín. 7 caracteres)."}),
@@ -45,7 +56,6 @@ const baseSchema = z.object({
   movementType: z.string().min(1, { message: 'Tipo de movimentação é obrigatório.' }),
   observation: z.string().max(500, { message: 'Observação muito longa (máx. 500 caracteres).' }).optional(),
 });
-
 
 const generateBarcode = () => {
     const now = new Date();
@@ -87,6 +97,8 @@ export default function RegistroEntradaPage() {
   const [expiredDriver, setExpiredDriver] = useState<Driver | null>(null);
   const [showCnhUpdate, setShowCnhUpdate] = useState(false);
   const [newCnhExpirationDate, setNewCnhExpirationDate] = useState('');
+
+  const [isPersonFormOpen, setIsPersonFormOpen] = useState(false);
   
   const entrySchema = useMemo(() => {
     const personMap = new Map(persons.map(p => [p.name.toLowerCase(), p]));
@@ -148,10 +160,9 @@ export default function RegistroEntradaPage() {
     const driver = persons.find(p => p.name.toLowerCase() === driverName.toLowerCase());
     
     if (driver?.cnh && driver.cnhExpirationDate) {
-      // Add one day to the expiration date to make the comparison correct
       const expirationDate = parseISO(driver.cnhExpirationDate);
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Normalize today's date
+      today.setHours(0, 0, 0, 0);
 
       if (isAfter(today, expirationDate)) {
         setExpiredDriver(driver);
@@ -164,7 +175,7 @@ export default function RegistroEntradaPage() {
   const handlePlateChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (value: string) => void) => {
     const val = e.target.value;
     if (!val) {
-      fieldOnChange(''); // for optional fields
+      fieldOnChange('');
       return;
     }
     const input = val.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -175,34 +186,41 @@ export default function RegistroEntradaPage() {
     }
     fieldOnChange(formatted);
   };
-
-  useEffect(() => {
+  
+  const fetchAllData = useCallback(async () => {
     if (!db) {
         setDataLoading(false);
         return;
     }
-    const fetchData = async () => {
-        setDataLoading(true);
-        try {
-            const companiesPromise = getDocs(query(collection(db, 'transportCompanies'), orderBy("name")));
-            const personsPromise = getDocs(query(collection(db, 'persons'), orderBy("name")));
-            const destinationsPromise = getDocs(query(collection(db, 'internalDestinations'), orderBy("name")));
-            
-            const [companiesSnap, personsSnap, destinationsSnap] = await Promise.all([companiesPromise, personsPromise, destinationsPromise]);
+    setDataLoading(true);
+    try {
+        const companiesPromise = getDocs(query(collection(db, 'transportCompanies'), orderBy("name")));
+        const personsPromise = getDocs(query(collection(db, 'persons'), orderBy("name")));
+        const destinationsPromise = getDocs(query(collection(db, 'internalDestinations'), orderBy("name")));
+        
+        const [companiesSnap, personsSnap, destinationsSnap] = await Promise.all([companiesPromise, personsPromise, destinationsPromise]);
 
-            setTransportCompanies(companiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany)));
-            setPersons(personsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Driver)));
-            setInternalDestinations(destinationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as InternalDestination)));
+        setTransportCompanies(companiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany)));
+        setPersons(personsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Driver)));
+        setInternalDestinations(destinationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as InternalDestination)));
 
-        } catch (error) {
-            console.error("Failed to fetch data:", error);
-            toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar os dados de cadastro." });
-        } finally {
-            setDataLoading(false);
-        }
-    };
-    fetchData();
+    } catch (error) {
+        console.error("Failed to fetch data:", error);
+        toast({ variant: "destructive", title: "Erro de Conexão", description: "Não foi possível carregar os dados de cadastro." });
+    } finally {
+        setDataLoading(false);
+    }
   }, [toast]);
+
+
+  const handlePersonCreated = () => {
+    fetchAllData(); // Re-fetches all data to update the lists
+    setIsPersonFormOpen(false); // Closes the modal
+  };
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   useEffect(() => {
     const entryId = searchParams.get('id');
@@ -252,8 +270,10 @@ export default function RegistroEntradaPage() {
         }
     };
 
-    fetchEntry();
-  }, [searchParams, form, router, toast]);
+    if (persons.length > 0) { // Fetch entry only after persons are loaded
+        fetchEntry();
+    }
+  }, [searchParams, form, router, toast, persons.length]);
 
   useEffect(() => {
     if (!isDialogOpen) {
@@ -269,7 +289,6 @@ export default function RegistroEntradaPage() {
         const driverDocRef = doc(db, 'persons', expiredDriver.id);
         await updateDoc(driverDocRef, { cnhExpirationDate: newCnhExpirationDate });
         
-        // Update local state to avoid re-triggering alert
         setPersons(prev => prev.map(p => 
             p.id === expiredDriver.id ? { ...p, cnhExpirationDate: newCnhExpirationDate } : p
         ));
@@ -399,7 +418,6 @@ export default function RegistroEntradaPage() {
             isForeigner: driver?.isForeigner || false,
             status: 'entrada_liberada',
             liberationTimestamp: Timestamp.fromDate(new Date()),
-            // If there was a liberatedBy from a notification, preserve it. Otherwise, use current user's name.
             liberatedBy: editingEntry.liberatedBy || user?.name || user?.login
         };
         
@@ -567,7 +585,7 @@ export default function RegistroEntradaPage() {
   return (
     <>
     <div className="container mx-auto pb-8 space-y-4">
-      <div className="flex items-center -mt-4">
+      <div className="flex justify-between items-center -mt-4">
         <div>
           <h1 className="text-3xl font-bold text-primary font-headline">
             {editingEntry ? 'Editar Registro de Entrada' : 'Registro de Entrada de Veículo'}
@@ -576,6 +594,29 @@ export default function RegistroEntradaPage() {
             {editingEntry ? `Alterando dados do veículo ${editingEntry.plate1}.` : 'Preencha os dados abaixo para registrar a entrada de um veículo.'}
           </p>
         </div>
+        <Dialog open={isPersonFormOpen} onOpenChange={setIsPersonFormOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Cadastrar Nova Pessoa
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-4xl">
+                <DialogHeader>
+                    <DialogTitle>Cadastro Rápido de Pessoa</DialogTitle>
+                    <DialogDescription>
+                        Cadastre um novo motorista ou ajudante. Após salvar, ele estará disponível na lista.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <PersonForm
+                        onSuccess={handlePersonCreated}
+                        onCancel={() => setIsPersonFormOpen(false)}
+                        allPersons={persons}
+                    />
+                </div>
+            </DialogContent>
+        </Dialog>
       </div>
       <Card className="shadow-xl w-full">
         <CardHeader className="pb-2">
@@ -1033,8 +1074,3 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
-
-    
-
-    
-    
