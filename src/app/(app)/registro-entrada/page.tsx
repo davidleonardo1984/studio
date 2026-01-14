@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, InternalDestination } from '@/lib/types';
@@ -35,17 +35,160 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { generateVehicleEntryImage } from '@/lib/pdf-generator';
 import { isAfter, parseISO, format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { PersonForm } from '@/components/forms/PersonForm';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 
+// Local PersonForm schema and component
+const personSchema = z.object({
+  name: z.string().min(3, 'Nome é obrigatório (mín. 3 caracteres).'),
+  cpf: z.string(),
+  cnh: z.string().optional(),
+  cnhExpirationDate: z.string().optional(),
+  phone: z.string().optional(),
+  isBlocked: z.boolean().default(false).optional(),
+  isForeigner: z.boolean().default(false).optional(),
+}).superRefine((data, ctx) => {
+    if (data.cnh && data.cnh.trim() !== '') {
+        if (!data.cnhExpirationDate || data.cnhExpirationDate.trim() === '') {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Vencimento da CNH é obrigatório quando a CNH é preenchida.',
+                path: ['cnhExpirationDate'],
+            });
+        }
+    }
+    if (!data.isForeigner) {
+        if (!data.cpf || data.cpf.length !== 11) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'CPF deve ter 11 dígitos.',
+                path: ['cpf'],
+            });
+        } else if (!/^\d+$/.test(data.cpf)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'CPF deve conter apenas números.',
+                path: ['cpf'],
+            });
+        }
+    }
+});
+type PersonFormData = z.infer<typeof personSchema>;
 
-// ====================================================================================
-// 5. UTILIZAÇÃO DA NOVA FUNCIONALIDADE
-//    - O botão "Cadastrar Nova Pessoa" foi adicionado ao cabeçalho.
-//    - Ele usa um `Dialog` para abrir o `PersonForm` em um modal.
-//    - A função `handlePersonCreated` é passada para o `onSuccess` do `PersonForm`.
-//      Quando um novo cadastro é feito, essa função atualiza a lista de pessoas
-//      da página e fecha o modal.
-// ====================================================================================
+interface PersonFormProps {
+  onSuccess: () => void;
+  onCancel: () => void;
+  allPersons: Driver[];
+}
+
+function PersonForm({ onSuccess, onCancel, allPersons }: PersonFormProps) {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<PersonFormData>({
+    resolver: zodResolver(personSchema),
+    defaultValues: { name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false, isForeigner: false },
+  });
+  
+  const { watch, setValue } = form;
+  const isForeigner = watch('isForeigner');
+
+  useEffect(() => {
+    if (isForeigner) {
+      setValue('cpf', '');
+      form.clearErrors('cpf');
+    }
+  }, [isForeigner, form, setValue]);
+
+  const onSubmit = async (formData: PersonFormData) => {
+    setIsSubmitting(true);
+    try {
+        if (!db) throw new Error("Firebase não configurado");
+
+        if (!formData.isForeigner) {
+            const isDuplicateCpf = allPersons.some(p => p.cpf === formData.cpf);
+            if (isDuplicateCpf) {
+                form.setError("cpf", { type: "manual", message: "Este CPF já está cadastrado." });
+                setIsSubmitting(false);
+                return;
+            }
+        }
+
+        const isDuplicateName = allPersons.some(p => p.name.trim().toLowerCase() === formData.name.trim().toLowerCase());
+        if (isDuplicateName) {
+            form.setError("name", { type: "manual", message: "Este nome já está cadastrado." });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const dataToSave: Partial<Driver> = { ...formData, cnhExpirationDate: formData.cnhExpirationDate || '' };
+        if(formData.isForeigner) { dataToSave.cpf = ''; }
+
+        await addDoc(collection(db, 'persons'), dataToSave);
+        toast({ title: "Pessoa cadastrada!", description: `${formData.name} foi cadastrado com sucesso.` });
+        
+        onSuccess();
+        form.reset();
+
+    } catch (error) {
+        console.error("Error saving person:", error);
+        toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a pessoa." });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (value: string) => void) => {
+      let rawValue = e.target.value.replace(/\D/g, "");
+      if (rawValue.length > 11) { rawValue = rawValue.substring(0, 11); }
+      fieldOnChange(rawValue);
+  };
+  
+  const formatDisplayPhoneNumber = (val: string): string => {
+      if (typeof val !== 'string' || !val) return "";
+      const digits = val.replace(/\D/g, "");
+      if (digits.length === 0) return "";
+      let formatted = `(${digits.substring(0, 2)}`;
+      if (digits.length > 2) {
+          const end = digits.length === 11 ? 7 : 6;
+          formatted += `) ${digits.substring(2, end)}`;
+          if (digits.length > 6) { formatted += `-${digits.substring(end, 11)}`; }
+      }
+      return formatted;
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} value={isForeigner ? "ESTRANGEIRO" : field.value} maxLength={11} autoComplete="off" disabled={isForeigner} /></FormControl><FormMessage /></FormItem>)} />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} value={field.value ?? ''} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="cnhExpirationDate" render={({ field }) => (<FormItem><FormLabel>Vencimento CNH</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="phone" render={({ field }) => (<FormItem className="flex flex-col h-full justify-end"><FormLabel>Telefone (Opcional)</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} value={formatDisplayPhoneNumber(field.value || "")} onChange={(e) => handlePhoneChange(e, field.onChange)} type="tel" autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField control={form.control} name="isForeigner" render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card">
+                    <div className="space-y-0.5"><FormLabel>Estrangeiro</FormLabel><FormDescription>Marque se a pessoa não possuir CPF.</FormDescription></div>
+                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Estrangeiro" /></FormControl>
+                </FormItem>
+            )} />
+        </div>
+        <div className="flex justify-end gap-2 pt-4">
+            {onCancel && <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>}
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Cadastrar Pessoa
+            </Button>
+        </div>
+      </form>
+    </Form>
+  );
+}
+
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -214,8 +357,8 @@ export default function RegistroEntradaPage() {
 
 
   const handlePersonCreated = () => {
-    fetchAllData(); // Re-fetches all data to update the lists
-    setIsPersonFormOpen(false); // Closes the modal
+    fetchAllData(); 
+    setIsPersonFormOpen(false); 
   };
 
   useEffect(() => {

@@ -33,15 +33,47 @@ import { Badge } from '@/components/ui/badge';
 import { format, parse, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
-import { PersonForm } from '@/components/forms/PersonForm';
-
-// ====================================================================================
-// ANTES: A lógica do formulário de pessoas estava toda aqui dentro.
-// AGORA: A lógica foi movida para `PersonForm.tsx` e este componente apenas o utiliza,
-//        tornando o código mais limpo e reutilizável.
-// ====================================================================================
 
 // Schemas for forms
+const personSchema = z.object({
+  name: z.string().min(3, 'Nome é obrigatório (mín. 3 caracteres).'),
+  cpf: z.string(),
+  cnh: z.string().optional(),
+  cnhExpirationDate: z.string().optional(),
+  phone: z.string().optional(),
+  isBlocked: z.boolean().default(false).optional(),
+  isForeigner: z.boolean().default(false).optional(),
+}).superRefine((data, ctx) => {
+    if (data.cnh && data.cnh.trim() !== '') {
+        if (!data.cnhExpirationDate || data.cnhExpirationDate.trim() === '') {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Vencimento da CNH é obrigatório quando a CNH é preenchida.',
+                path: ['cnhExpirationDate'],
+            });
+        }
+    }
+    if (!data.isForeigner) {
+        if (!data.cpf || data.cpf.length !== 11) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'CPF deve ter 11 dígitos.',
+                path: ['cpf'],
+            });
+        } else if (!/^\d+$/.test(data.cpf)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'CPF deve conter apenas números.',
+                path: ['cpf'],
+            });
+        }
+    }
+});
+
+
+type PersonFormData = z.infer<typeof personSchema>;
+
+
 const transportCompanySchema = z.object({
   name: z.string().min(3, 'Nome da Transportadora / Empresa é obrigatório (mín. 3 caracteres).'),
 });
@@ -79,10 +111,27 @@ function PersonsSection() {
   const { toast } = useToast();
   const [data, setData] = useState<Driver[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<Driver | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showBlocked, setShowBlocked] = useState(false);
+
+  const form = useForm<PersonFormData>({
+    resolver: zodResolver(personSchema),
+    defaultValues: { name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false, isForeigner: false },
+  });
+  
+  const { watch, setValue } = form;
+  const isForeigner = watch('isForeigner');
+
+  useEffect(() => {
+    if (isForeigner) {
+      setValue('cpf', '');
+      form.clearErrors('cpf');
+    }
+  }, [isForeigner, form, setValue]);
+
   
   if (!db) {
       return <FirebaseErrorDisplay />;
@@ -109,30 +158,22 @@ function PersonsSection() {
      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
-  const handleSuccess = () => {
-    refreshData();
-    setEditingItem(null);
-    setShowForm(false);
-  };
-
-  const handleCancel = () => {
-    setEditingItem(null);
-    setShowForm(false);
-  };
-
-
-  const handleDelete = async (id: string) => {
-    try {
-        const itemDoc = doc(db, 'persons', id);
-        await deleteDoc(itemDoc);
-        toast({ title: 'Excluído!', description: 'A pessoa foi removida com sucesso.' });
-        await refreshData();
-    } catch (error) {
-        console.error("Error deleting person:", error);
-        toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a pessoa." });
+  useEffect(() => {
+    if (editingItem) {
+      form.reset({
+        name: editingItem.name,
+        cpf: editingItem.cpf,
+        cnh: editingItem.cnh ?? '',
+        cnhExpirationDate: editingItem.cnhExpirationDate || '',
+        phone: editingItem.phone || '',
+        isBlocked: editingItem.isBlocked || false,
+        isForeigner: editingItem.isForeigner || false,
+      });
+      setShowForm(true);
+    } else {
+      form.reset({ name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false, isForeigner: false });
     }
-  };
+  }, [editingItem, form]);
   
   const filteredData = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -166,6 +207,59 @@ function PersonsSection() {
   }, [data, searchTerm, showBlocked]);
 
 
+  const onSubmit = async (formData: PersonFormData) => {
+    setIsSubmitting(true);
+    
+    const isDuplicateCpf = data.some(p => p.cpf === formData.cpf && p.id !== editingItem?.id);
+    if (!formData.isForeigner && isDuplicateCpf) {
+      form.setError("cpf", { type: "manual", message: "Este CPF já está cadastrado." });
+      setIsSubmitting(false);
+      return;
+    }
+
+    const isDuplicateName = data.some(p => p.name.trim().toLowerCase() === formData.name.trim().toLowerCase() && p.id !== editingItem?.id);
+    if (isDuplicateName) {
+      form.setError("name", { type: "manual", message: "Este nome já está cadastrado." });
+      setIsSubmitting(false);
+      return;
+    }
+
+    const dataToSave: Partial<Driver> = { ...formData, cnhExpirationDate: formData.cnhExpirationDate || '' };
+    if(formData.isForeigner) { dataToSave.cpf = ''; }
+
+    try {
+        if (editingItem) {
+            const itemDoc = doc(db, 'persons', editingItem.id);
+            await updateDoc(itemDoc, dataToSave);
+            toast({ title: "Pessoa atualizada!", description: `${formData.name} foi atualizado com sucesso.` });
+        } else {
+            await addDoc(personsCollection, dataToSave);
+            toast({ title: "Pessoa cadastrada!", description: `${formData.name} foi cadastrado com sucesso.` });
+        }
+        await refreshData();
+        setEditingItem(null);
+        setShowForm(false);
+        form.reset();
+    } catch (error) {
+        console.error("Error saving person:", error);
+        toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a pessoa." });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+        const itemDoc = doc(db, 'persons', id);
+        await deleteDoc(itemDoc);
+        toast({ title: 'Excluído!', description: 'A pessoa foi removida com sucesso.' });
+        await refreshData();
+    } catch (error) {
+        console.error("Error deleting person:", error);
+        toast({ variant: 'destructive', title: "Erro", description: "Não foi possível excluir a pessoa." });
+    }
+  };
+  
   const formatDisplayPhoneNumber = (val: string): string => {
       if (typeof val !== 'string' || !val) return "";
       const digits = val.replace(/\D/g, "");
@@ -181,6 +275,14 @@ function PersonsSection() {
       return formatted;
   };
   
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (value: string) => void) => {
+    let rawValue = e.target.value.replace(/\D/g, "");
+    if (rawValue.length > 11) {
+      rawValue = rawValue.substring(0, 11);
+    }
+    fieldOnChange(rawValue);
+  };
+
   const formatDateString = (dateString: string | undefined): string => {
     if (!dateString) return 'N/A';
     try {
@@ -225,11 +327,19 @@ function PersonsSection() {
                     <PlusCircle className="mr-2 h-4 w-4" /> Cadastrar Pessoa
                 </Button>
                 </>
-            ) : null }
+            ) : (
+              <>
+                  <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); form.reset(); }}>Cancelar</Button>
+                  <Button type="submit" form="person-form" size="sm" disabled={isSubmitting}>
+                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
+                  </Button>
+              </>
+            )}
           </div>
         </div>
         {!showForm && (
-            <div className="flex items-center space-x-2 mt-2 self-end">
+            <div className="flex items-center space-x-2 pt-2 self-end">
                 <Switch id="show-blocked" checked={showBlocked} onCheckedChange={setShowBlocked} />
                 <Label htmlFor="show-blocked">Mostrar bloqueados</Label>
             </div>
@@ -237,14 +347,35 @@ function PersonsSection() {
       </CardHeader>
       <CardContent>
         {showForm && (
-          <div className="mb-6 p-4 border rounded-md bg-muted/20">
-            <PersonForm
-              editingItem={editingItem}
-              onSuccess={handleSuccess}
-              onCancel={handleCancel}
-              allPersons={data}
-            />
-          </div>
+          <Form {...form}>
+            <form id="person-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} value={isForeigner ? "ESTRANGEIRO" : field.value} maxLength={11} autoComplete="off" disabled={isForeigner} /></FormControl><FormMessage /></FormItem>)} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} value={field.value ?? ''} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="cnhExpirationDate" render={({ field }) => (<FormItem><FormLabel>Vencimento CNH</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="phone" render={({ field }) => (<FormItem className="flex flex-col h-full justify-end"><FormLabel>Telefone (Opcional)</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} value={formatDisplayPhoneNumber(field.value || "")} onChange={(e) => handlePhoneChange(e, field.onChange)} type="tel" autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="isForeigner" render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card">
+                          <div className="space-y-0.5"><FormLabel>Estrangeiro</FormLabel><FormDescription>Marque se a pessoa não possuir CPF.</FormDescription></div>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Estrangeiro" /></FormControl>
+                      </FormItem>
+                  )} />
+                  {editingItem && (
+                      <FormField control={form.control} name="isBlocked" render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card">
+                              <div className="space-y-0.5"><FormLabel>Bloquear Acesso</FormLabel><FormDescription>Impedir novas entradas.</FormDescription></div>
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Bloquear Acesso" /></FormControl>
+                          </FormItem>
+                      )} />
+                  )}
+              </div>
+            </form>
+          </Form>
         )}
         
         {!showForm && (
