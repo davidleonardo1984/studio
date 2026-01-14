@@ -34,6 +34,7 @@ import { format, parse, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 
+
 // Schemas for forms
 const personSchema = z.object({
   name: z.string().min(3, 'Nome é obrigatório (mín. 3 caracteres).'),
@@ -69,14 +70,12 @@ const personSchema = z.object({
         }
     }
 });
-
-
 type PersonFormData = z.infer<typeof personSchema>;
-
 
 const transportCompanySchema = z.object({
   name: z.string().min(3, 'Nome da Transportadora / Empresa é obrigatório (mín. 3 caracteres).'),
 });
+
 
 const internalDestinationSchema = z.object({
   name: z.string().min(3, 'Nome do destino é obrigatório (mín. 3 caracteres).'),
@@ -107,6 +106,8 @@ const FirebaseErrorDisplay = () => (
     </Card>
 );
 
+
+// Specific component for Persons using Firestore
 function PersonsSection() {
   const { toast } = useToast();
   const [data, setData] = useState<Driver[]>([]);
@@ -122,16 +123,15 @@ function PersonsSection() {
     defaultValues: { name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false, isForeigner: false },
   });
   
-  const { watch, setValue } = form;
-  const isForeigner = watch('isForeigner');
+  const cnhValue = form.watch('cnh');
+  const isForeigner = form.watch('isForeigner');
 
   useEffect(() => {
     if (isForeigner) {
-      setValue('cpf', '');
+      form.setValue('cpf', '');
       form.clearErrors('cpf');
     }
-  }, [isForeigner, form, setValue]);
-
+  }, [isForeigner, form]);
   
   if (!db) {
       return <FirebaseErrorDisplay />;
@@ -160,74 +160,45 @@ function PersonsSection() {
 
   useEffect(() => {
     if (editingItem) {
-      form.reset({
-        name: editingItem.name,
-        cpf: editingItem.cpf,
-        cnh: editingItem.cnh ?? '',
-        cnhExpirationDate: editingItem.cnhExpirationDate || '',
-        phone: editingItem.phone || '',
-        isBlocked: editingItem.isBlocked || false,
-        isForeigner: editingItem.isForeigner || false,
-      });
+      form.reset({ name: editingItem.name, cpf: editingItem.cpf, cnh: editingItem.cnh ?? '', cnhExpirationDate: editingItem.cnhExpirationDate || '', phone: editingItem.phone || '', isBlocked: editingItem.isBlocked || false, isForeigner: editingItem.isForeigner || false });
       setShowForm(true);
     } else {
       form.reset({ name: '', cpf: '', cnh: '', cnhExpirationDate: '', phone: '', isBlocked: false, isForeigner: false });
     }
   }, [editingItem, form]);
-  
-  const filteredData = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    
-    if (term === '*') {
-      if (showBlocked) {
-        return data.filter(p => p.isBlocked);
-      }
-      return data;
-    }
-
-    let baseData: Driver[];
-    if (showBlocked) {
-      baseData = data.filter(p => p.isBlocked);
-    } else {
-      baseData = data.filter(p => !p.isBlocked);
-    }
-
-    if (!term && !showBlocked) {
-      return [];
-    }
-
-    if (!term && showBlocked) {
-      return baseData;
-    }
-
-    return baseData.filter(person => 
-      person.name.toLowerCase().includes(term) ||
-      person.cpf.includes(term)
-    );
-  }, [data, searchTerm, showBlocked]);
-
 
   const onSubmit = async (formData: PersonFormData) => {
     setIsSubmitting(true);
-    
-    const isDuplicateCpf = data.some(p => p.cpf === formData.cpf && p.id !== editingItem?.id);
-    if (!formData.isForeigner && isDuplicateCpf) {
-      form.setError("cpf", { type: "manual", message: "Este CPF já está cadastrado." });
-      setIsSubmitting(false);
-      return;
-    }
-
-    const isDuplicateName = data.some(p => p.name.trim().toLowerCase() === formData.name.trim().toLowerCase() && p.id !== editingItem?.id);
-    if (isDuplicateName) {
-      form.setError("name", { type: "manual", message: "Este nome já está cadastrado." });
-      setIsSubmitting(false);
-      return;
-    }
-
-    const dataToSave: Partial<Driver> = { ...formData, cnhExpirationDate: formData.cnhExpirationDate || '' };
-    if(formData.isForeigner) { dataToSave.cpf = ''; }
-
     try {
+        if (!formData.isForeigner) {
+            const isDuplicateCpf = data.some(
+                p => p.cpf === formData.cpf && p.id !== editingItem?.id
+            );
+            if (isDuplicateCpf) {
+                form.setError("cpf", { type: "manual", message: "Este CPF já está cadastrado." });
+                setIsSubmitting(false);
+                return;
+            }
+        }
+
+        const isDuplicateName = data.some(
+            p => p.name.trim().toLowerCase() === formData.name.trim().toLowerCase() && p.id !== editingItem?.id
+        );
+        if (isDuplicateName) {
+            form.setError("name", { type: "manual", message: "Este nome já está cadastrado." });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const dataToSave: Partial<Driver> = {
+            ...formData,
+            cnhExpirationDate: formData.cnhExpirationDate || '',
+        };
+        if(formData.isForeigner) {
+            dataToSave.cpf = '';
+        }
+
+
         if (editingItem) {
             const itemDoc = doc(db, 'persons', editingItem.id);
             await updateDoc(itemDoc, dataToSave);
@@ -260,6 +231,39 @@ function PersonsSection() {
     }
   };
   
+  const filteredData = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    
+    // '*' shows all (active and blocked)
+    if (term === '*') {
+      if (showBlocked) {
+        return data.filter(p => p.isBlocked);
+      }
+      return data;
+    }
+
+    let baseData: Driver[];
+    if (showBlocked) {
+      baseData = data.filter(p => p.isBlocked);
+    } else {
+      baseData = data.filter(p => !p.isBlocked);
+    }
+
+    if (!term && !showBlocked) {
+      return [];
+    }
+
+    if (!term && showBlocked) {
+      return baseData;
+    }
+
+    return baseData.filter(person => 
+      person.name.toLowerCase().includes(term) ||
+      person.cpf.includes(term)
+    );
+  }, [data, searchTerm, showBlocked]);
+
+
   const formatDisplayPhoneNumber = (val: string): string => {
       if (typeof val !== 'string' || !val) return "";
       const digits = val.replace(/\D/g, "");
@@ -276,20 +280,115 @@ function PersonsSection() {
   };
   
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (value: string) => void) => {
-    let rawValue = e.target.value.replace(/\D/g, "");
-    if (rawValue.length > 11) {
-      rawValue = rawValue.substring(0, 11);
-    }
-    fieldOnChange(rawValue);
+      let rawValue = e.target.value.replace(/\D/g, "");
+      if (rawValue.length > 11) {
+          rawValue = rawValue.substring(0, 11);
+      }
+      fieldOnChange(rawValue);
   };
+  
+  const formFields = (form: any) => (
+     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+      <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} value={isForeigner ? "ESTRANGEIRO" : field.value} maxLength={11} autoComplete="off" disabled={isForeigner} /></FormControl><FormMessage /></FormItem>)} />
+      <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} value={field.value ?? ''} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
+      
+      <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {cnhValue && (
+            <FormField
+            control={form.control}
+            name="cnhExpirationDate"
+            render={({ field }) => (
+                <FormItem className="flex flex-col h-full justify-end">
+                <FormLabel>Vencimento CNH</FormLabel>
+                    <FormControl>
+                        <Input type="date" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                <FormMessage />
+            </FormItem>
+
+            )}
+            />
+        )}
+        
+        <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+            <FormItem className="flex flex-col h-full justify-end">
+            <FormLabel>Telefone (Opcional)</FormLabel>
+            <FormControl>
+                <Input
+                placeholder="(XX) XXXXX-XXXX"
+                {...field}
+                value={formatDisplayPhoneNumber(field.value || "")}
+                onChange={(e) => handlePhoneChange(e, field.onChange)}
+                type="tel"
+                autoComplete="off"
+                />
+            </FormControl>
+            <FormMessage />
+        </FormItem>
+
+            )}
+        />
+      </div>
+      <div className="md:col-span-3 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="isForeigner"
+          render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card">
+                  <div className="space-y-0.5">
+                      <FormLabel>Estrangeiro</FormLabel>
+                      <FormDescription>
+                          Marque se a pessoa não possuir CPF.
+                      </FormDescription>
+                  </div>
+                  <FormControl>
+                      <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          aria-label="Estrangeiro"
+                      />
+                  </FormControl>
+              </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="isBlocked"
+          render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card">
+                  <div className="space-y-0.5">
+                      <FormLabel>Bloquear Acesso</FormLabel>
+                      <FormDescription>
+                          Impedir que esta pessoa seja registrada em novas entradas.
+                      </FormDescription>
+                  </div>
+                  <FormControl>
+                      <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={!editingItem}
+                          aria-label="Bloquear Acesso"
+                      />
+                  </FormControl>
+              </FormItem>
+          )}
+          />
+      </div>
+    </div>
+  );
 
   const formatDateString = (dateString: string | undefined): string => {
     if (!dateString) return 'N/A';
     try {
+        // Assuming dateString is 'YYYY-MM-DD'
         const date = parse(dateString, 'yyyy-MM-dd', new Date());
         return format(date, 'dd/MM/yyyy');
     } catch (e) {
-        return dateString;
+        return dateString; // fallback to original string if parsing fails
     }
   };
   
@@ -312,73 +411,49 @@ function PersonsSection() {
             <Users className="w-6 h-6 text-primary" />
             <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes ({data.length})</CardTitle>
           </div>
-          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-            {!showForm ? (
+          <div className="flex flex-col items-end w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+              {!showForm ? (
                 <>
-                <Input 
+                  <Input 
                     placeholder="Pesquisar ou '*' para todos"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     prefixIcon={<Search className="h-4 w-4 text-muted-foreground" />}
-                    className="w-full sm:max-w-xs"
+                    className="w-full sm:w-auto"
                     autoComplete="off"
-                />
-                <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
+                  />
+                  <Button size="sm" onClick={() => { setEditingItem(null); setShowForm(true); }} className="shrink-0">
                     <PlusCircle className="mr-2 h-4 w-4" /> Cadastrar Pessoa
-                </Button>
+                  </Button>
                 </>
-            ) : (
-              <>
+              ) : (
+                <>
                   <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); form.reset(); }}>Cancelar</Button>
                   <Button type="submit" form="person-form" size="sm" disabled={isSubmitting}>
-                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
                   </Button>
-              </>
+                </>
+              )}
+            </div>
+            {!showForm && (
+              <div className="flex items-center space-x-2 mt-2">
+                <Switch id="show-blocked" checked={showBlocked} onCheckedChange={setShowBlocked} />
+                <Label htmlFor="show-blocked">Mostrar bloqueados</Label>
+              </div>
             )}
           </div>
         </div>
-        {!showForm && (
-            <div className="flex items-center space-x-2 pt-2 self-end">
-                <Switch id="show-blocked" checked={showBlocked} onCheckedChange={setShowBlocked} />
-                <Label htmlFor="show-blocked">Mostrar bloqueados</Label>
-            </div>
-        )}
       </CardHeader>
       <CardContent>
-        {showForm && (
+        {showForm ? (
           <Form {...form}>
             <form id="person-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-6 p-4 border rounded-md bg-muted/20">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} value={isForeigner ? "ESTRANGEIRO" : field.value} maxLength={11} autoComplete="off" disabled={isForeigner} /></FormControl><FormMessage /></FormItem>)} />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} value={field.value ?? ''} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="cnhExpirationDate" render={({ field }) => (<FormItem><FormLabel>Vencimento CNH</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="phone" render={({ field }) => (<FormItem className="flex flex-col h-full justify-end"><FormLabel>Telefone (Opcional)</FormLabel><FormControl><Input placeholder="(XX) XXXXX-XXXX" {...field} value={formatDisplayPhoneNumber(field.value || "")} onChange={(e) => handlePhoneChange(e, field.onChange)} type="tel" autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="isForeigner" render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card">
-                          <div className="space-y-0.5"><FormLabel>Estrangeiro</FormLabel><FormDescription>Marque se a pessoa não possuir CPF.</FormDescription></div>
-                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Estrangeiro" /></FormControl>
-                      </FormItem>
-                  )} />
-                  {editingItem && (
-                      <FormField control={form.control} name="isBlocked" render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-card">
-                              <div className="space-y-0.5"><FormLabel>Bloquear Acesso</FormLabel><FormDescription>Impedir novas entradas.</FormDescription></div>
-                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Bloquear Acesso" /></FormControl>
-                          </FormItem>
-                      )} />
-                  )}
-              </div>
+              {formFields(form)}
             </form>
           </Form>
-        )}
-        
-        {!showForm && (
+        ) : (
           <>
             {isLoading ? (
               <div className="flex justify-center items-center py-12">
@@ -423,7 +498,7 @@ function PersonsSection() {
                           </TableCell>
                           <TableCell className="py-1">{item.phone ? formatDisplayPhoneNumber(item.phone) : 'N/A'}</TableCell>
                           <TableCell className="text-right space-x-2 py-1">
-                              <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); setShowForm(true); }}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); }}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
                               <AlertDialog>
                               <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
                               <AlertDialogContent>
@@ -927,3 +1002,4 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
+    

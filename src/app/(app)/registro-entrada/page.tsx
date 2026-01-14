@@ -737,33 +737,35 @@ export default function RegistroEntradaPage() {
             {editingEntry ? `Alterando dados do veículo ${editingEntry.plate1}.` : 'Preencha os dados abaixo para registrar a entrada de um veículo.'}
           </p>
         </div>
-        <Dialog open={isPersonFormOpen} onOpenChange={setIsPersonFormOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Cadastrar Nova Pessoa
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-4xl">
-                <DialogHeader>
-                    <DialogTitle>Cadastro Rápido de Pessoa</DialogTitle>
-                    <DialogDescription>
-                        Cadastre um novo motorista ou ajudante. Após salvar, ele estará disponível na lista.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                    <PersonForm
-                        onSuccess={handlePersonCreated}
-                        onCancel={() => setIsPersonFormOpen(false)}
-                        allPersons={persons}
-                    />
-                </div>
-            </DialogContent>
-        </Dialog>
       </div>
       <Card className="shadow-xl w-full">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-semibold text-primary">{editingEntry ? 'Editar Registro' : 'Registro de Entrada'}</CardTitle>
+            <div className="flex justify-between items-center">
+                <CardTitle className="text-xl font-semibold text-primary">{editingEntry ? 'Editar Registro' : 'Registro de Entrada'}</CardTitle>
+                <Dialog open={isPersonFormOpen} onOpenChange={setIsPersonFormOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline">
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Cadastrar Nova Pessoa
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-4xl">
+                        <DialogHeader>
+                            <DialogTitle>Cadastro Rápido de Pessoa</DialogTitle>
+                            <DialogDescription>
+                                Cadastre um novo motorista ou ajudante. Após salvar, ele estará disponível na lista.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <PersonForm
+                                onSuccess={handlePersonCreated}
+                                onCancel={() => setIsPersonFormOpen(false)}
+                                allPersons={persons}
+                            />
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
         </CardHeader>
         <CardContent>
           <Form {...form}>
