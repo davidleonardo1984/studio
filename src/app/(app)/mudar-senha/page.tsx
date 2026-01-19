@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useForm, type Control } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -24,64 +24,13 @@ const changePasswordSchema = z.object({
 
 type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 
-
-const PasswordInput = ({ 
-  control, 
-  name, 
-  label, 
-  showPassword, 
-  toggleShowPassword,
-  onKeyDown
-}: { 
-  control: Control<ChangePasswordFormValues>,
-  name: "currentPassword" | "newPassword" | "confirmPassword", 
-  label: string, 
-  showPassword: boolean, 
-  toggleShowPassword: () => void,
-  onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void
-}) => (
-     <FormField
-        control={control}
-        name={name}
-        render={({ field }) => (
-            <FormItem>
-                <FormLabel>{label}</FormLabel>
-                <div className="relative">
-                    <FormControl>
-                        <Input 
-                          type={showPassword ? "text" : "password"} 
-                          placeholder="••••••••" 
-                          {...field} 
-                          onKeyDown={onKeyDown}
-                          noAutoUppercase={true} 
-                        />
-                    </FormControl>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                        onClick={toggleShowPassword}
-                        tabIndex={-1}
-                    >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        <span className="sr-only">{showPassword ? "Ocultar senha" : "Mostrar senha"}</span>
-                    </Button>
-                </div>
-                <FormMessage />
-            </FormItem>
-        )}
-    />
-);
-
-
 export default function MudarSenhaPage() {
   const router = useRouter();
   const { user, changePassword } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showNewPasswords, setShowNewPasswords] = useState(false);
 
   const form = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
@@ -129,44 +78,118 @@ export default function MudarSenhaPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <PasswordInput 
+                <FormField
                   control={control}
-                  name="currentPassword" 
-                  label="Senha Atual" 
-                  showPassword={showCurrentPassword} 
-                  toggleShowPassword={() => setShowCurrentPassword(!showCurrentPassword)} 
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      setFocus('newPassword');
-                    }
-                  }}
+                  name="currentPassword"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Senha Atual</FormLabel>
+                          <div className="relative">
+                              <FormControl>
+                                  <Input 
+                                    type={showCurrentPassword ? "text" : "password"} 
+                                    placeholder="••••••••" 
+                                    {...field} 
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        setFocus('newPassword');
+                                      }
+                                    }}
+                                    noAutoUppercase={true} 
+                                  />
+                              </FormControl>
+                              <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                                  onClick={() => setShowCurrentPassword((prev) => !prev)}
+                                  tabIndex={-1}
+                              >
+                                  {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  <span className="sr-only">{showCurrentPassword ? "Ocultar senha" : "Mostrar senha"}</span>
+                              </Button>
+                          </div>
+                          <FormMessage />
+                      </FormItem>
+                  )}
                 />
-                <PasswordInput 
+                
+                <FormField
                   control={control}
-                  name="newPassword" 
-                  label="Nova Senha" 
-                  showPassword={showNewPassword} 
-                  toggleShowPassword={() => setShowNewPassword(!showNewPassword)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      setFocus('confirmPassword');
-                    }
-                  }}
+                  name="newPassword"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Nova Senha</FormLabel>
+                          <div className="relative">
+                              <FormControl>
+                                  <Input 
+                                    type={showNewPasswords ? "text" : "password"} 
+                                    placeholder="Mínimo 6 caracteres"
+                                    {...field} 
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        setFocus('confirmPassword');
+                                      }
+                                    }}
+                                    noAutoUppercase={true} 
+                                  />
+                              </FormControl>
+                              <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                                  onClick={() => setShowNewPasswords((prev) => !prev)}
+                                  tabIndex={-1}
+                              >
+                                  {showNewPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  <span className="sr-only">{showNewPasswords ? "Ocultar senha" : "Mostrar senha"}</span>
+                              </Button>
+                          </div>
+                          <FormMessage />
+                      </FormItem>
+                  )}
                 />
-                <PasswordInput 
+
+                <FormField
                   control={control}
-                  name="confirmPassword" 
-                  label="Confirmar Nova Senha" 
-                  showPassword={showNewPassword} 
-                  toggleShowPassword={() => setShowNewPassword(!showNewPassword)} 
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleSubmit(onSubmit)();
-                    }
-                  }}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Confirmar Nova Senha</FormLabel>
+                          <div className="relative">
+                              <FormControl>
+                                  <Input 
+                                    type={showNewPasswords ? "text" : "password"} 
+                                    placeholder="••••••••"
+                                    {...field} 
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleSubmit(onSubmit)();
+                                      }
+                                    }}
+                                    noAutoUppercase={true} 
+                                  />
+                              </FormControl>
+                              <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                                  onClick={() => setShowNewPasswords((prev) => !prev)}
+                                  tabIndex={-1}
+                              >
+                                  {showNewPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  <span className="sr-only">{showNewPasswords ? "Ocultar senha" : "Mostrar senha"}</span>
+                              </Button>
+                          </div>
+                          <FormMessage />
+                      </FormItem>
+                  )}
                 />
 
                 <div className="flex justify-end gap-2 pt-4">
