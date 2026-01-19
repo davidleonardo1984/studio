@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -25,6 +24,57 @@ const changePasswordSchema = z.object({
 
 type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 
+
+const PasswordInput = ({ 
+  control, 
+  name, 
+  label, 
+  showPassword, 
+  toggleShowPassword,
+  onKeyDown
+}: { 
+  control: Control<ChangePasswordFormValues>,
+  name: "currentPassword" | "newPassword" | "confirmPassword", 
+  label: string, 
+  showPassword: boolean, 
+  toggleShowPassword: () => void,
+  onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void
+}) => (
+     <FormField
+        control={control}
+        name={name}
+        render={({ field }) => (
+            <FormItem>
+                <FormLabel>{label}</FormLabel>
+                <div className="relative">
+                    <FormControl>
+                        <Input 
+                          type={showPassword ? "text" : "password"} 
+                          placeholder="••••••••" 
+                          {...field} 
+                          onKeyDown={onKeyDown}
+                          noAutoUppercase={true} 
+                        />
+                    </FormControl>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={toggleShowPassword}
+                        tabIndex={-1}
+                    >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        <span className="sr-only">{showPassword ? "Ocultar senha" : "Mostrar senha"}</span>
+                    </Button>
+                </div>
+                <FormMessage />
+            </FormItem>
+        )}
+    />
+);
+
+
 export default function MudarSenhaPage() {
   const router = useRouter();
   const { user, changePassword } = useAuth();
@@ -41,6 +91,8 @@ export default function MudarSenhaPage() {
       confirmPassword: '',
     },
   });
+
+  const { control, setFocus, handleSubmit } = form;
 
   const onSubmit = async (data: ChangePasswordFormValues) => {
     if (!user) {
@@ -62,36 +114,6 @@ export default function MudarSenhaPage() {
     }
   };
   
-  const PasswordInput = ({ name, label, showPassword, toggleShowPassword }: { name: "currentPassword" | "newPassword" | "confirmPassword", label: string, showPassword: boolean, toggleShowPassword: () => void}) => (
-     <FormField
-        control={form.control}
-        name={name}
-        render={({ field }) => (
-            <FormItem>
-                <FormLabel>{label}</FormLabel>
-                <div className="relative">
-                    <FormControl>
-                        <Input type={showPassword ? "text" : "password"} placeholder="••••••••" {...field} noAutoUppercase={true} />
-                    </FormControl>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                        onClick={toggleShowPassword}
-                        tabIndex={-1}
-                    >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        <span className="sr-only">{showPassword ? "Ocultar senha" : "Mostrar senha"}</span>
-                    </Button>
-                </div>
-                <FormMessage />
-            </FormItem>
-        )}
-    />
-  );
-
-
   return (
     <div className="container mx-auto pt-4 pb-8">
       <Card className="max-w-lg mx-auto shadow-xl">
@@ -106,10 +128,46 @@ export default function MudarSenhaPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <PasswordInput name="currentPassword" label="Senha Atual" showPassword={showCurrentPassword} toggleShowPassword={() => setShowCurrentPassword(!showCurrentPassword)} />
-                <PasswordInput name="newPassword" label="Nova Senha" showPassword={showNewPassword} toggleShowPassword={() => setShowNewPassword(!showNewPassword)} />
-                <PasswordInput name="confirmPassword" label="Confirmar Nova Senha" showPassword={showNewPassword} toggleShowPassword={() => setShowNewPassword(!showNewPassword)} />
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <PasswordInput 
+                  control={control}
+                  name="currentPassword" 
+                  label="Senha Atual" 
+                  showPassword={showCurrentPassword} 
+                  toggleShowPassword={() => setShowCurrentPassword(!showCurrentPassword)} 
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      setFocus('newPassword');
+                    }
+                  }}
+                />
+                <PasswordInput 
+                  control={control}
+                  name="newPassword" 
+                  label="Nova Senha" 
+                  showPassword={showNewPassword} 
+                  toggleShowPassword={() => setShowNewPassword(!showNewPassword)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      setFocus('confirmPassword');
+                    }
+                  }}
+                />
+                <PasswordInput 
+                  control={control}
+                  name="confirmPassword" 
+                  label="Confirmar Nova Senha" 
+                  showPassword={showNewPassword} 
+                  toggleShowPassword={() => setShowNewPassword(!showNewPassword)} 
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSubmit(onSubmit)();
+                    }
+                  }}
+                />
 
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => router.back()}>Cancelar</Button>
