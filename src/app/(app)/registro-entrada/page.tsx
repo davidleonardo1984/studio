@@ -782,7 +782,10 @@ export default function RegistroEntradaPage() {
                             <Input
                                 placeholder={dataLoading ? "CARREGANDO..." : "Digite o nome do motorista"}
                                 {...field}
-                                onBlur={handleDriverBlur}
+                                onBlur={(e) => {
+                                    field.onBlur(e);
+                                    handleDriverBlur();
+                                }}
                                 disabled={dataLoading || isSubmitting}
                                 list="driver-list"
                                 autoComplete="off"
