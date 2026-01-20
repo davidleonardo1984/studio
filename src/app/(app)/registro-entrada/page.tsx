@@ -296,21 +296,41 @@ export default function RegistroEntradaPage() {
     },
   });
 
+  const { watch } = form;
+  const driverNameValue = watch('driverName');
+
+  const selectedDriverDetails = useMemo(() => {
+      if (!driverNameValue) return null;
+      return persons.find(p => p.name.toLowerCase() === driverNameValue.toLowerCase()) || null;
+  }, [driverNameValue, persons]);
+
+  const isSelectedDriverBlocked = !!selectedDriverDetails?.isBlocked;
+
   const handleDriverBlur = useCallback(() => {
     if (showCnhUpdate) return;
     const driverName = form.getValues('driverName');
     if (!driverName) return;
 
     const driver = persons.find(p => p.name.toLowerCase() === driverName.toLowerCase());
+
+    if (driver?.isBlocked) {
+      // Zod validation is already triggered by form's onBlur, showing the FormMessage.
+      // We return here to prevent the CNH check.
+      return;
+    }
     
     if (driver?.cnh && driver.cnhExpirationDate) {
-      const expirationDate = parseISO(driver.cnhExpirationDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      try {
+        const expirationDate = parseISO(driver.cnhExpirationDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-      if (isAfter(today, expirationDate)) {
-        setExpiredDriver(driver);
-        setIsCnhAlertOpen(true);
+        if (isAfter(today, expirationDate)) {
+          setExpiredDriver(driver);
+          setIsCnhAlertOpen(true);
+        }
+      } catch (e) {
+        console.error("Invalid CNH expiration date format for driver:", driver.name, e);
       }
     }
   }, [form, persons, showCnhUpdate]);
@@ -789,6 +809,7 @@ export default function RegistroEntradaPage() {
                                 disabled={dataLoading || isSubmitting}
                                 list="driver-list"
                                 autoComplete="off"
+                                className={cn(isSelectedDriverBlocked && 'text-destructive font-bold')}
                             />
                         </FormControl>
                         <datalist id="driver-list">
