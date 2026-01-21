@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, InternalDestination } from '@/lib/types';
-import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn, Edit2, Trash2, Save, UserPlus } from 'lucide-react';
+import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn, Edit2, Trash2, Save, UserPlus, RotateCcw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy, addDoc, Timestamp, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
@@ -376,6 +376,15 @@ export default function RegistroEntradaPage() {
     }
   }, [toast]);
 
+
+  const handleClearForm = () => {
+    form.reset();
+    setShowAssistants(false);
+    toast({
+      title: 'Campos Limpos',
+      description: 'O formulário está pronto para um novo registro.',
+    });
+  };
 
   const handlePersonCreated = () => {
     fetchAllData(); 
@@ -1116,25 +1125,38 @@ export default function RegistroEntradaPage() {
                     </div>
                 </>
             ) : (
-                <div className="flex justify-end w-full gap-4">
-                    <Button
-                        variant="outline"
-                        onClick={form.handleSubmit(data => handleFormSubmit(data, 'aguardando_patio'))}
-                        disabled={isSubmitting || dataLoading}
-                        className="w-full sm:w-auto"
-                    >
-                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SendToBack className="mr-2 h-4 w-4" /> }
-                        Aguardar no Pátio
-                    </Button>
-                    <Button
-                        onClick={initiateNewEntryApproval}
-                        disabled={isSubmitting || dataLoading}
-                        className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
-                    >
-                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
-                        Liberar Entrada e Imprimir
-                    </Button>
-                </div>
+                <>
+                    <div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleClearForm}
+                            disabled={isSubmitting || dataLoading}
+                        >
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Limpar Campos
+                        </Button>
+                    </div>
+                    <div className="flex justify-end w-full sm:w-auto gap-4">
+                        <Button
+                            variant="outline"
+                            onClick={form.handleSubmit(data => handleFormSubmit(data, 'aguardando_patio'))}
+                            disabled={isSubmitting || dataLoading}
+                            className="w-full sm:w-auto"
+                        >
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SendToBack className="mr-2 h-4 w-4" /> }
+                            Aguardar no Pátio
+                        </Button>
+                        <Button
+                            onClick={initiateNewEntryApproval}
+                            disabled={isSubmitting || dataLoading}
+                            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
+                            Liberar Entrada e Imprimir
+                        </Button>
+                    </div>
+                </>
             )}
         </CardFooter>
       </Card>
