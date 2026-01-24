@@ -325,8 +325,6 @@ export default function RegistroEntradaPage() {
     const driver = persons.find(p => p.name.toLowerCase() === driverName.toLowerCase());
 
     if (driver?.isBlocked) {
-      // Zod validation is already triggered by form's onBlur, showing the FormMessage.
-      // We return here to prevent the CNH check.
       return;
     }
     
@@ -408,14 +406,17 @@ export default function RegistroEntradaPage() {
 
   useEffect(() => {
     const entryId = searchParams.get('id');
-    if (!entryId || !db) {
+
+    if (!entryId) {
+      if (editingEntry) { 
         setEditingEntry(null);
         form.reset({
             driverName: '', assistant1Name: '', assistant2Name: '',
             transportCompanyName: '', plate1: '', plate2: '', plate3: '',
             internalDestinationName: '', movementType: '', observation: '',
         });
-        return;
+      }
+      return; 
     }
 
     const fetchEntry = async () => {
@@ -454,10 +455,10 @@ export default function RegistroEntradaPage() {
         }
     };
 
-    if (persons.length > 0) { // Fetch entry only after persons are loaded
+    if (db && persons.length > 0 && editingEntry?.id !== entryId) {
         fetchEntry();
     }
-  }, [searchParams, form, router, toast, persons.length]);
+  }, [searchParams, router, toast, persons.length, form, editingEntry]);
 
   useEffect(() => {
     if (!isDialogOpen) {
