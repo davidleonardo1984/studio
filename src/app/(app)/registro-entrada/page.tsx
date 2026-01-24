@@ -76,7 +76,7 @@ const personSchema = z.object({
 type PersonFormData = z.infer<typeof personSchema>;
 
 interface PersonFormProps {
-  onSuccess: () => void;
+  onSuccess: (newPerson: Driver) => void;
   onCancel: () => void;
   allPersons: Driver[];
 }
@@ -124,10 +124,21 @@ function PersonForm({ onSuccess, onCancel, allPersons }: PersonFormProps) {
         const dataToSave: Partial<Driver> = { ...formData, cnhExpirationDate: formData.cnhExpirationDate || '' };
         if(formData.isForeigner) { dataToSave.cpf = ''; }
 
-        await addDoc(collection(db, 'persons'), dataToSave);
+        const docRef = await addDoc(collection(db, 'persons'), dataToSave);
+        const newPerson: Driver = {
+            id: docRef.id,
+            name: formData.name,
+            cpf: dataToSave.cpf || '',
+            cnh: formData.cnh,
+            cnhExpirationDate: formData.cnhExpirationDate,
+            phone: formData.phone,
+            isBlocked: formData.isBlocked,
+            isForeigner: formData.isForeigner
+        };
+
         toast({ title: "Pessoa cadastrada!", description: `${formData.name} foi cadastrado com sucesso.` });
         
-        onSuccess();
+        onSuccess(newPerson);
         form.reset();
 
     } catch (error) {
@@ -386,8 +397,8 @@ export default function RegistroEntradaPage() {
     });
   };
 
-  const handlePersonCreated = () => {
-    fetchAllData(); 
+  const handlePersonCreated = (newPerson: Driver) => {
+    setPersons(prev => [...prev, newPerson].sort((a,b) => a.name.localeCompare(b.name)));
     setIsPersonFormOpen(false); 
   };
 
@@ -1266,3 +1277,5 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
+
+    
