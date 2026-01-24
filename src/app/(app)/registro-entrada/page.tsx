@@ -458,7 +458,7 @@ export default function RegistroEntradaPage() {
     if (db && persons.length > 0 && editingEntry?.id !== entryId) {
         fetchEntry();
     }
-  }, [searchParams, router, toast, persons.length, form, editingEntry]);
+  }, [searchParams, router, toast, persons, form, editingEntry]);
 
   useEffect(() => {
     if (!isDialogOpen) {
@@ -1278,5 +1278,3 @@ export default function RegistroEntradaPage() {
     </>
   );
 }
-
-    
