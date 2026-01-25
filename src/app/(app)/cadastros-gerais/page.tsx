@@ -406,12 +406,12 @@ function PersonsSection() {
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Users className="w-6 h-6 text-primary" />
-            <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes ({data.length})</CardTitle>
-          </div>
-          <div className="flex flex-col items-end w-full sm:w-auto">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Users className="w-6 h-6 text-primary" />
+              <CardTitle className="text-xl font-semibold text-primary font-headline">Motoristas e Ajudantes ({data.length})</CardTitle>
+            </div>
             <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
               {!showForm ? (
                 <>
@@ -428,22 +428,22 @@ function PersonsSection() {
                   </Button>
                 </>
               ) : (
-                <>
+                <div className="flex w-full justify-end gap-2">
                   <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingItem(null); form.reset(); }}>Cancelar</Button>
                   <Button type="submit" form="person-form" size="sm" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingItem ? 'Salvar Alterações' : 'Cadastrar'}
                   </Button>
-                </>
+                </div>
               )}
             </div>
-            {!showForm && (
-              <div className="flex items-center space-x-2 mt-2">
-                <Switch id="show-blocked" checked={showBlocked} onCheckedChange={setShowBlocked} />
-                <Label htmlFor="show-blocked">Mostrar bloqueados</Label>
-              </div>
-            )}
           </div>
+          {!showForm && (
+            <div className="flex items-center justify-end space-x-2">
+              <Switch id="show-blocked" checked={showBlocked} onCheckedChange={setShowBlocked} />
+              <Label htmlFor="show-blocked">Mostrar bloqueados</Label>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
