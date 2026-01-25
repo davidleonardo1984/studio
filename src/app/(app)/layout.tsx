@@ -1,13 +1,21 @@
 
 "use client";
 
-import React, { useEffect, type ReactNode, useState } from 'react';
+import React, { useEffect, type ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { AppSidebar } from '@/components/layout/AppSidebar';
-import { AppHeader } from '@/components/layout/AppHeader';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const AppSidebar = dynamic(() => import('@/components/layout/AppSidebar').then(mod => mod.AppSidebar), {
+  ssr: false,
+});
+
+const AppHeader = dynamic(() => import('@/components/layout/AppHeader').then(mod => mod.AppHeader), {
+  ssr: false,
+  loading: () => <Skeleton className="sticky top-0 z-10 h-16 w-full border-b" />,
+});
 
 
 export default function AuthenticatedLayout({ children }: { children: ReactNode }) {
