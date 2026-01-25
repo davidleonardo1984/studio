@@ -989,13 +989,13 @@ export default function CadastrosGeraisPage() {
           <TabsTrigger value="internalDestinations" className="flex items-center gap-2"><MapPin className="h-4 w-4" />Destinos Internos</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="persons" className="mt-0">
+        <TabsContent value="persons" className="mt-4">
           <PersonsSection />
         </TabsContent>
-        <TabsContent value="transportCompanies" className="mt-0">
+        <TabsContent value="transportCompanies" className="mt-4">
            <TransportCompaniesSection />
         </TabsContent>
-        <TabsContent value="internalDestinations" className="mt-0">
+        <TabsContent value="internalDestinations" className="mt-4">
           <InternalDestinationsSection />
         </TabsContent>
       </Tabs>
