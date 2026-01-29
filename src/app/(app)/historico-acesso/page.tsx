@@ -87,6 +87,7 @@ export default function HistoricoAcessoPage() {
     plate: '',
     observation: '',
     dateRange: undefined as DateRange | undefined,
+    barcode: '',
   });
   const [hasSearched, setHasSearched] = useState(false);
   const [showObservationColumn, setShowObservationColumn] = useState(false);
@@ -124,11 +125,11 @@ export default function HistoricoAcessoPage() {
     setIsSearching(true);
     setHasSearched(true);
     
-    const { dateRange, driverName, transportCompany, plate, observation } = filters;
+    const { dateRange, driverName, transportCompany, plate, observation, barcode } = filters;
     setShowObservationColumn(observation.trim() !== '');
     setShowAllPlateColumns(plate.trim() !== '');
 
-    const isWildcardSearch = driverName.trim() === '*' || transportCompany.trim() === '*' || plate.trim() === '*' || observation.trim() === '*';
+    const isWildcardSearch = driverName.trim() === '*' || transportCompany.trim() === '*' || plate.trim() === '*' || observation.trim() === '*' || barcode.trim() === '*';
 
     try {
         // Fetch all entries ordered by date. Filtering is done client-side.
@@ -190,6 +191,13 @@ export default function HistoricoAcessoPage() {
                 const observationSearchTerm = observation.trim().toLowerCase();
                 const observationMatch = entry.observation && entry.observation.toLowerCase().includes(observationSearchTerm);
                 if (!observationMatch) return false;
+            }
+            
+            // Barcode/ID Filter (Substring Match)
+            if (barcode.trim()) {
+              const searchTerm = barcode.trim().toLowerCase();
+              const barcodeMatch = entry.barcode.toLowerCase().includes(searchTerm);
+              if (!barcodeMatch) return false;
             }
 
 
@@ -359,7 +367,7 @@ export default function HistoricoAcessoPage() {
   };
 
   const resetFilters = () => {
-    setFilters({ transportCompany: '', driverName: '', plate: '', observation: '', dateRange: undefined });
+    setFilters({ transportCompany: '', driverName: '', plate: '', observation: '', dateRange: undefined, barcode: '' });
     setFilteredEntries([]);
     setHasSearched(false);
     setShowObservationColumn(false);
@@ -477,7 +485,18 @@ export default function HistoricoAcessoPage() {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
-             <div className="space-y-1 lg:col-span-2">
+            <div className="space-y-1">
+                <Label htmlFor="barcodeFilter">ID/Código</Label>
+                <Input
+                  id="barcodeFilter"
+                  placeholder="FILTRAR POR ID/CÓDIGO OU '*'"
+                  value={filters.barcode}
+                  onChange={(e) => setFilters(prev => ({ ...prev, barcode: e.target.value }))}
+                  noAutoUppercase
+                  autoComplete="off"
+                />
+            </div>
+            <div className="space-y-1">
               <Label htmlFor="observationFilter">Observação</Label>
               <Input id="observationFilter" placeholder="FILTRAR POR OBSERVAÇÃO OU '*'" value={filters.observation} onChange={(e) => setFilters(prev => ({...prev, observation: e.target.value}))} autoComplete="off" />
             </div>
