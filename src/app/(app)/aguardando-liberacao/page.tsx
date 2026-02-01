@@ -57,6 +57,7 @@ export default function AguardandoLiberacaoPage() {
   const [now, setNow] = useState(new Date());
 
   const [isLiberationDialogOpen, setIsLiberationDialogOpen] = useState(false);
+  const [isNotifiedConfirmOpen, setIsNotifiedConfirmOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleEntry | null>(null);
   const [liberatedByName, setLiberatedByName] = useState('');
 
@@ -117,11 +118,13 @@ export default function AguardandoLiberacaoPage() {
   }, [toast]);
 
   useEffect(() => {
-    if (!isLiberationDialogOpen) {
+    if (!isLiberationDialogOpen && !isNotifiedConfirmOpen) {
       setSelectedVehicle(null);
-      setLiberatedByName('');
     }
-  }, [isLiberationDialogOpen]);
+    if (!isLiberationDialogOpen) {
+        setLiberatedByName('');
+    }
+  }, [isLiberationDialogOpen, isNotifiedConfirmOpen]);
 
 
   const calculateWaitingTime = useCallback((arrivalTimestamp: VehicleEntry['arrivalTimestamp'], currentTime: Date): string => {
@@ -265,7 +268,7 @@ export default function AguardandoLiberacaoPage() {
   const initiateLiberation = (vehicle: VehicleEntry) => {
     setSelectedVehicle(vehicle);
     if (vehicle.notified) {
-      handleApproveAndPrint(vehicle);
+      setIsNotifiedConfirmOpen(true);
     } else {
       setLiberatedByName('');
       setIsLiberationDialogOpen(true);
@@ -563,6 +566,28 @@ export default function AguardandoLiberacaoPage() {
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
+    </AlertDialog>
+
+    <AlertDialog open={isNotifiedConfirmOpen} onOpenChange={setIsNotifiedConfirmOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar Liberação de {selectedVehicle?.plate1}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Este veículo foi notificado por <strong>{selectedVehicle?.liberatedBy || 'um agente'}</strong>. A liberação será registrada em nome dele. Deseja continuar?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={() => {
+                    if (selectedVehicle) {
+                        handleApproveAndPrint(selectedVehicle);
+                    }
+                    setIsNotifiedConfirmOpen(false);
+                }}>
+                    Confirmar e Gerar Documento
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
     </AlertDialog>
 
     <DocumentPreviewModal 
