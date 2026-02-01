@@ -573,7 +573,7 @@ export default function AguardandoLiberacaoPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Confirmar Liberação de {selectedVehicle?.plate1}?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Este veículo foi notificado por <strong>{selectedVehicle?.liberatedBy || 'um agente'}</strong>. A liberação será registrada em nome dele. Deseja continuar?
+                    O agente <strong>{selectedVehicle?.liberatedBy || 'um agente'}</strong> solicitou a liberação. A liberação será registrada em nome dele. Deseja continuar?
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
