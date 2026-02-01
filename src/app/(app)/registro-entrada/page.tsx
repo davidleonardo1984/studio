@@ -232,9 +232,10 @@ export default function RegistroEntradaPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAssistants, setShowAssistants] = useState(false);
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [liberatedByName, setLiberatedByName] = useState('');
-  const [isApprovingNewEntry, setIsApprovingNewEntry] = useState(false);
+  const [isLiberationDialogOpen, setIsLiberationDialogOpen] = useState(false);
+  const [isNotifiedConfirmOpen, setIsNotifiedConfirmOpen] = useState(false);
+  const [isLiberatingEdited, setIsLiberatingEdited] = useState(false);
 
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -461,11 +462,12 @@ export default function RegistroEntradaPage() {
   }, [searchParams, router, toast, persons, form, editingEntry]);
 
   useEffect(() => {
-    if (!isDialogOpen) {
-      setIsApprovingNewEntry(false);
+    if (!isLiberationDialogOpen) {
       setLiberatedByName('');
+      setIsLiberatingEdited(false);
     }
-  }, [isDialogOpen]);
+  }, [isLiberationDialogOpen]);
+
   
   const handleUpdateCnhDate = async () => {
     if (!expiredDriver || !newCnhExpirationDate || !db) return;
@@ -588,22 +590,26 @@ export default function RegistroEntradaPage() {
         setUpdatedDataForAction(null);
     }
   };
-
-  const handleSaveAndLiberate = async () => {
+  
+  const executeSaveAndLiberate = async (liberatedBy?: string) => {
     if (!editingEntry || !updatedDataForAction || !db) return;
-    setIsSubmitting(true);
-    setIsEditActionDialogOpen(false);
     
+    setIsSubmitting(true);
+    setIsNotifiedConfirmOpen(false);
+
     const driver = persons.find(p => p.name.toLowerCase() === updatedDataForAction.driverName.toLowerCase());
 
     try {
         const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
+        
+        const finalLiberatedBy = liberatedBy ?? (editingEntry.liberatedBy || user?.name || user?.login);
+        
         const updateData: any = { 
             ...updatedDataForAction,
             isForeigner: driver?.isForeigner || false,
-            status: 'entrada_liberada',
+            status: 'entrada_liberada' as const,
             liberationTimestamp: Timestamp.fromDate(new Date()),
-            liberatedBy: editingEntry.liberatedBy || user?.name || user?.login
+            liberatedBy: finalLiberatedBy,
         };
         
         await updateDoc(entryDocRef, updateData);
@@ -629,14 +635,16 @@ export default function RegistroEntradaPage() {
             });
             router.back();
         }
+
     } catch (error) {
-        console.error("Error updating and liberating entry:", error);
-        toast({ variant: "destructive", title: "Erro", description: "Não foi possível salvar as alterações e liberar a entrada." });
+        console.error("Error saving and liberating entry:", error);
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível salvar e liberar a entrada." });
     } finally {
         setIsSubmitting(false);
         setUpdatedDataForAction(null);
     }
   };
+
 
   const handleSaveAndReprint = async () => {
     if (!editingEntry || !updatedDataForAction || !db) return;
@@ -713,17 +721,36 @@ export default function RegistroEntradaPage() {
   const initiateNewEntryApproval = async () => {
     const isValid = await form.trigger();
     if (isValid) {
-      setIsApprovingNewEntry(true);
-      setIsDialogOpen(true);
+      setIsLiberatingEdited(false);
+      setLiberatedByName('');
+      setIsLiberationDialogOpen(true);
     } else {
       toast({ variant: 'destructive', title: 'Formulário Inválido', description: 'Por favor, corrija os erros para prosseguir.' });
     }
   };
+  
+  const initiateEditLiberation = () => {
+    if (!editingEntry) return;
+
+    setIsEditActionDialogOpen(false); 
+
+    if (editingEntry.notified) {
+        setIsNotifiedConfirmOpen(true);
+    } else {
+        setIsLiberatingEdited(true);
+        setLiberatedByName('');
+        setIsLiberationDialogOpen(true);
+    }
+  };
+
 
   const handleConfirmApproval = () => {
-    if (!isApprovingNewEntry) return;
-    handleFormSubmit(form.getValues(), 'entrada_liberada', liberatedByName);
-    setIsDialogOpen(false);
+    if (isLiberatingEdited) {
+        executeSaveAndLiberate(liberatedByName);
+    } else {
+        handleFormSubmit(form.getValues(), 'entrada_liberada', liberatedByName);
+    }
+    setIsLiberationDialogOpen(false);
   };
   
   const handleClosePreview = () => {
@@ -1174,7 +1201,7 @@ export default function RegistroEntradaPage() {
       </Card>
     </div>
 
-    <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+    <AlertDialog open={isLiberationDialogOpen} onOpenChange={setIsLiberationDialogOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
@@ -1210,6 +1237,23 @@ export default function RegistroEntradaPage() {
       </AlertDialogContent>
     </AlertDialog>
 
+    <AlertDialog open={isNotifiedConfirmOpen} onOpenChange={setIsNotifiedConfirmOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar Liberação de {editingEntry?.plate1}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    O agente <strong>{editingEntry?.liberatedBy || 'um agente'}</strong> solicitou a liberação. A liberação será registrada em nome dele. Deseja continuar?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={() => executeSaveAndLiberate()}>
+                    Confirmar e Gerar Documento
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
     <AlertDialog open={isEditActionDialogOpen} onOpenChange={setIsEditActionDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
@@ -1224,7 +1268,7 @@ export default function RegistroEntradaPage() {
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         Salvar e Manter no Pátio
                     </Button>
-                    <Button className="bg-green-600 hover:bg-green-700" onClick={handleSaveAndLiberate} disabled={isSubmitting}>
+                    <Button className="bg-green-600 hover:bg-green-700" onClick={initiateEditLiberation} disabled={isSubmitting}>
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         Liberar Entrada e Imprimir
                     </Button>
