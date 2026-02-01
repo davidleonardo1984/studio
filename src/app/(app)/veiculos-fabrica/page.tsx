@@ -121,7 +121,7 @@ export default function VeiculosFabricaPage() {
     const vehicleDocRef = doc(db, 'vehicleEntries', selectedVehicleForRevert.id);
   
     try {
-      // Revert status and clear liberation info
+      // Revert status and clear liberation/notification info
       await updateDoc(vehicleDocRef, {
         status: 'aguardando_patio',
         liberationTimestamp: null,
@@ -129,22 +129,6 @@ export default function VeiculosFabricaPage() {
         notified: false,
         notifiedBy: null
       });
-
-      // If it was notified, re-create the notification
-      if (selectedVehicleForRevert.notified) {
-         await addDoc(collection(db, 'notifications'), {
-            vehicleEntryId: selectedVehicleForRevert.id,
-            plate1: selectedVehicleForRevert.plate1,
-            plate2: selectedVehicleForRevert.plate2 || '',
-            plate3: selectedVehicleForRevert.plate3 || '',
-            driverName: selectedVehicleForRevert.driverName,
-            transportCompanyName: selectedVehicleForRevert.transportCompanyName,
-            internalDestinationName: selectedVehicleForRevert.internalDestinationName,
-            driverPhone: '', // Not available here, can be re-fetched if needed
-            createdAt: Timestamp.now(),
-            createdBy: selectedVehicleForRevert.notifiedBy || 'system',
-        });
-      }
   
       toast({
         title: 'Veículo Retornou ao Pátio',
@@ -349,5 +333,7 @@ export default function VeiculosFabricaPage() {
     </>
   );
 }
+
+    
 
     
