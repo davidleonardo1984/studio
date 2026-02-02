@@ -76,9 +76,9 @@ export function AppHeader() {
   const isInitialNotificationsLoad = useRef(true);
 
   useEffect(() => {
+    setNotifications([]); // Force clear state on re-render/user change
     isInitialNotificationsLoad.current = true;
-    // If the user isn't logged in or doesn't have the role to see notifications,
-    // clear any existing notifications and don't set up a listener.
+
     if (!db || !user || user.role === 'gate_agent' || user.role === 'exit_agent') {
       setNotifications([]);
       return;
@@ -110,7 +110,6 @@ export function AppHeader() {
 
     }, (error) => {
       console.error("Error fetching notifications:", error);
-      // Clear notifications on error to prevent showing stale cached data.
       setNotifications([]);
     });
 
