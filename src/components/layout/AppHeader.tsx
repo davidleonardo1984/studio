@@ -26,7 +26,7 @@ import { useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
 import type { AppNotification, VehicleEntry } from '@/lib/types';
-import { collection, query, onSnapshot, orderBy, Timestamp, doc, getDoc, updateDoc, where, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, Timestamp, doc, getDoc, updateDoc, where, writeBatch, getDocs, deleteDoc } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -157,14 +157,26 @@ export function AppHeader() {
 
   const handleApproveEntry = async (notification: AppNotification) => {
     if (!db) return;
-    
+
     const vehicleDocRef = doc(db, 'vehicleEntries', notification.vehicleEntryId);
     const vehicleDocSnap = await getDoc(vehicleDocRef);
 
     if (!vehicleDocSnap.exists()) {
-        toast({ variant: "destructive", title: "Erro", description: "Veículo não encontrado no banco de dados." });
+        toast({ variant: "destructive", title: "Registro Inválido", description: "O veículo para esta notificação não existe mais. A notificação será removida." });
+
+        // Proactively remove from UI for immediate feedback
+        setNotifications(prev => prev.filter(n => n.id !== notification.id));
+
+        // Try to delete from the backend to prevent it from reappearing
+        try {
+            const notificationDocRef = doc(db, 'notifications', notification.id);
+            await deleteDoc(notificationDocRef);
+        } catch (e) {
+            console.error("Failed to delete orphaned notification from Firestore:", e);
+        }
         return;
     }
+
     const vehicle = { id: vehicleDocSnap.id, ...vehicleDocSnap.data() } as VehicleEntry;
 
     const agentWhoNotified = users.find(u => u.login === notification.createdBy);
@@ -176,17 +188,16 @@ export function AppHeader() {
     };
     
     try {
-        await updateDoc(vehicleDocRef, updatedVehicleData);
+        const batch = writeBatch(db);
+
+        // Update vehicle
+        batch.update(vehicleDocRef, updatedVehicleData);
+
+        // Delete the notification that was clicked
+        const notificationDocRef = doc(db, 'notifications', notification.id);
+        batch.delete(notificationDocRef);
         
-        const notificationsQuery = query(collection(db, 'notifications'), where('vehicleEntryId', '==', vehicle.id));
-        const notificationSnapshot = await getDocs(notificationsQuery);
-        if (!notificationSnapshot.empty) {
-            const batch = writeBatch(db);
-            notificationSnapshot.forEach(notificationDoc => {
-                batch.delete(notificationDoc.ref);
-            });
-            await batch.commit();
-        }
+        await batch.commit();
 
         const updatedVehicle: VehicleEntry = { ...vehicle, ...updatedVehicleData };
 
@@ -405,3 +416,5 @@ export function AppHeader() {
     </>
   );
 }
+
+    
