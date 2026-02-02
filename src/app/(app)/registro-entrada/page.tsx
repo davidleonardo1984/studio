@@ -17,7 +17,7 @@ import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, Inte
 import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn, Edit2, Trash2, Save, UserPlus, RotateCcw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, addDoc, Timestamp, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, Timestamp, doc, getDoc, updateDoc, deleteDoc, writeBatch, where } from 'firebase/firestore';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -600,6 +600,7 @@ export default function RegistroEntradaPage() {
     const driver = persons.find(p => p.name.toLowerCase() === updatedDataForAction.driverName.toLowerCase());
 
     try {
+        const batch = writeBatch(db);
         const entryDocRef = doc(db, 'vehicleEntries', editingEntry.id);
         
         const finalLiberatedBy = liberatedBy ?? (editingEntry.liberatedBy || user?.name || user?.login);
@@ -612,8 +613,19 @@ export default function RegistroEntradaPage() {
             liberatedBy: finalLiberatedBy,
         };
         
-        await updateDoc(entryDocRef, updateData);
+        batch.update(entryDocRef, updateData);
+
+        // Remove notification after approval
+        const notificationsQuery = query(collection(db, 'notifications'), where('vehicleEntryId', '==', editingEntry.id));
+        const notificationSnapshot = await getDocs(notificationsQuery);
+        if (!notificationSnapshot.empty) {
+            notificationSnapshot.forEach(notificationDoc => {
+                batch.delete(notificationDoc.ref);
+            });
+        }
         
+        await batch.commit();
+
         const updatedEntry: VehicleEntry = { ...editingEntry, ...updateData };
 
         toast({

@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { DocumentPreviewModal } from '@/components/layout/PdfPreviewModal';
 import { useIsClient } from '@/hooks/use-is-client';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, getDocs, writeBatch, Timestamp } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -118,17 +118,29 @@ export default function VeiculosFabricaPage() {
   const handleReturnToYard = async () => {
     if (!selectedVehicleForRevert || !db) return;
   
-    const vehicleDocRef = doc(db, 'vehicleEntries', selectedVehicleForRevert.id);
-  
     try {
-      // Revert status and clear liberation/notification info
-      await updateDoc(vehicleDocRef, {
+      const batch = writeBatch(db);
+      
+      // Update vehicle entry
+      const vehicleDocRef = doc(db, 'vehicleEntries', selectedVehicleForRevert.id);
+      batch.update(vehicleDocRef, {
         status: 'aguardando_patio',
         liberationTimestamp: null,
         liberatedBy: null,
         notified: false,
         notifiedBy: null
       });
+
+      // Also delete any existing notification for this vehicle
+      const notificationsQuery = query(collection(db, 'notifications'), where('vehicleEntryId', '==', selectedVehicleForRevert.id));
+      const notificationSnapshot = await getDocs(notificationsQuery);
+      if (!notificationSnapshot.empty) {
+          notificationSnapshot.forEach(notificationDoc => {
+              batch.delete(notificationDoc.ref);
+          });
+      }
+
+      await batch.commit();
   
       toast({
         title: 'Veículo Retornou ao Pátio',
@@ -333,7 +345,3 @@ export default function VeiculosFabricaPage() {
     </>
   );
 }
-
-    
-
-    
