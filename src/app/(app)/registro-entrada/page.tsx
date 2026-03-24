@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { VehicleEntryFormData, VehicleEntry, TransportCompany, Driver, InternalDestination } from '@/lib/types';
-import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn, Edit2, Trash2, Save, UserPlus, RotateCcw } from 'lucide-react';
+import { SendToBack, CheckCircle, Printer, Loader2, AlertTriangle, LogIn, Edit2, Trash2, Save, UserPlus, RotateCcw, Building2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy, addDoc, Timestamp, doc, getDoc, updateDoc, deleteDoc, writeBatch, where } from 'firebase/firestore';
@@ -200,6 +200,82 @@ function PersonForm({ onSuccess, onCancel, allPersons }: PersonFormProps) {
   );
 }
 
+// Local CompanyForm schema and component
+const transportCompanySchema = z.object({
+  name: z.string().min(3, 'Nome da Transportadora / Empresa é obrigatório (mín. 3 caracteres).'),
+});
+type CompanyFormData = z.infer<typeof transportCompanySchema>;
+
+interface CompanyFormProps {
+  onSuccess: (newCompany: TransportCompany) => void;
+  onCancel: () => void;
+  allCompanies: TransportCompany[];
+}
+
+function CompanyForm({ onSuccess, onCancel, allCompanies }: CompanyFormProps) {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<CompanyFormData>({
+    resolver: zodResolver(transportCompanySchema),
+    defaultValues: { name: '' },
+  });
+
+  const onSubmit = async (formData: CompanyFormData) => {
+    setIsSubmitting(true);
+    try {
+        if (!db) throw new Error("Firebase não configurado");
+
+        const normalizedName = formData.name.trim().toLowerCase();
+        const isDuplicate = allCompanies.some(c => c.name.trim().toLowerCase() === normalizedName);
+        
+        if (isDuplicate) {
+            form.setError("name", { type: "manual", message: "Esta transportadora / empresa já está cadastrada." });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const docRef = await addDoc(collection(db, 'transportCompanies'), formData);
+        const newCompany: TransportCompany = {
+            id: docRef.id,
+            name: formData.name,
+        };
+
+        toast({ title: "Empresa cadastrada!", description: `${formData.name} foi cadastrada com sucesso.` });
+        
+        onSuccess(newCompany);
+        form.reset();
+
+    } catch (error) {
+        console.error("Error saving company:", error);
+        toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar a transportadora." });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField control={form.control} name="name" render={({ field }) => ( 
+            <FormItem>
+                <FormLabel>Nome da Transportadora / Empresa</FormLabel>
+                <FormControl><Input placeholder="Ex: Transportes Rápidos S.A." {...field} autoComplete="off" /></FormControl>
+                <FormMessage />
+            </FormItem>
+        )} />
+        <div className="flex justify-end gap-2 pt-4">
+            {onCancel && <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>}
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Cadastrar Empresa
+            </Button>
+        </div>
+      </form>
+    </Form>
+  );
+}
+
 
 const mockMovementTypes = ["CARGA", "DESCARGA", "PRESTAÇÃO DE SERVIÇO", "TRANSFERENCIA INTERNA", "DEVOLUÇÃO", "VISITA", "OUTROS"];
 
@@ -254,6 +330,7 @@ export default function RegistroEntradaPage() {
   const [newCnhExpirationDate, setNewCnhExpirationDate] = useState('');
 
   const [isPersonFormOpen, setIsPersonFormOpen] = useState(false);
+  const [isCompanyFormOpen, setIsCompanyFormOpen] = useState(false);
   
   const entrySchema = useMemo(() => {
     const personMap = new Map(persons.map(p => [p.name.toLowerCase(), p]));
@@ -399,6 +476,11 @@ export default function RegistroEntradaPage() {
   const handlePersonCreated = (newPerson: Driver) => {
     setPersons(prev => [...prev, newPerson].sort((a,b) => a.name.localeCompare(b.name)));
     setIsPersonFormOpen(false); 
+  };
+
+  const handleCompanyCreated = (newCompany: TransportCompany) => {
+    setTransportCompanies(prev => [...prev, newCompany].sort((a,b) => a.name.localeCompare(b.name)));
+    setIsCompanyFormOpen(false);
   };
 
   useEffect(() => {
@@ -821,31 +903,56 @@ export default function RegistroEntradaPage() {
       </div>
       <Card className="shadow-xl w-full">
         <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <CardTitle className="text-xl font-semibold text-primary">{editingEntry ? 'Editar Registro' : 'Registro de Entrada'}</CardTitle>
-                <Dialog open={isPersonFormOpen} onOpenChange={setIsPersonFormOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="outline">
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Cadastrar Nova Pessoa
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-4xl">
-                        <DialogHeader>
-                            <DialogTitle>Cadastro Rápido de Pessoa</DialogTitle>
-                            <DialogDescription>
-                                Cadastre um novo motorista ou ajudante. Após salvar, ele estará disponível na lista.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="py-4">
-                            <PersonForm
-                                onSuccess={handlePersonCreated}
-                                onCancel={() => setIsPersonFormOpen(false)}
-                                allPersons={persons}
-                            />
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <div className="flex flex-wrap gap-2">
+                    <Dialog open={isPersonFormOpen} onOpenChange={setIsPersonFormOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Cadastrar Nova Pessoa
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-4xl">
+                            <DialogHeader>
+                                <DialogTitle>Cadastro Rápido de Pessoa</DialogTitle>
+                                <DialogDescription>
+                                    Cadastre um novo motorista ou ajudante. Após salvar, ele estará disponível na lista.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4">
+                                <PersonForm
+                                    onSuccess={handlePersonCreated}
+                                    onCancel={() => setIsPersonFormOpen(false)}
+                                    allPersons={persons}
+                                />
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                    <Dialog open={isCompanyFormOpen} onOpenChange={setIsCompanyFormOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <Building2 className="mr-2 h-4 w-4" />
+                                Cadastrar Nova Transportadora
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-lg">
+                            <DialogHeader>
+                                <DialogTitle>Cadastro Rápido de Transportadora</DialogTitle>
+                                <DialogDescription>
+                                    Cadastre uma nova transportadora ou empresa. Após salvar, ela estará disponível na lista.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4">
+                                <CompanyForm
+                                    onSuccess={handleCompanyCreated}
+                                    onCancel={() => setIsCompanyFormOpen(false)}
+                                    allCompanies={transportCompanies}
+                                />
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
         </CardHeader>
         <CardContent>
