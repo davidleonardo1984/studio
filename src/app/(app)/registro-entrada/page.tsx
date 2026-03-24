@@ -1123,7 +1123,7 @@ export default function RegistroEntradaPage() {
                       <FormLabel>Placa 1</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="AAA-1234" 
+                          placeholder="DIGITE A PLACA 1" 
                           {...field}
                           onChange={(e) => handlePlateChange(e, field.onChange)}
                           disabled={isSubmitting} 
@@ -1144,7 +1144,7 @@ export default function RegistroEntradaPage() {
                       <FormLabel>Placa 2 (Opcional)</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="BBB-5678" 
+                          placeholder="DIGITE A PLACA 2 (OPCIONAL)" 
                           {...field}
                           onChange={(e) => handlePlateChange(e, field.onChange)}
                           disabled={isSubmitting} 
@@ -1165,7 +1165,7 @@ export default function RegistroEntradaPage() {
                       <FormLabel>Placa 3 (Opcional)</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="CCC-9012" 
+                          placeholder="DIGITE A PLACA 3 (OPCIONAL)" 
                           {...field}
                           onChange={(e) => handlePlateChange(e, field.onChange)}
                           disabled={isSubmitting} 
