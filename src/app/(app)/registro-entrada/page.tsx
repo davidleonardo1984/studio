@@ -463,7 +463,7 @@ export default function RegistroEntradaPage() {
         const personsPromise = getDocs(query(collection(db, 'persons'), orderBy("name")));
         const destinationsPromise = getDocs(query(collection(db, 'internalDestinations'), orderBy("name")));
         
-        const [companiesSnap, personsSnap, destinationsSnap] = await Promise.all([companiesPromise, personsPromise, destinationsPromise]);
+        const [companiesSnap, personsSnap, destinationsSnap] = await Promise.all([companiesPromise, personsSnap, destinationsSnap]);
 
         setTransportCompanies(companiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany)));
         setPersons(personsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Driver)));
@@ -1144,7 +1144,7 @@ export default function RegistroEntradaPage() {
                       <FormLabel>Placa 2 (Opcional)</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="DIGITE A PLACA 2 (OPCIONAL)" 
+                          placeholder="DIGITE A PLACA 2" 
                           {...field}
                           onChange={(e) => handlePlateChange(e, field.onChange)}
                           disabled={isSubmitting} 
@@ -1165,7 +1165,7 @@ export default function RegistroEntradaPage() {
                       <FormLabel>Placa 3 (Opcional)</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="DIGITE A PLACA 3 (OPCIONAL)" 
+                          placeholder="DIGITE A PLACA 3" 
                           {...field}
                           onChange={(e) => handlePlateChange(e, field.onChange)}
                           disabled={isSubmitting} 
