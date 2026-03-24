@@ -33,7 +33,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { generateVehicleEntryImage } from '@/lib/pdf-generator';
 import { isAfter, parseISO, format } from 'date-fns';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/dialog';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
@@ -463,7 +463,7 @@ export default function RegistroEntradaPage() {
         const personsPromise = getDocs(query(collection(db, 'persons'), orderBy("name")));
         const destinationsPromise = getDocs(query(collection(db, 'internalDestinations'), orderBy("name")));
         
-        const [companiesSnap, personsSnap, destinationsSnap] = await Promise.all([companiesPromise, personsSnap, destinationsSnap]);
+        const [companiesSnap, personsSnap, destinationsSnap] = await Promise.all([companiesPromise, personsPromise, destinationsPromise]);
 
         setTransportCompanies(companiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as TransportCompany)));
         setPersons(personsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Driver)));
