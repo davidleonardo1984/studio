@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -278,6 +277,21 @@ function PersonsSection() {
       }
       return formatted;
   };
+
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (value: string) => void) => {
+    const rawValue = e.target.value.replace(/\D/g, "");
+    fieldOnChange(rawValue.substring(0, 11));
+  };
+
+  const formatDisplayCpf = (val: string): string => {
+    if (!val || val === "ESTRANGEIRO") return val;
+    const digits = val.replace(/\D/g, "");
+    let formatted = digits;
+    if (digits.length > 3) formatted = digits.substring(0, 3) + "." + digits.substring(3);
+    if (digits.length > 6) formatted = formatted.substring(0, 7) + "." + digits.substring(6);
+    if (digits.length > 9) formatted = formatted.substring(0, 11) + "-" + digits.substring(9, 11);
+    return formatted.substring(0, 14);
+  };
   
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (value: string) => void) => {
       let rawValue = e.target.value.replace(/\D/g, "");
@@ -290,7 +304,7 @@ function PersonsSection() {
   const formFields = (form: any) => (
      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Ex: Carlos Alberto" {...field} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
-      <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF (apenas números)</FormLabel><FormControl><Input placeholder="12345678900" {...field} value={isForeigner ? "ESTRANGEIRO" : field.value} maxLength={11} autoComplete="off" disabled={isForeigner} /></FormControl><FormMessage /></FormItem>)} />
+      <FormField control={form.control} name="cpf" render={({ field }) => ( <FormItem><FormLabel>CPF</FormLabel><FormControl><Input placeholder="000.000.000-00" {...field} value={isForeigner ? "ESTRANGEIRO" : formatDisplayCpf(field.value || "")} onChange={(e) => handleCpfChange(e, field.onChange)} maxLength={isForeigner ? undefined : 14} autoComplete="off" disabled={isForeigner} /></FormControl><FormMessage /></FormItem>)} />
       <FormField control={form.control} name="cnh" render={({ field }) => ( <FormItem><FormLabel>CNH (Opcional)</FormLabel><FormControl><Input placeholder="Número da CNH" {...field} value={field.value ?? ''} autoComplete="off" /></FormControl><FormMessage /></FormItem>)} />
       
       <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -491,7 +505,7 @@ function PersonsSection() {
                               )}
                           </TableCell>
                           <TableCell className="py-1">{item.name}</TableCell>
-                          <TableCell className="py-1">{item.isForeigner ? 'ESTRANGEIRO' : item.cpf}</TableCell>
+                          <TableCell className="py-1">{item.isForeigner ? 'ESTRANGEIRO' : formatDisplayCpf(item.cpf)}</TableCell>
                           <TableCell className="py-1">{item.cnh || 'N/A'}</TableCell>
                           <TableCell className={cn("py-1", isCnhExpired(item.cnhExpirationDate) && "text-destructive font-bold")}>
                             {formatDateString(item.cnhExpirationDate)}
@@ -840,7 +854,7 @@ function InternalDestinationsSection() {
         form.reset();
     } catch (error) {
         console.error("Error saving destination:", error);
-        toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar o destino." });
+        toast({ variant: 'destructive', title: "Erro", description: "Não foi possível salvar the destino." });
     } finally {
         setIsSubmitting(false);
     }
@@ -1002,4 +1016,3 @@ export default function CadastrosGeraisPage() {
     </div>
   );
 }
-    
